@@ -1,0 +1,15 @@
+# Workflow: Generate tests for a feature
+
+Tests derive from acceptance criteria, never from reading finished code.
+
+1. Start from the spec's `Unit Test Cases` table — those IDs are fixed. Add cases to
+   `test_cases/<slug>.test_cases.md`; never renumber an existing ID.
+2. ID prefixes: `UT` unit (service with fakes) · `IT` integration (repository or route against
+   real MongoDB) · `CT` contract suite shared by every implementation of an interface ·
+   `E2E` Playwright journey · `VR` Playwright visual baseline.
+3. Per-layer convention is in `constitution.md` → Testing Discipline. Name each test with its ID:
+   `it('publish-pipeline.UT03 — blocks publish when a placeholder remains', …)`.
+4. Every AC maps to at least one test; every error row in an API exception table maps to one.
+5. Fixtures are built by factory functions in `apps/api/src/testing/` — never copied from seed
+   data, so a seed edit cannot silently change a test's meaning.
+6. A scenario spanning more than one spec goes in `test_cases/_integration.md`.

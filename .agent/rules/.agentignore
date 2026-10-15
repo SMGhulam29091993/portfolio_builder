@@ -1,0 +1,37 @@
+# Keeps secrets, binaries and generated output out of agent context.
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Binaries and media (read docs/design-reference/*.jpg only when a task needs the visuals)
+*.zip
+*.pdf
+*.woff
+*.woff2
+*.mp4
+playwright-report/
+test-results/
+**/__screenshots__/
+
+# Local data
+apps/api/.data/
+mongo-data/
+ollama-data/
+
+# Logs
+*.log

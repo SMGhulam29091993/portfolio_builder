@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Test output
+playwright-report/
+test-results/
+
+# Local data
+apps/api/.data/
+mongo-data/
+ollama-data/
+
+# Logs and OS files
+*.log
+.DS_Store

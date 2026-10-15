@@ -1,0 +1,27 @@
+{
+  "name": "@portfolio/sections",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Section renderers, layout variant registry and page composer, used by the public site and the CMS preview.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@portfolio/eslint-config": "workspace:*",
+    "@portfolio/tsconfig": "workspace:*",
+    "eslint": "10.12.0",
+    "typescript": "6.0.3"
+  }
+}
