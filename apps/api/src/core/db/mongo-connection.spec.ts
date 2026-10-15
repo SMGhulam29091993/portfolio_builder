@@ -87,6 +87,18 @@ describe('MongoConnection', () => {
     expect(connection.isConnected()).toBe(false);
   });
 
+  it('hands out the open connection only between connect and disconnect', async () => {
+    const connection = track(MongoConnection.getInstance(optionsFor()));
+    expect(() => connection.getConnection()).toThrow('not open');
+
+    await connection.connect();
+    const open = connection.getConnection();
+    await expect(open.db?.admin().ping()).resolves.toEqual(expect.objectContaining({ ok: 1 }));
+
+    await connection.disconnect();
+    expect(() => connection.getConnection()).toThrow('not open');
+  });
+
   describe('hot-reload cache', () => {
     const cacheKey = Symbol.for('portfolio-builder.api.mongo-connection');
     const globalCache = globalThis as Record<symbol, unknown>;

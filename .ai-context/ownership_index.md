@@ -14,6 +14,11 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** every spec's API Contract (exception tables name a code, not a shape)
 **Last updated:** 2026-10-11
 
+## Module router convention (`ApiRouter`, mounted route table)
+**Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
+**Referenced by:** `.ai-context/architecture.md` → Request lifecycle, `apps/api/src/app.ts`
+**Last updated:** 2026-10-15
+
 ## Optimistic concurrency (`revision` / `expectedRevision`)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Optimistic concurrency
 **Referenced by:** `section-engine`, `site-identity`, `design-theme`, `ai-design-studio`, `cms-panel-shell` specs

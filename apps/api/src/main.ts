@@ -4,15 +4,15 @@
  * Runs the startup sequence from `constitution.md` → Infrastructure and fails fast on any step:
  *   1. load and validate the environment — exit 1, naming the bad variables (AC2)
  *   2. connect to MongoDB and confirm it answered — exit 1 without opening a port (AC3)
- *   3. listen
- *   4. on SIGTERM / SIGINT, drain in-flight requests, close MongoDB, exit 0 (AC13)
+ *   3. build the container and the Express app
+ *   4. listen
+ *   5. on SIGTERM / SIGINT, drain in-flight requests, close MongoDB, exit 0 (AC13)
  *
- * Building the container and the Express app slots in between steps 2 and 3 with
- * `monorepo-foundation.T06`; recovering interrupted AI work joins with `ai-design-studio`.
+ * Recovering interrupted AI work joins between steps 3 and 4 with `ai-design-studio`.
  */
-import type { RequestListener } from 'node:http';
-
+import { createApp } from './app.js';
 import { EnvValidationError, loadEnv, type Env } from './config/env.js';
+import { buildContainer } from './container.js';
 import { MongoConnection } from './core/db/mongo-connection.js';
 import { ApplicationLifecycle, ExitCode } from './core/lifecycle/application-lifecycle.js';
 import { JsonLogger } from './core/logger/json-logger.js';
@@ -26,15 +26,6 @@ const SHUTDOWN_GRACE_MS = 10_000;
 
 /** Upper bound on waiting for buffered log output before a forced exit. */
 const EXIT_FLUSH_TIMEOUT_MS = 1_000;
-
-/**
- * Temporary request handler until `monorepo-foundation.T06` replaces it with the Express app
- * built from the container. Answers every request with an empty 404.
- */
-const placeholderListener: RequestListener = (_req, res) => {
-  res.statusCode = 404;
-  res.end();
-};
 
 const logger: ILogger = new JsonLogger(process.stdout);
 
@@ -77,7 +68,11 @@ async function main(): Promise<void> {
     cacheAcrossReloads: env.NODE_ENV !== 'production',
   });
 
-  const lifecycle = new ApplicationLifecycle(database, placeholderListener, logger, {
+  // Built only after MongoDB has answered (step 3 follows step 2).
+  const createRequestListener = () =>
+    createApp(buildContainer({ env, logger, mongo: database })).handler;
+
+  const lifecycle = new ApplicationLifecycle(database, createRequestListener, logger, {
     port: env.PORT,
     shutdownGraceMs: SHUTDOWN_GRACE_MS,
   });

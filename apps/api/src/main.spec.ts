@@ -130,12 +130,18 @@ describe('main', () => {
     expect(api.output()).not.toContain(FAKE_SECRET);
   });
 
-  it('monorepo-foundation.AC13 — on SIGTERM closes MongoDB and exits 0', async () => {
+  it('monorepo-foundation.AC4 / AC13 — serves /api/v1/health, then on SIGTERM closes MongoDB and exits 0', async () => {
     const port = await findFreePort();
     const api = startApi({ NODE_ENV: 'test', PORT: String(port), MONGODB_URI: mongo.getUri() });
 
     const listening = await waitForLog(api, 'http server listening');
     expect(listening.port).toBe(port);
+
+    const health = await fetch(`http://127.0.0.1:${String(port)}/api/v1/health`);
+    expect(health.status).toBe(200);
+    expect(await health.json()).toEqual(
+      expect.objectContaining({ data: expect.objectContaining({ db: 'up' }) as unknown }),
+    );
 
     api.child.kill('SIGTERM');
 

@@ -62,8 +62,8 @@ stop, raise it, and fix the spec.
 - **Secrets:** environment variables only, validated at startup by `config/env.ts`. Model IDs and
   provider URLs are configuration, never literals in code.
 - **Security hardening backlog** (kept current, not aspirational):
-  - `helmet()` — built ✅ `monorepo-foundation.T05` (`createSecurityHeaders`); mounted ⬜ `monorepo-foundation.T06`
-  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; per-mount limiters ⬜ `monorepo-foundation.T06` (`/health`), `owner-auth.T05`
+  - `helmet()` — ✅ built `monorepo-foundation.T05` (`createSecurityHeaders`), mounted `monorepo-foundation.T06` (`app.ts`)
+  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; auth, AI and public limiters ⬜ `owner-auth.T05` and their own specs
   - Origin allow-list on state-changing CMS requests — ⬜ `owner-auth.T05`
   - Input sanitisation for free-text fields — ⬜ `section-engine.T03`
   - File upload MIME / size validation before storage — ⬜ `media-assets.T03`

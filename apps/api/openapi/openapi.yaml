@@ -1,0 +1,127 @@
+# API document for apps/api (int-standards.express.md → API documentation).
+#
+# Rules:
+# - Every mounted route appears here, and nothing else does. `pnpm drift` (and CI) fails on
+#   any difference, naming the method and path.
+# - Paths are written in full, including the /api/v1 prefix.
+# - Each operation carries its spec contract ID in `operationId` and `x-spec-id`.
+# - info.version: bump the minor digit when a route is added or changed, the patch digit for
+#   doc-only corrections (constitution.md → Versioning Rules).
+openapi: 3.1.0
+info:
+  title: Portfolio Builder API
+  version: 0.1.0
+  description: >-
+    CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
+    `{ success, message, data? }`; on failure `data.code` is a canonical error code.
+
+tags:
+  - name: health
+    description: Ops and deploy readiness checks.
+
+paths:
+  /api/v1/health:
+    get:
+      tags: [health]
+      operationId: monorepo-foundation.API01
+      x-spec-id: monorepo-foundation.API01
+      summary: Liveness and database reachability
+      description: >-
+        Reports runtime facts only. MongoDB is probed with a `ping` that has its own short
+        timeout, so the endpoint answers 503 instead of hanging when the database is down.
+      security: []
+      responses:
+        '200':
+          description: The API is up and MongoDB answered.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/HealthReport'
+              example:
+                success: true
+                message: ok
+                data: { status: ok, db: up, version: 0.0.0, uptimeSec: 42 }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: MongoDB did not answer the ping in time.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FailureEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [code, db]
+                        properties:
+                          code: { const: SERVICE_UNAVAILABLE }
+                          db: { const: down }
+              example:
+                success: false
+                message: Database unavailable
+                data: { code: SERVICE_UNAVAILABLE, db: down }
+
+components:
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success, message]
+      properties:
+        success: { const: true }
+        message: { type: string }
+        data: {}
+    FailureEnvelope:
+      type: object
+      required: [success, message, data]
+      properties:
+        success: { const: false }
+        message: { type: string }
+        data:
+          type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+              description: Canonical error code (int-standards.express.md → Error codes).
+          additionalProperties: true
+    HealthReport:
+      type: object
+      required: [status, db, version, uptimeSec]
+      properties:
+        status: { const: ok }
+        db: { const: up }
+        version: { type: string, minLength: 1 }
+        uptimeSec: { type: integer, minimum: 0 }
+
+  responses:
+    RateLimited:
+      description: The client exceeded the rate limit for this route.
+      headers:
+        Retry-After:
+          description: Seconds until the current window resets.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, retryAfterSec]
+                    properties:
+                      code: { const: RATE_LIMITED }
+                      retryAfterSec: { type: integer, minimum: 1 }
+          example:
+            success: false
+            message: Too many requests
+            data: { code: RATE_LIMITED, retryAfterSec: 30 }

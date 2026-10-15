@@ -26,14 +26,15 @@ draft into an immutable snapshot; the public site renders only the current snaps
 portfolio-builder/
 ├── apps/
 │   ├── api/                      🚧 Express + TypeScript + Mongoose
-│   │   ├── openapi/openapi.yaml  ⬜
+│   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           🚧 startup sequence — env → MongoDB → listen → graceful shutdown ✅; container + app slot in with T06
-│   │       ├── app.ts            ⬜ Express app factory (middleware + router mounts)
-│   │       ├── container.ts      ⬜ composition root — the only place classes are instantiated
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → container + app → listen → graceful shutdown
+│   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
+│   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment
-│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`) ✅ · events ⬜
-│   │       ├── modules/          ⬜ one folder per module (table below)
+│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events ⬜
+│   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness
 │   └── web/                      ⬜ Next.js App Router
@@ -71,6 +72,7 @@ implements, so `portfolio` remains the collection's single writer.
 ## Module dependency map (allowed edges only)
 An arrow reads "depends on an interface exported by". Anything not listed is forbidden.
 ```
+health      → core
 auth        → core
 portfolio   → core
 identity    → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
@@ -120,9 +122,14 @@ A section type is four registrations and no engine edits: a contract schema, an 
 derived at render time from the visible order; they are never stored.
 
 ## Request lifecycle (CMS write)
-`helmet` → request id → rate limiter → JSON body → Origin allow-list (non-GET) →
+`helmet` → request id → JSON body → [module router: rate limiter] → Origin allow-list (non-GET) →
 `requireOwner` (auth: verifies the access cookie, attaches `userId`) → `resolvePortfolio`
 (portfolio: attaches `portfolioId`) → `validate(schema)` → controller → service → repository → envelope → error middleware.
+
+Rate limiters are per mount, so they run inside each module's router, after the global JSON body
+parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. Every
+module router is an `ApiRouter`, so the app knows its mounted route table for the OpenAPI drift
+check (`apps/api/src/app.ts`).
 
 ## Draft → publish → site
 1. Each content module holds its own draft document(s) with an integer `revision`.

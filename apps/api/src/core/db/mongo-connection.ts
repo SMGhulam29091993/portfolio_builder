@@ -8,7 +8,10 @@
  */
 import mongoose from 'mongoose';
 
-import type { IDatabaseConnection } from './database-connection.interface.js';
+import type {
+  IDatabaseConnection,
+  IMongoConnectionProvider,
+} from './database-connection.interface.js';
 
 export interface MongoConnectionOptions {
   /** MongoDB connection string. May carry credentials — never log it. */
@@ -25,7 +28,7 @@ const GLOBAL_CACHE_KEY = Symbol.for('portfolio-builder.api.mongo-connection');
 /** Shape of `globalThis` with the development cache attached. */
 type GlobalWithCache = typeof globalThis & { [GLOBAL_CACHE_KEY]?: MongoConnection };
 
-export class MongoConnection implements IDatabaseConnection {
+export class MongoConnection implements IDatabaseConnection, IMongoConnectionProvider {
   /** Instance for the current module evaluation; used in every environment. */
   private static instance: MongoConnection | undefined;
 
@@ -77,6 +80,11 @@ export class MongoConnection implements IDatabaseConnection {
     this.connection = undefined;
     this.releaseSingleton();
     if (connection) await connection.close();
+  }
+
+  getConnection(): mongoose.Connection {
+    if (!this.connection) throw new Error('MongoDB connection is not open');
+    return this.connection;
   }
 
   isConnected(): boolean {
