@@ -2,5 +2,13 @@ packages:
   - apps/*
   - packages/*
 
+# Dependency install scripts are blocked unless listed here (pnpm 11 default).
+# - esbuild: verifies its platform binary; used by tsx and Vitest.
+# - mongodb-memory-server: downloads the `mongod` binary at install time, so integration tests
+#   never stall on a first-run download (constitution.md → real MongoDB in tests).
+allowBuilds:
+  esbuild: true
+  mongodb-memory-server: true
+
 # Every dependency is pinned to an exact version (ADR-0007 → Pinned versions).
 savePrefix: ''
