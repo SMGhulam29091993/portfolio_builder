@@ -43,6 +43,10 @@ owner moves a spec to `Ready`.
 - `monorepo-foundation.T05` completed on branch `feat/foundation-t05-security-middleware`:
   `createSecurityHeaders` (helmet), `createRequestId`, `RateLimiterFactory` (AC11; IT06).
   Mounting on `/health` moved to T06, which creates the route.
+- `monorepo-foundation.T06` completed on branch `feat/foundation-t06-health-app-openapi`:
+  `health` module, `container.ts`, `app.ts`, `main.ts` serving the real app, `ApiRouter`,
+  `openapi/openapi.yaml` and `pnpm drift` (AC4, AC5, AC10; AC6 and AC11 re-proven on the live
+  app; IT01, IT02, IT12). `GET /api/v1/health` is the first live route.
 ### 2026-10-11
 - All 16 specs, plans, task lists and test-case files authored from `Ghulam Portfolio.html`.
 - ADR-0001 and ADR-0002 accepted by the owner; ADR-0003 accepted for the provider list;

@@ -22,6 +22,11 @@
   `/health`", but that route is created by T06; the sub-step moved to T06's line in the tasks
   file. AC11 is proven by IT06 on a test mount of `GET /api/v1/health` and is re-proven on the
   real route in T06.
+- monorepo-foundation.T06 — 2026-10-15 — DoD self-check: 2026-10-15, pass, with the same CI gap
+  as T01 (checked locally: `pnpm turbo run build typecheck lint test drift` — 16 tasks pass;
+  `pnpm drift` reports the document in sync). Records: `health → core` added to the module
+  dependency map; the request-lifecycle order now states that per-mount rate limiters run after
+  the global JSON body parser; `int-standards.express.md` step 5 requires `ApiRouter`.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

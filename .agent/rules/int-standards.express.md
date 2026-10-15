@@ -9,6 +9,8 @@ boundaries, approved patterns) are in `constitution.md` and are not repeated her
 3. Service class — `modules/<name>/<name>.service.ts`, implementing its interface
 4. Controller class — `modules/<name>/<name>.controller.ts`
 5. Router factory — `modules/<name>/<name>.routes.ts`, receives the controller and middleware
+   and returns an `ApiRouter` (`core/http`). Register every route with `.route(method, path,
+   ...handlers)`, never `router.get()` directly, so the OpenAPI drift check sees it
 6. Wire into `src/container.ts`, then mount the router in `src/app.ts`
 7. **Update the OpenAPI document — same PR, mandatory**
 See `.agent/workflows/generate-plan.md` for the full checklist.
