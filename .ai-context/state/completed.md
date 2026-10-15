@@ -9,6 +9,11 @@
 - monorepo-foundation.T02 — 2026-10-15 — DoD self-check: 2026-10-15, pass, with the same CI gap
   as T01 (checked locally: 10 tasks pass, second run fully cached, each `dist/` imports as ESM).
 
+- monorepo-foundation.T03 — 2026-10-15 — DoD self-check: 2026-10-15, pass, with the same CI gap
+  as T01 (checked locally: `pnpm turbo run build typecheck lint test` — 14 tasks pass, 30 API
+  tests pass against a real `mongod`, second run fully cached). OpenAPI item not applicable: no
+  route is mounted until T06.
+
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass
 -->
