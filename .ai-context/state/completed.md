@@ -13,6 +13,10 @@
   as T01 (checked locally: `pnpm turbo run build typecheck lint test` — 14 tasks pass, 30 API
   tests pass against a real `mongod`, second run fully cached). OpenAPI item not applicable: no
   route is mounted until T06.
+- monorepo-foundation.T04 — 2026-10-15 — DoD self-check: 2026-10-15, pass, with the same CI gap
+  as T01 (checked locally: 14 pipeline tasks pass, 61 API tests pass). OpenAPI item not
+  applicable: no route is mounted until T06; AC6 is proven on a test app mounting `notFound`
+  under `/api/v1`, and is re-proven on the real app in T06.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

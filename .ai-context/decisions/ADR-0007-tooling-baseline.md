@@ -40,6 +40,10 @@ appends the tools it installs to this table in the same change.
 | mongodb-memory-server | 11.3.0 | `monorepo-foundation.T03` | Downloads `mongod` 8.2.6 at install (`allowBuilds` in `pnpm-workspace.yaml`) |
 | tsx | 4.23.15 | `monorepo-foundation.T03` | Runs `src/main.ts` in `dev` and in process-level tests |
 | @types/node | 24.19.2 | `monorepo-foundation.T03` | Major tracks the Node.js runtime (24) |
+| express | 5.3.0 | `monorepo-foundation.T04` | `apps/api` |
+| @types/express | 5.0.6 | `monorepo-foundation.T04` | |
+| supertest | 7.3.1 | `monorepo-foundation.T04` | HTTP-level tests |
+| @types/supertest | 7.2.1 | `monorepo-foundation.T04` | |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and
