@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@portfolio/contracts": "workspace:*",
     "express": "5.3.0",
     "helmet": "8.3.0",
     "mongoose": "9.11.2",
