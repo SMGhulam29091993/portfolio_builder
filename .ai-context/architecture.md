@@ -25,14 +25,14 @@ draft into an immutable snapshot; the public site renders only the current snaps
 ```
 portfolio-builder/
 ├── apps/
-│   ├── api/                      ⬜ Express + TypeScript + Mongoose
+│   ├── api/                      🚧 Express + TypeScript + Mongoose
 │   │   ├── openapi/openapi.yaml  ⬜
 │   │   └── src/
-│   │       ├── main.ts           ⬜ startup sequence
+│   │       ├── main.ts           🚧 startup sequence — env → MongoDB → listen → graceful shutdown ✅; container + app slot in with T06
 │   │       ├── app.ts            ⬜ Express app factory (middleware + router mounts)
 │   │       ├── container.ts      ⬜ composition root — the only place classes are instantiated
-│   │       ├── config/env.ts     ⬜ zod-validated environment
-│   │       ├── core/             ⬜ errors · http (respond, validate) · db · events · logger
+│   │       ├── config/env.ts     ✅ zod-validated environment
+│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ⬜ · http (respond, validate) ⬜ · events ⬜
 │   │       ├── modules/          ⬜ one folder per module (table below)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness

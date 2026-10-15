@@ -34,6 +34,9 @@ owner moves a spec to `Ready`.
   `packages/eslint-config`; versions pinned in ADR-0007 (TypeScript held at 6.0.3).
 - `monorepo-foundation.T02` completed: buildable skeletons for `contracts`, `design-tokens`,
   `sections`.
+- `monorepo-foundation.T03` completed on branch `feat/foundation-t03-api-bootstrap`:
+  `apps/api` workspace, `config/env.ts`, `ILogger` + `JsonLogger`, `MongoConnection`
+  singleton, `ApplicationLifecycle`, `main.ts` startup and graceful shutdown (AC2, AC3, AC13).
 ### 2026-10-11
 - All 16 specs, plans, task lists and test-case files authored from `Ghulam Portfolio.html`.
 - ADR-0001 and ADR-0002 accepted by the owner; ADR-0003 accepted for the provider list;
