@@ -55,7 +55,7 @@ function createLifecycle(
   listener: RequestListener = respondOk,
   shutdownGraceMs = 5_000,
 ): ApplicationLifecycle {
-  const lifecycle = new ApplicationLifecycle(database, listener, silentLogger, {
+  const lifecycle = new ApplicationLifecycle(database, () => listener, silentLogger, {
     port: 0,
     shutdownGraceMs,
   });
@@ -111,27 +111,41 @@ afterEach(async () => {
 });
 
 describe('ApplicationLifecycle.start', () => {
-  it('connects to the datastore before it starts listening', async () => {
+  it('connects, then builds the request handler, then listens', async () => {
     const database = new FakeDatabase();
-    const lifecycle = createLifecycle(database);
+    const lifecycle = new ApplicationLifecycle(
+      database,
+      () => {
+        database.calls.push('build handler');
+        return respondOk;
+      },
+      silentLogger,
+      { port: 0, shutdownGraceMs: 5_000 },
+    );
+    started.push(lifecycle);
 
     const { port } = await lifecycle.start();
 
-    expect(database.calls).toEqual(['connect']);
+    expect(database.calls).toEqual(['connect', 'build handler']);
     await expect(get(port)).resolves.toBe('ok');
   });
 
-  it('monorepo-foundation.AC3 — never opens a port when the datastore is unreachable', async () => {
+  it('monorepo-foundation.AC3 — never builds the app or opens a port when the datastore is unreachable', async () => {
     const port = await findFreePort();
+    let handlerBuilt = false;
     const lifecycle = new ApplicationLifecycle(
       new FakeDatabase(new Error('server selection timed out')),
-      respondOk,
+      () => {
+        handlerBuilt = true;
+        return respondOk;
+      },
       silentLogger,
       { port, shutdownGraceMs: 5_000 },
     );
 
     await expect(lifecycle.start()).rejects.toThrow('server selection timed out');
     await expect(isPortOpen(port)).resolves.toBe(false);
+    expect(handlerBuilt).toBe(false);
   });
 });
 

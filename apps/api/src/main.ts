@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     cacheAcrossReloads: env.NODE_ENV !== 'production',
   });
 
-  const lifecycle = new ApplicationLifecycle(database, placeholderListener, logger, {
+  const lifecycle = new ApplicationLifecycle(database, () => placeholderListener, logger, {
     port: env.PORT,
     shutdownGraceMs: SHUTDOWN_GRACE_MS,
   });

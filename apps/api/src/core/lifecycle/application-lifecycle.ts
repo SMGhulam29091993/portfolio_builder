@@ -1,9 +1,9 @@
 /**
  * Startup and graceful shutdown of the API process.
  *
- * Enforces the order required by `constitution.md` → Infrastructure: the datastore must be
- * reachable before a port is opened, so a half-configured process never serves traffic
- * (`monorepo-foundation.AC3`). On shutdown it stops accepting connections, lets in-flight
+ * Enforces the order required by `constitution.md` → Infrastructure: connect to the datastore
+ * and confirm it answered → build the request handler (the container and app) → listen. A
+ * half-configured process never serves traffic (`monorepo-foundation.AC3`). On shutdown it stops accepting connections, lets in-flight
  * requests finish, then closes the datastore (`monorepo-foundation.AC13`).
  *
  * Exiting the process is left to the caller (`main.ts`); this class only reports the exit code,
@@ -39,22 +39,24 @@ export class ApplicationLifecycle {
 
   constructor(
     private readonly database: IDatabaseConnection,
-    private readonly requestListener: RequestListener,
+    /** Builds the request handler; called once, only after the datastore has answered. */
+    private readonly createRequestListener: () => RequestListener,
     private readonly logger: ILogger,
     private readonly options: ApplicationLifecycleOptions,
   ) {}
 
   /**
-   * Connects to the datastore, then starts listening.
+   * Connects to the datastore, builds the request handler, then starts listening.
    *
    * @returns The bound address.
-   * @throws When the datastore is unreachable — in that case no port has been opened.
+   * @throws When the datastore is unreachable or the handler cannot be built — in both cases
+   *   no port has been opened.
    */
   async start(): Promise<AddressInfo> {
     await this.database.connect();
     this.logger.info('database connected');
 
-    const server = createServer(this.requestListener);
+    const server = createServer(this.createRequestListener());
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
       server.listen(this.options.port, () => {
