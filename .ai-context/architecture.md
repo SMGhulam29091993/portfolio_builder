@@ -32,7 +32,7 @@ portfolio-builder/
 │   │       ├── app.ts            ⬜ Express app factory (middleware + router mounts)
 │   │       ├── container.ts      ⬜ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment
-│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body) ✅; request id + rate limiter ⬜ T05 · events ⬜
+│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`) ✅ · events ⬜
 │   │       ├── modules/          ⬜ one folder per module (table below)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness

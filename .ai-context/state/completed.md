@@ -17,6 +17,11 @@
   as T01 (checked locally: 14 pipeline tasks pass, 61 API tests pass). OpenAPI item not
   applicable: no route is mounted until T06; AC6 is proven on a test app mounting `notFound`
   under `/api/v1`, and is re-proven on the real app in T06.
+- monorepo-foundation.T05 — 2026-10-15 — DoD self-check: 2026-10-15, pass, with the same CI gap
+  as T01 (checked locally: 14 pipeline tasks pass). Deviation: the task line said "applied to
+  `/health`", but that route is created by T06; the sub-step moved to T06's line in the tasks
+  file. AC11 is proven by IT06 on a test mount of `GET /api/v1/health` and is re-proven on the
+  real route in T06.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

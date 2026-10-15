@@ -1,10 +1,10 @@
 # next.md
 ## Queued
-1. `monorepo-foundation.T05` — security middleware: `helmet`, request id, `RateLimiterFactory`
-   with an in-memory store, applied to `/health`. Not blocked. Starts once the owner has merged
-   `feat/foundation-t04-http-core`. The request-id middleware sets `req.requestId`, which the
-   error middleware already logs; `RateLimitedError` already exists in `core/errors`.
-2. `monorepo-foundation.T06`–`T10`, in task-file order. T07 must let `main.ts` construct core
+1. `monorepo-foundation.T06` — `health` module, `container.ts`, `app.ts` mounting the T04/T05
+   middleware in the `architecture.md` → Request lifecycle order, a rate limiter on `/health`,
+   `openapi/openapi.yaml` and the drift check. Not blocked. Starts once the owner has merged
+   T04 and T05. Also replaces `main.ts`'s placeholder listener.
+2. `monorepo-foundation.T07`–`T10`, in task-file order. T07 must let `main.ts` construct core
    infrastructure (logger, lifecycle, `MongoConnection`) — see `memory/review-findings.md`,
    2026-10-15.
 3. `owner-auth.T01` — blocked on: `monorepo-foundation` implemented; the spec moved to `Ready`.
