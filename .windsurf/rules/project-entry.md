@@ -1,0 +1,6 @@
+---
+trigger: always_on
+---
+Before doing anything in this repository, read `.agent/rules/agent-role.md` and
+`.ai-context/project_context.md` in full, then follow the rule files they point to. This file
+is only a pointer and is not a substitute for them.

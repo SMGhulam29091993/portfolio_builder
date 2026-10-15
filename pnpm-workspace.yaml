@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Every dependency is pinned to an exact version (ADR-0007 → Pinned versions).
+savePrefix: ''

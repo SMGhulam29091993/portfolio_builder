@@ -1,0 +1,29 @@
+{
+  "name": "@portfolio/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared ESLint flat configuration for every workspace.",
+  "type": "module",
+  "files": [
+    "base.js"
+  ],
+  "exports": {
+    "./base": "./base.js"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@eslint/js": "10.0.1",
+    "globals": "17.13.0",
+    "typescript-eslint": "8.71.2"
+  },
+  "peerDependencies": {
+    "eslint": "10.12.0",
+    "typescript": "6.0.3"
+  },
+  "devDependencies": {
+    "eslint": "10.12.0",
+    "typescript": "6.0.3"
+  }
+}
