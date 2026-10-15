@@ -40,6 +40,9 @@ owner moves a spec to `Ready`.
 - `monorepo-foundation.T04` completed on branch `feat/foundation-t04-http-core`: `AppError`
   hierarchy, `respond` helpers, `validate()`, `notFound`, `errorHandler`, JSON body limit
   (AC6, AC7, AC8; IT08, IT09).
+- `monorepo-foundation.T05` completed on branch `feat/foundation-t05-security-middleware`:
+  `createSecurityHeaders` (helmet), `createRequestId`, `RateLimiterFactory` (AC11; IT06).
+  Mounting on `/health` moved to T06, which creates the route.
 ### 2026-10-11
 - All 16 specs, plans, task lists and test-case files authored from `Ghulam Portfolio.html`.
 - ADR-0001 and ADR-0002 accepted by the owner; ADR-0003 accepted for the provider list;
