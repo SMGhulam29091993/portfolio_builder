@@ -13,6 +13,7 @@ import { loadEnv } from '../config/env.js';
 import { buildContainer } from '../container.js';
 import { MongoConnection } from '../core/db/mongo-connection.js';
 import { JsonLogger } from '../core/logger/json-logger.js';
+import { RedisConnection } from '../core/redis/redis-connection.js';
 import { findDrift, readDocumentedOperations } from './openapi-drift.js';
 
 const OPENAPI_DOCUMENT = new URL('../../openapi/openapi.yaml', import.meta.url);
@@ -23,6 +24,8 @@ const ROUTE_TABLE_ENV = {
   PORT: '1',
   MONGODB_URI: 'mongodb://127.0.0.1:1/openapi-drift-check',
   REDIS_URL: 'redis://127.0.0.1:1/0',
+  // Satisfies the length check only; nothing is signed while reading the route table.
+  JWT_ACCESS_SECRET: 'openapi-drift-check-placeholder-secret',
 };
 
 const logger = new JsonLogger(process.stdout);
@@ -33,7 +36,15 @@ const mongo = MongoConnection.getInstance({
   cacheAcrossReloads: false,
 });
 
-const { routes } = createApp(buildContainer({ env, logger, mongo }));
+// Never connected: stores ask for the client per command, and no command runs here.
+const redis = RedisConnection.getInstance({
+  url: env.REDIS_URL,
+  connectTimeoutMs: 1,
+  cacheAcrossReloads: false,
+  logger,
+});
+
+const { routes } = createApp(buildContainer({ env, logger, mongo, redis }));
 const issues = findDrift(routes, readDocumentedOperations(readFileSync(OPENAPI_DOCUMENT, 'utf8')));
 
 if (issues.length > 0) {

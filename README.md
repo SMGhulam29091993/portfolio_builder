@@ -36,7 +36,9 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
 - **Redis.** The same file runs Redis 8.10.2 on `127.0.0.1:6379`, loopback only, without a
   password or persistence: it holds only auth sessions and one-time-code references, which are
   safe to lose (ADR-0008). `pnpm dev` uses logical database 0. An existing `apps/api/.env` needs
-  the `REDIS_URL` line from `.env.example` added, or the API refuses to start.
+  the `REDIS_URL` line from `.env.example` added, or the API refuses to start — and since
+  `owner-auth.T05` the `JWT_ACCESS_SECRET` line too (at least 32 characters; replace the
+  development placeholder with `openssl rand -base64 48`).
 - **Tests need the compose Redis running.** They start their own throwaway `mongod`, but Redis
   has no in-memory server: each API spec file claims its own logical database (1-14) on the
   compose Redis, and the E2E harness uses database 15, so tests never touch development data.

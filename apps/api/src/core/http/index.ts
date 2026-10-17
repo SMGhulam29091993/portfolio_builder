@@ -4,6 +4,7 @@
 import './request-context.js';
 
 export { ApiRouter, type HttpMethod, type RouteEntry } from './api-router.js';
+export { parseCookieHeader } from './cookies.js';
 export { createErrorHandler } from './error-handler.js';
 export { createJsonBodyParser, JSON_BODY_LIMIT_BYTES } from './json-body.js';
 export { notFound } from './not-found.js';

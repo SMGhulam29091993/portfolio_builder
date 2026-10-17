@@ -110,6 +110,28 @@ export interface SignedInSession {
   readonly tokens: SessionTokens;
 }
 
+/**
+ * Who a guarded request is from, as `requireOwner` sets it on `req.auth` once all three `jti`
+ * values match (spec → Request authorization, step 4; `owner-auth.AC4`). A controller behind
+ * the guard reads `req.auth.userId` and nothing else about the session.
+ */
+export interface AuthContext {
+  readonly userId: string;
+}
+
+declare global {
+  // Express exposes its request type through this global namespace; augmenting it is the
+  // documented way to add a field (as `core/http/request-context.ts` does). Declared here, in
+  // the module that sets it, because `core` may not know about `auth`.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      /** Set by `requireOwner` only; absent on any route the guard does not run on. */
+      auth?: AuthContext;
+    }
+  }
+}
+
 /** The actions a one-time code can authorise. Only one exists today. */
 export const OTP_PURPOSES = ['password_reset'] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];

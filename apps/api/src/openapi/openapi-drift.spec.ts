@@ -98,6 +98,10 @@ describe('readDocumentedOperations', () => {
   it('reads the real document', () => {
     expect(readDocumentedOperations(REAL_DOCUMENT)).toEqual([
       { method: 'get', path: '/api/v1/health', specId: 'monorepo-foundation.API01' },
+      { method: 'post', path: '/api/v1/auth/login', specId: 'owner-auth.API01' },
+      { method: 'post', path: '/api/v1/auth/refresh', specId: 'owner-auth.API02' },
+      { method: 'post', path: '/api/v1/auth/logout', specId: 'owner-auth.API03' },
+      { method: 'get', path: '/api/v1/auth/me', specId: 'owner-auth.API04' },
     ]);
   });
 });

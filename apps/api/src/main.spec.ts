@@ -15,6 +15,9 @@ const API_ROOT = fileURLToPath(new URL('..', import.meta.url));
 /** A credential that must never appear in any log line. */
 const FAKE_SECRET = 'not-a-real-secret';
 
+/** Satisfies `JWT_ACCESS_SECRET` validation; like every secret, it must never be logged. */
+const JWT_ACCESS_SECRET = 'main-spec-placeholder-jwt-secret-000000';
+
 interface LogLine {
   readonly level: string;
   readonly msg: string;
@@ -102,7 +105,7 @@ describe('main', () => {
       expect.objectContaining({
         level: 'error',
         msg: 'invalid environment configuration',
-        variables: ['MONGODB_URI', 'REDIS_URL'],
+        variables: ['MONGODB_URI', 'REDIS_URL', 'JWT_ACCESS_SECRET'],
       }),
     );
     expect(api.output()).not.toContain('4999');
@@ -114,6 +117,7 @@ describe('main', () => {
       PORT: '4999',
       MONGODB_URI: `postgres://svc:${FAKE_SECRET}@db.internal/portfolio`,
       REDIS_URL: redis.url,
+      JWT_ACCESS_SECRET,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -128,6 +132,7 @@ describe('main', () => {
       PORT: String(port),
       MONGODB_URI: `mongodb://svc:${FAKE_SECRET}@127.0.0.1:1/portfolio`,
       REDIS_URL: redis.url,
+      JWT_ACCESS_SECRET,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -145,6 +150,7 @@ describe('main', () => {
       PORT: String(port),
       MONGODB_URI: mongo.getUri(),
       REDIS_URL: `redis://default:${FAKE_SECRET}@127.0.0.1:1/0`,
+      JWT_ACCESS_SECRET,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -167,6 +173,7 @@ describe('main', () => {
       PORT: String(port),
       MONGODB_URI: mongo.getUri(),
       REDIS_URL: redis.url,
+      JWT_ACCESS_SECRET,
     });
 
     const listening = await waitForLog(api, 'http server listening');
@@ -181,6 +188,7 @@ describe('main', () => {
     api.child.kill('SIGTERM');
 
     await expect(api.exited).resolves.toBe(0);
+    expect(api.output()).not.toContain(JWT_ACCESS_SECRET);
     const messages = api.lines.map((line) => line.msg);
     expect(messages).toEqual(
       expect.arrayContaining(['shutdown started', 'http server closed', 'database disconnected']),

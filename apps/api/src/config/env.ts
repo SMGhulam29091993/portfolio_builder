@@ -16,6 +16,13 @@ const MONGODB_URI_PATTERN = /^mongodb(\+srv)?:\/\//;
 /** Accepted Redis URL schemes (plain and TLS). */
 const REDIS_URL_PATTERN = /^rediss?:\/\//;
 
+/**
+ * Shortest accepted access-token secret: HS256 needs at least 256 bits of key. `JwtTokenIssuer`
+ * enforces the same floor; checking it here as well makes a short secret fail startup by name,
+ * like every other bad variable, instead of as a bare error while the container is built.
+ */
+const MIN_JWT_SECRET_LENGTH = 32;
+
 const envSchema = z.object({
   /** Runtime mode. `production` switches off development-only behaviour (connection caching). */
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -28,6 +35,11 @@ const envSchema = z.object({
    * secret: it may carry a password. A trailing `/<n>` selects the logical database.
    */
   REDIS_URL: z.string().regex(REDIS_URL_PATTERN),
+  /**
+   * Signs and verifies the access token (HS256; `owner-auth` spec → Session contract). A secret:
+   * never logged. Rotating it signs every browser out at its next request.
+   */
+  JWT_ACCESS_SECRET: z.string().min(MIN_JWT_SECRET_LENGTH),
 });
 
 /** The validated, read-only configuration object. */
