@@ -44,7 +44,7 @@ No seed data: the résumé is uploaded by the owner.
 - [x] One writer per collection, including the GridFS bucket
 - [x] Draft isolation: no anonymous route in this module
 - [x] Interfaces owned by the consumer; storage substitutable (AC12 contract suite)
-- [ ] No new datastore introduced without ADR — GridFS is MongoDB, pending ADR-0007 acceptance
+- [x] No new datastore introduced without ADR — GridFS is MongoDB (ADR-0007, accepted 2026-10-15)
 ## Explicitly Deferred
 - Object storage adapter — new `IFileStorage` implementation plus an ADR.
 - Image variants / responsive sizes — only one optional OG image exists today.

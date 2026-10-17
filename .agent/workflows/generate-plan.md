@@ -16,4 +16,6 @@
    review as one diff. Backend order is always contracts → repository → service → controller +
    routes → container wiring → OpenAPI. Frontend order is renderer → editor → wiring.
 8. If the plan adds a module dependency edge or a collection, update `architecture.md` in the
-   same change.
+   same change. A new module or edge also needs its row in
+   `apps/api/src/architecture/module-dependency-map.ts`, which the architecture test enforces —
+   name that in the task that first adds the import.

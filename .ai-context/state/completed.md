@@ -27,6 +27,15 @@
   `pnpm drift` reports the document in sync). Records: `health → core` added to the module
   dependency map; the request-lifecycle order now states that per-mount rate limiters run after
   the global JSON body parser; `int-standards.express.md` step 5 requires `ApiRouter`.
+- monorepo-foundation.T07 — 2026-10-17 — DoD self-check: 2026-10-17, pass, with the same CI gap
+  as T01 (checked locally: `pnpm turbo run build typecheck lint test drift` — 16 tasks pass,
+  118 API tests pass; the second run is fully cached; editing a rule in
+  `@portfolio/eslint-config` invalidates the API's lint cache). OpenAPI item not applicable: no
+  route changed. Judgement call: `src/architecture/module-graph.ts` is function-based outside
+  `core/`, accepted as build-excluded dev tooling on the same footing as `src/openapi/` (T06).
+  Records: `architecture.md` → Boundary enforcement added and its stale header fixed; ADR-0007
+  "proposed" wording removed from `constitution.md`, two plans' Constitution Check boxes ticked;
+  `governance.md` Status refreshed; dependency-map cycle contradiction raised in `blockers.md`.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

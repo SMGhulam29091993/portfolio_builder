@@ -6,14 +6,15 @@ stop, raise it, and fix the spec.
 
 ## Testing Discipline
 - **Frameworks:** Vitest (unit + integration), Supertest (HTTP), Playwright (E2E + visual).
-  Proposed in ADR-0007; the constitution follows that ADR once the owner accepts it.
+  Chosen in ADR-0007 (accepted 2026-10-15), which pins their versions.
 - **Integration testing:** run against a real MongoDB process (`mongodb-memory-server` locally
   and in CI, or a containerised `mongod`). Never mock Mongoose models or the driver — a mocked
   data layer hides responses that are not actually backed by stored data.
 - **Test file location:** colocated with the code under test (`<name>.spec.ts` next to
   `<name>.ts`). Playwright specs are the one exception: `apps/web/e2e/`.
 - **Coverage floor:** 80% lines and branches on `apps/api/src/modules/**/**.service.ts`, enforced
-  in CI (proposed, ADR-0007). No floor is claimed for any other path until one is enforced.
+  in CI (ADR-0007, accepted; wired into CI by `monorepo-foundation.T09`). No floor is claimed
+  for any other path until one is enforced.
 - **Test-first scope (mandatory, no exceptions):**
   - Any new or changed API endpoint
   - Anything touching auth, sessions, uploads or PII

@@ -31,8 +31,15 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Module list, dependency map, collection writers
 **Canonical definition:** `.ai-context/architecture.md` → API modules · Module dependency map · Data ownership
-**Referenced by:** `constitution.md`, every plan's Architecture Approach and Data Model
-**Last updated:** 2026-10-11
+**Referenced by:** `constitution.md`, every plan's Architecture Approach and Data Model,
+`apps/api/src/architecture/module-dependency-map.ts` (the allowed edges as data, enforced by the architecture test),
+`int-standards.express.md` (Adding a feature, step 6), `generate-plan.md` (step 8), `code-review.md` (SOLID and module boundaries)
+**Last updated:** 2026-10-17
+
+## Boundary lint rules and their exemptions
+**Canonical definition:** `packages/eslint-config/api.js` (rules in `packages/eslint-config/plugin/`); summarised in `.ai-context/architecture.md` → Boundary enforcement
+**Referenced by:** `apps/api/eslint.config.js`, `apps/api/src/architecture/boundary-lint.spec.ts`, `.agent/workflows/code-review.md`
+**Last updated:** 2026-10-17
 
 ## Section type catalogue (types, orderable / hideable flags, owning spec)
 **Canonical definition:** `.ai-context/architecture.md` → Section type catalogue

@@ -17,7 +17,9 @@
 - **`container.ts`** — composition root; returns typed routers. `health` is the first module
   wired, in the module file pattern, proving the path end to end.
 - **Boundary enforcement:** lint import-restriction rules per layer and per module, plus one
-  architecture test asserting the module dependency map in `architecture.md`.
+  architecture test asserting the module dependency map in `architecture.md`. _Built in T07 as
+  the local `portfolio` ESLint plugin (one rule id per AC9 case) and `apps/api/src/architecture/`
+  — current shape in `architecture.md` → Boundary enforcement._
 - **OpenAPI:** `apps/api/openapi/openapi.yaml`; a drift script compares it with the route table
   the app exposes in test mode.
 - **`apps/web`:** Next.js App Router, Tailwind, route groups `(site)` and `(cms)`, a rewrite of

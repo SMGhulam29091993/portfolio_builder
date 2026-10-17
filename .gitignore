@@ -29,3 +29,6 @@ ollama-data/
 # Logs and OS files
 *.log
 .DS_Store
+
+# Commit message scratch file, deleted after each commit
+.git-commit-message.txt

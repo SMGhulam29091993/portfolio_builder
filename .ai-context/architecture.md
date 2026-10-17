@@ -4,9 +4,9 @@ Living system design. States current truth in plain present tense. The *why* beh
 lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 
 **Directory-status legend:** ✅ built · 🚧 in progress · ⬜ planned (specified, not built).
-As of 2026-10-15 the workspace root and `packages/tsconfig` are built
-(`monorepo-foundation.T01`), and `contracts`, `design-tokens` and `sections` exist as buildable
-skeletons with empty public surfaces (`monorepo-foundation.T02`); everything else is ⬜ planned.
+The tree below marks each path's current state; `monorepo-foundation` T01–T07 are built, so
+the workspace, the API core, the `health` module and the boundary checks exist, while
+`apps/web` and every feature module are ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -34,9 +34,11 @@ portfolio-builder/
 │   │       ├── config/env.ts     ✅ zod-validated environment
 │   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events ⬜
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
+│   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
 │   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness
+│   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      ⬜ Next.js App Router
 │       ├── e2e/                  ⬜ Playwright
 │       └── src/app/{(site),(cms)/cms,api/revalidate}
@@ -44,7 +46,7 @@ portfolio-builder/
 │   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — skeleton
 │   ├── sections/                 🚧 React section renderers + variant registry — skeleton
 │   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
-│   ├── eslint-config/            🚧 shared lint rules — baseline ✅; import boundaries ⬜ (T07)
+│   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`)
 ├── docs/design-reference/        ✅ the two reference boards
 ├── .agent/  .ai-context/         ✅ this system
@@ -90,6 +92,22 @@ every /cms router → auth (requireOwner) and portfolio (resolvePortfolio) middl
 ```
 `IDraftContributor`, `IPublishRule`, `IPublishStep` are owned by `publishing`;
 `IAssetReferenceProvider` by `assets`. The consuming module owns the interface it depends on.
+
+## Boundary enforcement
+The constitution's module and layer rules are checked mechanically on every `pnpm lint` and
+`pnpm test` (`monorepo-foundation.AC9`):
+| Check | Where | Fails when |
+|---|---|---|
+| `portfolio/module-boundary` | lint | a file imports another module's file other than its `index.ts` |
+| `portfolio/no-framework-in-service` | lint, `*.service.ts` | a service imports `mongoose` or `express` |
+| `portfolio/no-process-env` | lint | any file but `config/env.ts` reads the environment |
+| `portfolio/no-instantiation-outside-container` | lint (type-aware) | a module class named `*Service` / `*Repository` / `*Controller`, or one that implements an interface, is created outside `container.ts` or a test |
+| architecture test | `apps/api/src/architecture/` | the actual module-level import graph has an edge missing from the map above, a module missing from the map, or a cycle |
+
+The lint rules live in `packages/eslint-config` (`api.js` holds every exemption as a file glob).
+The architecture test reads the allowed edges from `module-dependency-map.ts`, which mirrors the
+map above and changes with it. `core/` and `config/` form one `core` node that every module may
+use and that may use no module.
 
 ## Data ownership
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
