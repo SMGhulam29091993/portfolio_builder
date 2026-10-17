@@ -36,6 +36,17 @@
   Records: `architecture.md` → Boundary enforcement added and its stale header fixed; ADR-0007
   "proposed" wording removed from `constitution.md`, two plans' Constitution Check boxes ticked;
   `governance.md` Status refreshed; dependency-map cycle contradiction raised in `blockers.md`.
+- monorepo-foundation.T08 — 2026-10-17 — DoD self-check: 2026-10-17, pass, with the same CI gap
+  as T01 (checked locally: `pnpm turbo run build typecheck lint test drift` — 20 tasks pass,
+  second run fully cached; `pnpm test:e2e` passes E2E01 and fails with 404 when the rewrite
+  target is broken; `pnpm dev` from the root answers `/api/v1/health` on the web origin with
+  200 and the API's `x-request-id`). OpenAPI item not applicable: no route changed. Frontend
+  items: no hex or font literal; axe is not wired until the first UI task
+  (`cms-panel-shell.T08`, the section T05s), so "axe clean" is deferred there, not claimed.
+  Judgement call: the two placeholder pages carry a heading and one line of scaffold copy each —
+  not portfolio content, which arrives only from the published snapshot. Records: ADR-0007 pins,
+  `architecture.md` tree and Environment (Turborepo strict env rule, web dev port), ownership
+  index, three pitfalls; tracked build artifacts raised in `blockers.md`.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

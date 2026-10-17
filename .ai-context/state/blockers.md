@@ -25,3 +25,8 @@
   (the section's footnote already says `publishing` owns `IPublishedPointerWriter`). Does not
   block `monorepo-foundation`; blocks `publish-pipeline.T02`. See `memory/review-findings.md`,
   2026-10-17.
+- **Build output and symlinks tracked in git** — `.turbo/cache/`, `packages/*/dist/` and
+  `packages/*/node_modules/` symlinks were committed in the first commit and are still tracked,
+  although `.gitignore` excludes them. Any install that changes a peer set rewrites the tracked
+  symlinks (it happened in `monorepo-foundation.T08`). Untracking them (`git rm -r --cached`,
+  files stay on disk) needs the owner's go-ahead. Blocks nothing; noise in every diff until done.

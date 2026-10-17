@@ -2,7 +2,10 @@
 ## Derived From
 .ai-context/specs/cms-panel-shell.spec.md
 ## Architecture Approach
-All in `apps/web/src`, following `int-standards.nextjs.md`.
+All in `apps/web/src`, following `int-standards.nextjs.md`. `monorepo-foundation.T08` already
+provides the same-origin `/api/v1` proxy, `lib/env.ts` and a placeholder `(cms)/cms/layout.tsx`
+(noindex metadata) and `page.tsx`; this plan extends those files rather than creating parallel
+ones.
 - **`lib/api/client.ts`** — typed fetch wrapper: same-origin `/api/v1`, envelope unwrapping,
   `ApiError` carrying `code` + details, single-flight refresh-and-retry on 401.
 - **`lib/api/<area>.ts`** — TanStack Query hooks per area (`auth`, `portfolio`); types from

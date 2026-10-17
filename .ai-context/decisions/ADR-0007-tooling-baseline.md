@@ -35,17 +35,22 @@ appends the tools it installs to this table in the same change.
 | @eslint/js | 10.0.1 | `monorepo-foundation.T01` | |
 | globals | 17.13.0 | `monorepo-foundation.T01` | |
 | mongoose | 9.11.2 | `monorepo-foundation.T03` | `apps/api` |
-| zod | 4.6.7 | `monorepo-foundation.T03` | `apps/api`; `packages/contracts` adopts it with its first schema |
-| vitest | 5.0.5 | `monorepo-foundation.T03` | Coverage provider added by T09 |
-| mongodb-memory-server | 11.3.0 | `monorepo-foundation.T03` | Downloads `mongod` 8.2.6 at install (`allowBuilds` in `pnpm-workspace.yaml`) |
+| zod | 4.6.7 | `monorepo-foundation.T03` | `apps/api`; `packages/contracts` adopts it with its first schema; `apps/web` from T08 |
+| vitest | 5.0.5 | `monorepo-foundation.T03` | Coverage provider added by T09; `apps/web` unit tests from T08 |
+| mongodb-memory-server | 11.3.0 | `monorepo-foundation.T03` | Downloads `mongod` 8.2.6 at install (`allowBuilds` in `pnpm-workspace.yaml`); `apps/web` E2E harness from T08 |
 | tsx | 4.23.15 | `monorepo-foundation.T03` | Runs `src/main.ts` in `dev` and in process-level tests |
-| @types/node | 24.19.2 | `monorepo-foundation.T03` | Major tracks the Node.js runtime (24) |
+| @types/node | 24.19.2 | `monorepo-foundation.T03` | Major tracks the Node.js runtime (24); also `apps/web` |
 | express | 5.3.0 | `monorepo-foundation.T04` | `apps/api` |
 | @types/express | 5.0.6 | `monorepo-foundation.T04` | |
 | supertest | 7.3.1 | `monorepo-foundation.T04` | HTTP-level tests |
 | @types/supertest | 7.2.1 | `monorepo-foundation.T04` | |
 | helmet | 8.3.0 | `monorepo-foundation.T05` | Security headers, defaults unchanged |
 | yaml | 2.9.1 | `monorepo-foundation.T06` | Dev only: reads `openapi.yaml` in the drift check |
+| next | 16.4.2 | `monorepo-foundation.T08` | `apps/web`; Turbopack for dev and build |
+| react, react-dom | 19.3.1 | `monorepo-foundation.T08` | |
+| @types/react, @types/react-dom | 19.3.0 | `monorepo-foundation.T08` | |
+| tailwindcss, @tailwindcss/postcss | 4.3.3 | `monorepo-foundation.T08` | v4: configured in CSS, no `tailwind.config` |
+| @playwright/test | 1.64.1 | `monorepo-foundation.T08` | E2E01 uses the `request` fixture, so no browser download yet; axe arrives with the first UI task |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and

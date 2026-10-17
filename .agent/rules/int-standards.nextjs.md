@@ -8,6 +8,8 @@ apps/web/src/app/
 ├── (site)/                 # Public portfolio — Server Components, no auth, no client data fetching
 ├── (cms)/cms/              # CMS panel — authenticated, noindex
 └── api/revalidate/route.ts # Secret-protected revalidation hook
+apps/web/src/lib/env.ts     # The only reader of process.env in the web app
+apps/web/e2e/               # Playwright specs; run with `pnpm test:e2e`
 packages/sections/          # Section renderers + variant registry (site AND CMS preview use these)
 packages/design-tokens/     # Token types, default theme, CSS-variable emitter, contrast helpers
 packages/contracts/         # zod schemas + inferred types shared with apps/api
@@ -68,7 +70,17 @@ The page composer, the section editor host and the section engine are not edited
 - Form fields have labels and associate their error text with `aria-describedby`.
 - Evaluation signal: axe checks and Playwright visual baselines run alongside unit tests.
 
+## Configuration
+- Every environment variable is read through `src/lib/env.ts` (zod; errors name variables,
+  never values). A new variable is also declared in `turbo.json` — the rule and the variable
+  list are owned by `architecture.md` → Environment.
+
 ## Framework-specific notes
+- Next.js 16 ships version-matched docs in `node_modules/next/dist/docs/`; check them before
+  relying on remembered APIs. `agentRules: false` stays set in `next.config.ts` so `next dev`
+  does not write a second agent-instruction file into the app (ADR-0002).
+- `typecheck` runs `tsc --noEmit` alone: `next typegen` evaluates `rewrites()`, which needs
+  runtime configuration. `next build` still type-checks with Next's generated route types.
 - Caching and revalidation APIs have changed between Next.js majors. Before implementing
   `public-site-rendering.T03`, confirm tag-based revalidation against the installed version's
   documentation and record what was found in `memory/` if it differs from the plan.

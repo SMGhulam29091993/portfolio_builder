@@ -23,7 +23,10 @@
 - **OpenAPI:** `apps/api/openapi/openapi.yaml`; a drift script compares it with the route table
   the app exposes in test mode.
 - **`apps/web`:** Next.js App Router, Tailwind, route groups `(site)` and `(cms)`, a rewrite of
-  `/api/v1/:path*` to `API_INTERNAL_URL`.
+  `/api/v1/:path*` to `API_INTERNAL_URL`. _Built in T08: `src/lib/env.ts` validates the
+  environment inside `rewrites()`, `src/lib/api-proxy.ts` builds the rewrite, and E2E01 runs
+  through `pnpm test:e2e` with `e2e/start-api.ts` (throwaway MongoDB + built API) — current
+  shape in `architecture.md` → Repository layout and Environment._
 - **Patterns used:** Singleton (DB connection), Factory (rate limiter), Observer seam
   (`IEventBus`) — all from the approved list.
 ## Data Model

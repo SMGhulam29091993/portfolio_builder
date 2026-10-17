@@ -28,6 +28,10 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `monorepo-foundation.T08` completed on branch `feat/foundation-t08-web-scaffold`: `apps/web`
+  (Next.js 16, Tailwind v4), `(site)` and `(cms)` placeholder pages, `/api/v1` rewrite,
+  `lib/env.ts`, Playwright E2E01 proving AC12. Raised: build artifacts still tracked in git
+  (`state/blockers.md`).
 - `monorepo-foundation.T07` completed on branch `feat/foundation-t07-boundary-lint`: the
   `portfolio/*` boundary lint rules (AC9 a–d) and the architecture test against the module
   dependency map (IT10, IT11). Raised: the map, as written, allows two cycles the constitution
