@@ -11,7 +11,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## In-process event semantics (`IEventBus`)
 **Canonical definition:** `.ai-context/architecture.md` → In-process events
-**Referenced by:** `publish-pipeline` spec (Error Handling) and plan; `apps/api/src/core/events/`
+**Referenced by:** `publish-pipeline` spec (Error Handling) and plan; `int-standards.express.md` (Per-module file pattern → Events); `monorepo-foundation` plan; `apps/api/src/core/events/`
 **Last updated:** 2026-10-17
 
 ## Response envelope and canonical error codes
@@ -31,8 +31,18 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Tooling choices and pinned versions
 **Canonical definition:** `.ai-context/decisions/ADR-0007-tooling-baseline.md` → Decision · Pinned versions
-**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`
-**Last updated:** 2026-10-15
+**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`, `.github/workflows/ci.yml` (action SHAs, Node version)
+**Last updated:** 2026-10-17
+
+## Service coverage floor (80% lines and branches, per file)
+**Canonical definition:** `.agent/rules/constitution.md` → Testing Discipline → Coverage floor
+**Referenced by:** ADR-0007, ADR-0001, `governance.md` (Definition of Done), `monorepo-foundation` spec (Non-Functional Constraints), `.agent/workflows/implement-task.md`, `apps/api/vitest.config.ts`
+**Last updated:** 2026-10-17
+
+## API test support (`MongoTestHarness`, `FixtureFactory`, `RecordingLogger`)
+**Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13)
+**Last updated:** 2026-10-17
 
 ## Module list, dependency map, collection writers
 **Canonical definition:** `.ai-context/architecture.md` → API modules · Module dependency map · Data ownership

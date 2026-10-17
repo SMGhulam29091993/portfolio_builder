@@ -41,6 +41,14 @@ modules/<name>/
 A module may add sub-folders for its own strategies (`sections/`, `rules/`, `providers/`,
 `steps/`). Every file in them follows the same layer rules.
 
+- **Events:** a module that emits declares its event map (event name → payload type) in
+  `index.ts`; its service depends on `IEventPublisher` from `core/events`. A reacting module's
+  handler is a class implementing `IEventHandler`, subscribed in `container.ts`. Semantics:
+  `architecture.md` → In-process events.
+- **Tests:** specs sit next to the file under test. Repository and route specs get a real
+  `mongod` from `MongoTestHarness`, fixtures come from a `FixtureFactory` subclass in
+  `src/testing/`, and log assertions use `RecordingLogger` — `.agent/workflows/generate-tests.md`.
+
 ## Standardised response shape
 ```typescript
 { success: boolean, message: string, data?: unknown }
