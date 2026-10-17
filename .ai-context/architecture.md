@@ -8,9 +8,9 @@ The tree below marks each path's current state; `monorepo-foundation` is impleme
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
 harness, CI and the local development environment exist. `owner-auth` is in progress: the
-Redis infrastructure, the `auth` module's persistence and adapters (T01–T03) and its
-`SessionAuthorizer` and `AuthService` (T04) exist, not yet wired or routed (T05); every
-other feature module is ⬜ planned.
+Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), its
+`SessionAuthorizer` and `AuthService` (T04), and sign-in, refresh, sign-out, `me` and the
+`requireOwner` guard wired and routed (T05) exist; every other feature module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -39,10 +39,10 @@ portfolio-builder/
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
@@ -160,6 +160,13 @@ derived at render time from the visible order; they are never stored.
 `requireOwner` (auth: verifies the access cookie, matches its `jti` against the `jti` cookie and
 the Redis session, attaches `userId`) → `resolvePortfolio`
 (portfolio: attaches `portfolioId`) → `validate(schema)` → controller → service → repository → envelope → error middleware.
+
+`requireOwner` clears the three session cookies on `SESSION_EXPIRED` only; on `UNAUTHENTICATED`
+it keeps them, because an expired access token is repaired by a refresh that needs them. While
+Redis is unreachable, commands fail at once (the client's offline queue is off) and every
+Redis-backed store maps the failure to 503 `SERVICE_UNAVAILABLE` (`core/redis`
+`whileRedisAvailable`), so the guard and the auth routes answer 503 instead of waiting or
+allowing.
 
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
 parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. Every

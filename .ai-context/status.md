@@ -28,6 +28,11 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth.T05` completed on `feat/owner-auth-t05-routes-guard`: `AuthController`,
+  `auth.routes.ts` (API01–API04, OpenAPI 0.2.0), `RequireOwnerMiddleware` (clears cookies on
+  `SESSION_EXPIRED` only), `SessionCookieWriter`, `parseCookieHeader`; the auth module wired in
+  `container.ts`; `JWT_ACCESS_SECRET` read by `env.ts`; Redis failures answer 503 at once
+  (`disableOfflineQueue`, `whileRedisAvailable`). Rate limit and Origin allow-list are T06.
 - `owner-auth.T04` completed on `feat/owner-auth-t04-auth-service`: `SessionAuthorizer` (the one
   `jti` triple match, with an ignore-expiry mode for refresh and logout) and `AuthService`
   (login with a decoy hash for unknown emails, refresh with refresh-hash check and

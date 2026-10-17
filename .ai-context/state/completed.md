@@ -113,3 +113,10 @@
   applicable: no route changed. E2E not run: neither `apps/web` nor a route changed. Deviation
   recorded in the plan: `AuthService` also takes `IClock`. Container wiring and cookie clearing
   are T05's scope.
+- owner-auth.T05 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: uncached `pnpm turbo run build typecheck lint test drift` (20 tasks,
+  with `API_INTERNAL_URL` set as CI sets it; API 41 spec files / 361 tests; services at 100%
+  lines and branches), `pnpm drift` (5 routes match OpenAPI 0.2.0) and `pnpm test:e2e` passed.
+  ACs covered by named tests: AC1, AC4–AC8, AC11, AC15, plus IT02, IT09, IT10, IT23 and the
+  IT13 runtime half (503 with Redis cut, proven to fail without the offline-queue fix). API01's
+  403 / 429 responses are T06's scope and not yet documented. CI not yet run on this branch.
