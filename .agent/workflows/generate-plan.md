@@ -19,3 +19,7 @@
    same change. A new module or edge also needs its row in
    `apps/api/src/architecture/module-dependency-map.ts`, which the architecture test enforces —
    name that in the task that first adds the import.
+9. If the plan reads a new environment variable, add its row to `architecture.md` → Environment
+   in the same change, and name in the task that first reads it: the `env.ts` schema, the line
+   in that app's `.env.example` (uncommented then; listed commented until then), and
+   `turbo.json`. The `env-example.spec.ts` drift tests enforce the first two against the table.

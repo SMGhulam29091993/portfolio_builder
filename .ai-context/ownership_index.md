@@ -63,7 +63,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Environment variables
 **Canonical definition:** `.ai-context/architecture.md` → Environment
-**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development
+**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `.agent/workflows/generate-plan.md` step 9; `.agent/workflows/code-review.md` (Security); `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development
 **Last updated:** 2026-10-17
 
 ## Reference content, visual tokens, design unknowns

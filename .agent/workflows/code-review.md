@@ -23,6 +23,8 @@ unticked item means the task stays `inprogress`.
 - [ ] No hardcoded business payload; no secret, model ID or URL literal.
 - [ ] No secret, token, cookie, prompt text or email address is logged.
 - [ ] Inputs validated through `validate(schema)`; free text through `plainText`.
+- [ ] A variable newly read by `env.ts` is in `architecture.md` → Environment, uncommented in
+      that app's `.env.example` with no real secret, and declared in `turbo.json`.
 - [ ] Any new integration has the dev-bypass guard and a test in both directions.
 - [ ] Nothing under `/api/v1/public` can reach draft data.
 
