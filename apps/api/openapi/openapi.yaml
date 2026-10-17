@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.1.0
+  version: 0.2.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -18,6 +18,11 @@ info:
 tags:
   - name: health
     description: Ops and deploy readiness checks.
+  - name: auth
+    description: >-
+      CMS sign-in and the single owner session (owner-auth). Tokens travel only in the three
+      HttpOnly session cookies, never in a body. The login rate limit and the Origin allow-list
+      (403 ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06.
 
 paths:
   /api/v1/health:
@@ -69,7 +74,178 @@ paths:
                 message: Database unavailable
                 data: { code: SERVICE_UNAVAILABLE, db: down }
 
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API01
+      x-spec-id: owner-auth.API01
+      summary: Sign in with email and password
+      description: >-
+        Starts the owner's one session, replacing any previous one (which ends it in every other
+        browser), and sets the three session cookies. The email is compared case-insensitively.
+        An unknown email and a wrong password get the same 401 body, and password verification
+        runs in both cases.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Signed in. The body carries the user only.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+              example:
+                success: true
+                message: Signed in
+                data:
+                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner }
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API02
+      x-spec-id: owner-auth.API02
+      summary: Rotate the session tokens
+      description: >-
+        Reads all three cookies. The access token's signature is verified but its expiry is
+        ignored; the token's jti, the jti cookie and the stored session's jti must match, and the
+        refresh token's SHA-256 must equal the stored hash. On success the jti, access token and
+        refresh token are all replaced in one atomic compare-and-set, and the session's 7-day
+        lifetime restarts. Of two refreshes sent with the same cookies exactly one succeeds; the
+        other receives SESSION_EXPIRED. Every 401 clears the three cookies.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: Rotated. New cookies are set; the body carries the user only.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+              example:
+                success: true
+                message: Session refreshed
+                data:
+                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner }
+        '401':
+          description: >-
+            UNAUTHENTICATED — the access cookie is absent or its signature invalid, no session
+            exists, or the refresh token is absent or wrong with a matching jti (the session is
+            then deleted). SESSION_EXPIRED — the three jti values differ (the session is kept).
+            The cookies are cleared in every case.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearSessionCookies'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/FailureEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [code]
+                        properties:
+                          code: { enum: [UNAUTHENTICATED, SESSION_EXPIRED] }
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API03
+      x-spec-id: owner-auth.API03
+      summary: Sign out
+      description: >-
+        If the access cookie's signature is valid (expiry ignored) and its jti still matches the
+        stored session, deletes that session; a superseded browser cannot end the newer one.
+        Always clears the three cookies. Idempotent — 200 with no or malformed cookies too.
+      security: []
+      responses:
+        '200':
+          description: Signed out; the cookies are cleared.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+              example:
+                success: true
+                message: Signed out
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/auth/me:
+    get:
+      tags: [auth]
+      operationId: owner-auth.API04
+      x-spec-id: owner-auth.API04
+      summary: The signed-in owner
+      description: Guarded by requireOwner, the same guard every /api/v1/cms route runs.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The signed-in user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+              example:
+                success: true
+                message: Current user
+                data:
+                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner }
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
 components:
+  securitySchemes:
+    sessionCookies:
+      type: apiKey
+      in: cookie
+      name: access-token
+      description: >-
+        The session is three HttpOnly cookies set by sign-in and refresh: `access-token` (the
+        15-minute HS256 JWT; Path=/api/v1), `jti` (the session id; Path=/api/v1) and
+        `refresh-token` (opaque; Path=/api/v1/auth, so it never reaches /cms). All three last 7
+        days; in production they are also Secure and SameSite=Strict, otherwise SameSite=Lax.
+        The access token, the jti cookie and the stored session must carry the same jti.
+
+  headers:
+    SetSessionCookies:
+      description: >-
+        Three Set-Cookie lines: access-token, jti and refresh-token, each HttpOnly with
+        Max-Age=604800 and the paths and flags of the sessionCookies scheme.
+      schema: { type: string }
+    ClearSessionCookies:
+      description: >-
+        Three Set-Cookie lines that expire access-token, jti and refresh-token on the paths they
+        were set on.
+      schema: { type: string }
+
   schemas:
     SuccessEnvelope:
       type: object
@@ -92,6 +268,31 @@ components:
               type: string
               description: Canonical error code (int-standards.express.md → Error codes).
           additionalProperties: true
+    AuthUser:
+      type: object
+      required: [id, email, displayName]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+    UserEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  $ref: '#/components/schemas/AuthUser'
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 1, maxLength: 200 }
     HealthReport:
       type: object
       required: [status, db, version, uptimeSec]
@@ -102,6 +303,90 @@ components:
         uptimeSec: { type: integer, minimum: 0 }
 
   responses:
+    ValidationFailed:
+      description: The request failed its schema.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, errors]
+                    properties:
+                      code: { const: VALIDATION_FAILED }
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          required: [path, message]
+                          properties:
+                            path: { type: string }
+                            message: { type: string }
+    Unauthenticated:
+      description: No valid credentials or session. One body for every cause.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: UNAUTHENTICATED }
+          example:
+            success: false
+            message: Invalid email or password
+            data: { code: UNAUTHENTICATED }
+    GuardRejected:
+      description: >-
+        UNAUTHENTICATED — the access cookie is absent, malformed, expired (30 s leeway), tampered
+        or signed with another secret, or no session exists for it; the cookies are kept so the
+        client can refresh. SESSION_EXPIRED — a newer sign-in or refresh replaced this browser's
+        session; the three cookies are cleared and the stored session is left alone.
+      headers:
+        Set-Cookie:
+          description: On SESSION_EXPIRED only, as ClearSessionCookies.
+          schema: { type: string }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [UNAUTHENTICATED, SESSION_EXPIRED] }
+          example:
+            success: false
+            message: Your session has ended. Please sign in again
+            data: { code: SESSION_EXPIRED }
+    ServiceUnavailable:
+      description: The session store (Redis) is unreachable. Nothing falls back to allowing the request.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: SERVICE_UNAVAILABLE }
+          example:
+            success: false
+            message: Service unavailable
+            data: { code: SERVICE_UNAVAILABLE }
     RateLimited:
       description: The client exceeded the rate limit for this route.
       headers:

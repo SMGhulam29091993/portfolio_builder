@@ -1,6 +1,7 @@
 /**
- * The real app built from the real container, over real HTTP, against a real `mongod`.
- * Re-proves on the live wiring what the core specs proved on test mounts (AC6, AC11).
+ * The real app built from the real container, over real HTTP, against a real `mongod` and a
+ * real Redis. Re-proves on the live wiring what the core specs proved on test mounts (AC6,
+ * AC11). The auth routes have their own end-to-end spec, `modules/auth/auth.routes.spec.ts`.
  */
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -8,22 +9,32 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp, type ApiApplication } from './app.js';
 import { loadEnv } from './config/env.js';
 import { buildContainer } from './container.js';
-import { MongoTestHarness, RecordingLogger } from './testing/index.js';
+import { MongoTestHarness, RecordingLogger, RedisTestHarness } from './testing/index.js';
 
-/** Starts a harness `mongod`, connects the singleton to it and builds the app. */
-async function startStack(): Promise<{ mongo: MongoTestHarness; api: ApiApplication }> {
+/** Starts a harness `mongod` and Redis database, connects both singletons and builds the app. */
+async function startStack(): Promise<{
+  mongo: MongoTestHarness;
+  redis: RedisTestHarness;
+  api: ApiApplication;
+}> {
   const mongo = await MongoTestHarness.start();
-  // The container reads no Redis yet, so an unreachable placeholder satisfies validation.
+  const redis = await RedisTestHarness.start();
   const env = loadEnv({
     NODE_ENV: 'test',
     PORT: '4100',
     MONGODB_URI: mongo.uri,
-    REDIS_URL: 'redis://127.0.0.1:1/0',
+    REDIS_URL: redis.url,
+    JWT_ACCESS_SECRET: 'app-spec-placeholder-jwt-secret-0000000',
   });
   const api = createApp(
-    buildContainer({ env, logger: new RecordingLogger(), mongo: mongo.connection }),
+    buildContainer({
+      env,
+      logger: new RecordingLogger(),
+      mongo: mongo.connection,
+      redis: redis.connection,
+    }),
   );
-  return { mongo, api };
+  return { mongo, redis, api };
 }
 
 describe('app with MongoDB reachable', () => {
@@ -35,6 +46,7 @@ describe('app with MongoDB reachable', () => {
 
   afterAll(async () => {
     await stack.mongo.stop();
+    await stack.redis.stop();
   });
 
   it('monorepo-foundation.IT01 / AC4 — GET /api/v1/health answers 200 with the API01 body', async () => {
@@ -73,7 +85,13 @@ describe('app with MongoDB reachable', () => {
   });
 
   it('exposes the mounted route table for the drift check', () => {
-    expect(stack.api.routes).toEqual([{ method: 'get', path: '/api/v1/health' }]);
+    expect(stack.api.routes).toEqual([
+      { method: 'get', path: '/api/v1/health' },
+      { method: 'post', path: '/api/v1/auth/login' },
+      { method: 'post', path: '/api/v1/auth/refresh' },
+      { method: 'post', path: '/api/v1/auth/logout' },
+      { method: 'get', path: '/api/v1/auth/me' },
+    ]);
   });
 
   // Runs last in this block: it exhausts the health limiter for this app instance.
@@ -111,6 +129,7 @@ describe('app with MongoDB lost after startup', () => {
       expect(Date.now() - started).toBeLessThan(2_000);
     } finally {
       await stack.mongo.stop();
+      await stack.redis.stop();
     }
   });
 });

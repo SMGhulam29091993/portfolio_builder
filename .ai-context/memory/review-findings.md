@@ -42,6 +42,20 @@ that `ApplicationLifecycle` relies on (fail-fast connect, idempotent disconnect)
 `describe.each` suite run against both classes on real servers. A third datastore joins by
 adding one subject to its list.
 
+### 2026-10-17 — owner-auth.T05
+**Finding:** The note carried from T04 said the controller *and the guard* clear all three
+cookies on 401s. For the guard that would be wrong: its usual 401 is `UNAUTHENTICATED` for an
+access token past its 15 minutes, and clearing the cookies then would make the refresh that
+repairs it impossible. The spec clears them on guard step 3 (`SESSION_EXPIRED`) only.
+**Resulting rule/check added:** `RequireOwnerMiddleware` clears on `SESSION_EXPIRED` only, and
+`require-owner.middleware.spec.ts` asserts no `Set-Cookie` on an expired token.
+
+### 2026-10-17 — owner-auth.T05
+**Finding:** The AC15 log check in `auth.routes.spec.ts` was first written in `afterAll`, so no
+test carried the AC's ID and a failure there would not have been reported against it.
+**Resulting rule/check added:** It is the file's last named test (`owner-auth.AC15 / IT15`) and
+asserts it saw tokens, so it cannot pass vacuously.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

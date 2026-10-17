@@ -5,9 +5,13 @@
  * only on the methods they call.
  *
  * `owner-auth.T02` defined the persistence ports, `T03` the hashing, token, randomness and
- * clock ports, and `T04` the session-authorizer and auth-service ports. The password-reset
- * service port follows with `T08`.
+ * clock ports, `T04` the session-authorizer and auth-service ports, and `T05` the two HTTP-layer
+ * ports at the end of this file. The password-reset service port follows with `T08`.
+ *
+ * Only the HTTP-layer ports mention Express types; no service imports them.
  */
+import type { Request, RequestHandler, Response } from 'express';
+
 import type {
   AccessTokenClaims,
   AuthorizedSession,
@@ -19,6 +23,7 @@ import type {
   OtpRecord,
   SessionCookies,
   SessionCredentials,
+  SessionTokens,
   SignedInSession,
   User,
 } from './auth.types.js';
@@ -228,3 +233,24 @@ export interface IAuthService {
    */
   me(userId: string): Promise<AuthUser>;
 }
+
+/**
+ * The only reader and writer of the three session cookies (`owner-auth` plan → Architecture
+ * Approach), used by the controller and the guard. Names, paths, lifetime and the `Secure` /
+ * `SameSite` flags live in its implementation, so no other class can set them differently.
+ */
+export interface ISessionCookieWriter {
+  /** The session cookies the request carried; a missing or unreadable cookie is `undefined`. */
+  read(req: Request): SessionCookies;
+  /** Sets all three cookies to a freshly minted session (sign-in, refresh). */
+  write(res: Response, tokens: SessionTokens): void;
+  /** Clears all three cookies, on the same paths they were set on. */
+  clear(res: Response): void;
+}
+
+/**
+ * `requireOwner` — the guard every `/api/v1/cms/**` route runs (spec → Request authorization).
+ * Other modules receive the instance from the container and import only this type
+ * (`owner-auth` plan → Architecture Approach). After it, `req.auth` is set.
+ */
+export type IAuthGuard = RequestHandler;

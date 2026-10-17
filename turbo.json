@@ -28,7 +28,14 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["NODE_ENV", "PORT", "MONGODB_URI", "REDIS_URL", "API_INTERNAL_URL"]
+      "passThroughEnv": [
+        "NODE_ENV",
+        "PORT",
+        "MONGODB_URI",
+        "REDIS_URL",
+        "JWT_ACCESS_SECRET",
+        "API_INTERNAL_URL"
+      ]
     }
   }
 }

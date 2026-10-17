@@ -13,6 +13,7 @@
  * Usage: `node e2e/start-api.ts <port>`
  */
 import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
@@ -21,6 +22,9 @@ const API_ROOT = fileURLToPath(new URL('../../api', import.meta.url));
 /** The local / CI Redis, database 15 (see above). */
 const E2E_REDIS_URL = 'redis://127.0.0.1:6379/15';
 
+/** Signs this throwaway API's access tokens; a fresh value per run, never a real secret. */
+const E2E_JWT_ACCESS_SECRET = randomBytes(48).toString('base64url');
+
 const port = process.argv[2];
 if (!port) throw new Error('usage: node e2e/start-api.ts <port>');
 
@@ -28,7 +32,13 @@ const mongo = await MongoMemoryServer.create();
 
 const api = spawn(process.execPath, ['dist/main.js'], {
   cwd: API_ROOT,
-  env: { NODE_ENV: 'test', PORT: port, MONGODB_URI: mongo.getUri(), REDIS_URL: E2E_REDIS_URL },
+  env: {
+    NODE_ENV: 'test',
+    PORT: port,
+    MONGODB_URI: mongo.getUri(),
+    REDIS_URL: E2E_REDIS_URL,
+    JWT_ACCESS_SECRET: E2E_JWT_ACCESS_SECRET,
+  },
   stdio: 'inherit',
 });
 

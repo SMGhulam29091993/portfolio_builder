@@ -64,6 +64,17 @@ same.
 **Regression test:** `owner-auth` — `otp.repository.spec.ts` → "rejects a purpose outside the
 allowed list" (failed before the fix).
 
+### 2026-10-17 — Auth requests hang for as long as Redis is down instead of failing
+**Root cause:** node-redis queues a command issued while the socket is reconnecting (its offline
+queue is on by default) and sends it only once the server is back. `RedisConnection`'s comment
+already said such commands "fail", but nothing tested it: a guarded request with Redis gone
+waited until the test client gave up (5 s), where the spec wants an immediate 503.
+**Fix:** `RedisConnection` creates the client with `disableOfflineQueue: true`, and Redis-backed
+stores wrap every command in `whileRedisAvailable` (`core/redis`), which maps any failure to
+503 `SERVICE_UNAVAILABLE` with the driver error as the logged cause.
+**Regression test:** `owner-auth.IT13` — `modules/auth/auth-redis-outage.spec.ts` (cuts a TCP
+proxy in front of Redis; fails at 5 s against the queueing client).
+
 <!-- Template
 ### <date> — <symptom>
 **Root cause:** ...

@@ -8,9 +8,10 @@ const VALID_SOURCE = {
   PORT: '4100',
   MONGODB_URI: 'mongodb://svc-user:not-a-real-secret@db.internal:27017/portfolio',
   REDIS_URL: 'redis://svc-user:not-a-real-secret@cache.internal:6379/0',
+  JWT_ACCESS_SECRET: 'not-a-real-secret-but-32-chars-long-0000',
 } as const;
 
-const REQUIRED_VARIABLES = ['PORT', 'MONGODB_URI', 'REDIS_URL'] as const;
+const REQUIRED_VARIABLES = ['PORT', 'MONGODB_URI', 'REDIS_URL', 'JWT_ACCESS_SECRET'] as const;
 
 /** Runs `loadEnv` and returns the `EnvValidationError` it throws, failing the test otherwise. */
 function captureEnvError(source: Record<string, string | undefined>): EnvValidationError {
@@ -41,6 +42,7 @@ describe('loadEnv', () => {
       PORT: 4100,
       MONGODB_URI: VALID_SOURCE.MONGODB_URI,
       REDIS_URL: VALID_SOURCE.REDIS_URL,
+      JWT_ACCESS_SECRET: VALID_SOURCE.JWT_ACCESS_SECRET,
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -71,7 +73,20 @@ describe('loadEnv', () => {
   it('reports every invalid variable at once', () => {
     const error = captureEnvError({ NODE_ENV: 'staging' });
 
-    expect(error.variables).toEqual(['NODE_ENV', 'PORT', 'MONGODB_URI', 'REDIS_URL']);
+    expect(error.variables).toEqual([
+      'NODE_ENV',
+      'PORT',
+      'MONGODB_URI',
+      'REDIS_URL',
+      'JWT_ACCESS_SECRET',
+    ]);
+  });
+
+  it('owner-auth.T05 — rejects a JWT_ACCESS_SECRET shorter than 32 characters without echoing it', () => {
+    const error = captureEnvError({ ...VALID_SOURCE, JWT_ACCESS_SECRET: 'short-secret-value' });
+
+    expect(error.variables).toEqual(['JWT_ACCESS_SECRET']);
+    expect(error.message).not.toContain('short-secret-value');
   });
 
   it('owner-auth.T01 — rejects a REDIS_URL with an invalid scheme without echoing it (data variation)', () => {

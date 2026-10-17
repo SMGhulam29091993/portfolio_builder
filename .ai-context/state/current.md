@@ -1,9 +1,11 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T04 are completed; T05
-  (controller, cookies, routes API01–API04, `requireOwner`, container wiring) is next.
-- T04 was built on its own branch, `feat/owner-auth-t04-auth-service`, cut from `master` after
-  the PR #10 merge; check `git log` / `git branch -a` for whether it has been merged.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T05 are completed; T06 (login
+  rate limiter, Origin allow-list) is next.
+- T05 was built on its own branch, `feat/owner-auth-t05-routes-guard`, cut from `master` after
+  the PR #11 merge (T04); check `git log` / `git branch -a` for whether it has been merged.
+- Since T05 the API also needs `JWT_ACCESS_SECRET` (32+ characters) in `apps/api/.env`, or it
+  refuses to start.
 - T00–T03 (the spec revision, T01, T02, T03 and the records audit) reached `master` through
   PR #10 from `feat/owner-auth-t01-t03`. The three older stacked branches
   (`feat/auth-t00-spec-revision`, `feat/auth-t01-redis-infra`, `feat/auth-t02-models-stores`)

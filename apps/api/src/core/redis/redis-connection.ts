@@ -117,6 +117,10 @@ export class RedisConnection implements IDatabaseConnection, IRedisClientProvide
 
     const client: RedisClient = createClient({
       url: this.options.url,
+      // While the socket is down, reject a command at once instead of queueing it until the
+      // reconnect succeeds: a queued command would hold the request open for as long as Redis
+      // stays down, where the spec wants an immediate 503 (`owner-auth.IT13`).
+      disableOfflineQueue: true,
       socket: {
         connectTimeout: this.options.connectTimeoutMs,
         reconnectStrategy: (retries, cause) =>

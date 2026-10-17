@@ -10,7 +10,11 @@
  * Every write is one atomic step on the server: `replace` is a `MULTI` transaction, and the two
  * conditional writes are Lua scripts, so a check and its write can never interleave with
  * another request's (`owner-auth.AC10`, `AC11`).
+ *
+ * Every command runs through `whileRedisAvailable`, so an unreachable server surfaces as 503
+ * `SERVICE_UNAVAILABLE` and never as a driver error (`owner-auth.T05`, IT13).
  */
+import { whileRedisAvailable } from '../../core/redis/redis-availability.js';
 import type { IRedisClientProvider } from '../../core/redis/redis-client-provider.interface.js';
 import type { ISessionStore } from './auth.interface.js';
 import type { AuthSession } from './auth.types.js';
@@ -52,7 +56,9 @@ export class RedisSessionStore implements ISessionStore {
   ) {}
 
   async get(userId: string): Promise<AuthSession | null> {
-    const fields = await this.redis.getClient().hGetAll(sessionKey(userId));
+    const fields = await whileRedisAvailable(() =>
+      this.redis.getClient().hGetAll(sessionKey(userId)),
+    );
     const { jti, refreshTokenHash, issuedAt } = fields;
     // An empty reply means no session. A partial hash cannot be written by this class; treat
     // it as no session rather than trusting half a record.
@@ -62,40 +68,46 @@ export class RedisSessionStore implements ISessionStore {
 
   async replace(userId: string, session: AuthSession): Promise<void> {
     const key = sessionKey(userId);
-    await this.redis
-      .getClient()
-      .multi()
-      .del(key)
-      .hSet(key, toFields(session))
-      .expire(key, this.options.ttlSec)
-      .exec();
+    await whileRedisAvailable(() =>
+      this.redis
+        .getClient()
+        .multi()
+        .del(key)
+        .hSet(key, toFields(session))
+        .expire(key, this.options.ttlSec)
+        .exec(),
+    );
   }
 
   async compareAndSet(userId: string, expectedJti: string, next: AuthSession): Promise<boolean> {
     const fields = toFields(next);
-    const swapped = await this.redis.getClient().eval(COMPARE_AND_SET_SCRIPT, {
-      keys: [sessionKey(userId)],
-      arguments: [
-        expectedJti,
-        fields.jti,
-        fields.refreshTokenHash,
-        fields.issuedAt,
-        String(this.options.ttlSec),
-      ],
-    });
+    const swapped = await whileRedisAvailable(() =>
+      this.redis.getClient().eval(COMPARE_AND_SET_SCRIPT, {
+        keys: [sessionKey(userId)],
+        arguments: [
+          expectedJti,
+          fields.jti,
+          fields.refreshTokenHash,
+          fields.issuedAt,
+          String(this.options.ttlSec),
+        ],
+      }),
+    );
     return swapped === 1;
   }
 
   async deleteIfJti(userId: string, expectedJti: string): Promise<boolean> {
-    const deleted = await this.redis.getClient().eval(DELETE_IF_JTI_SCRIPT, {
-      keys: [sessionKey(userId)],
-      arguments: [expectedJti],
-    });
+    const deleted = await whileRedisAvailable(() =>
+      this.redis.getClient().eval(DELETE_IF_JTI_SCRIPT, {
+        keys: [sessionKey(userId)],
+        arguments: [expectedJti],
+      }),
+    );
     return deleted === 1;
   }
 
   async delete(userId: string): Promise<void> {
-    await this.redis.getClient().del(sessionKey(userId));
+    await whileRedisAvailable(() => this.redis.getClient().del(sessionKey(userId)));
   }
 }
 

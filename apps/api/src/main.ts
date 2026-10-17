@@ -82,7 +82,7 @@ async function main(): Promise<void> {
 
   // Built only after every datastore has answered (step 3 follows step 2).
   const createRequestListener = () =>
-    createApp(buildContainer({ env, logger, mongo: database })).handler;
+    createApp(buildContainer({ env, logger, mongo: database, redis })).handler;
 
   const lifecycle = new ApplicationLifecycle(
     [

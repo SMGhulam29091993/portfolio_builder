@@ -6,34 +6,38 @@ Module `apps/api/src/modules/auth/` in the module file pattern. Redis use follow
 follows ADR-0009.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
-| `AuthController` | Controller | — | `IAuthService`, `IPasswordResetService` |
+| `AuthController` | Controller | — | `IAuthService`, `ISessionCookieWriter` (`owner-auth.T05`), `IPasswordResetService` (joins in `owner-auth.T08`) |
 | `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserReader`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom`, `IClock` (the session's `issuedAt`; added in `owner-auth.T04`) |
 | `SessionAuthorizer` | Service | `ISessionAuthorizer` (guard steps 1–3, with an "ignore expiry" mode for refresh and logout) | `ITokenIssuer`, `ISessionStore` |
 | `PasswordResetService` | Service | `IPasswordResetService` (requestCode, resend, reset) | `IUserReader`, `IUserPasswordWriter`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `ISessionStore`, `IMailSender`, `ISecureRandom`, `IClock` |
 | `UserRepository`, `OtpRepository` | Repository | `IUserReader`, `IUserCreator`, `IUserPasswordWriter` (role-sized, `owner-auth.T02`), `IOtpRepository` | Mongoose models |
-| `RedisSessionStore`, `RedisOtpReferenceStore` | Repository (Redis) | `ISessionStore` (get, replace, compareAndSet, delete), `IOtpReferenceStore` (put, resolve, delete) | the `core` Redis client |
+| `RedisSessionStore`, `RedisOtpReferenceStore` | Repository (Redis) | `ISessionStore` (get, replace, compareAndSet, deleteIfJti, delete), `IOtpReferenceStore` (put, resolve, delete) | the `core` Redis client; every command through `whileRedisAvailable` (503 on failure; session store since `owner-auth.T05`, reference store in `T08`) |
 | `Argon2PasswordHasher` | Adapter | `IPasswordHasher` | — |
 | `BcryptOtpHasher` | Adapter | `IOtpHasher` (hash, compare) | — |
-| `JwtTokenIssuer` | Adapter | `ITokenIssuer` (sign / verify the access token, with an ignore-expiry option) | `Env`, `IClock` |
+| `JwtTokenIssuer` | Adapter | `ITokenIssuer` (sign / verify the access token, with an ignore-expiry option) | options (secret from `JWT_ACCESS_SECRET`, TTL, leeway) passed by the container, `IClock` |
 | `CryptoSecureRandom` | Adapter | `ISecureRandom` (bytes, 6-digit code) | — |
 | `SystemClock` | Adapter | `IClock` | — |
 | `GmailMailSender`, `DisabledMailSender` | Adapter | `IMailSender` | `Env` (Gmail only) |
 | `MailSenderFactory` | Factory | — | `Env` |
-| `RequireOwnerMiddleware` | HTTP | — | `ISessionAuthorizer` |
-| `SessionCookieWriter` | HTTP | — | `Env` |
+| `RequireOwnerMiddleware` | HTTP | — (its `handle` is the `IAuthGuard`) | `ISessionAuthorizer`, `ISessionCookieWriter` |
+| `SessionCookieWriter` | HTTP | `ISessionCookieWriter` (read, write, clear) | `Env` (`NODE_ENV`), cookie paths and lifetime from the container; `core/http` `parseCookieHeader` |
 | `OriginAllowListMiddleware` | HTTP (`core/http`) | — | `Env` |
 | `OwnerSeeder` | Seed | `ISeeder` | `IUserReader`, `IUserCreator`, `IPasswordHasher`, `Env` |
 - `index.ts` exports `IAuthGuard` (the `requireOwner` handler type) and `AuthContext`; other
   modules receive the guard instance from the container and import nothing else.
 - The three cookies are read and written only by `SessionCookieWriter`, used by the controller
   and the guard — services never see `req`/`res`, and cookie flags come from the injected `env`.
+  The guard clears them on `SESSION_EXPIRED` only; refresh clears them on every 401
+  (`owner-auth.T05`; `memory/review-findings.md`, 2026-10-17).
 - `SessionAuthorizer` is the one implementation of the `jti` triple match, shared by the guard,
   refresh and logout, so the rule cannot diverge between them.
 - The SHA-256 of a refresh token is a pure helper in `core/crypto` (no state, no I/O).
 - `ISecureRandom` and `IClock` are injected so code generation, expiry, cooldown and rate-limit
   tests are deterministic.
 - The Redis client is created in `core/` (ADR-0008); `RedisSessionStore.compareAndSet` is a Lua
-  script that replaces the session only while the stored `jti` equals the presented one.
+  script that replaces the session only while the stored `jti` equals the presented one. The
+  client's offline queue is off, so a command fails at once while Redis is down and the store
+  answers 503 instead of waiting (`owner-auth.T05`; `memory/pitfalls.md`, 2026-10-17).
 - Patterns: Repository; Adapter + Factory (`IMailSender` strategies, hashers, token issuer) —
   all from the approved list.
 - argon2id cost, measured 2026-10-17 (`owner-auth.T03`): m=64 MiB, t=3, p=4 takes ~33 ms per
@@ -45,7 +49,7 @@ follows ADR-0009.
 **`otps`** (MongoDB) — `_id`, `userId`, `purpose` (`password_reset`), `identifier` (unique),
 `otpHash`, `attempts`, `sentAt`, `expiresAt`, `purgeAt` (TTL index, `expireAfterSeconds: 0`),
 `createdAt`, `updatedAt`. Unique compound index `{ userId, purpose }` — the upsert key.
-**Redis** — `auth:session:<userId>` → JSON `{ jti, refreshTokenHash, issuedAt }`, TTL 7 days;
+**Redis** — `auth:session:<userId>` → a hash with the fields `jti`, `refreshTokenHash` and `issuedAt` (epoch ms; a hash so the Lua scripts read the `jti` with `HGET`, `owner-auth.T02`), TTL 7 days;
 `auth:otp-ref:<reference>` → identifier, TTL 24 hours.
 Seed: one user from `OWNER_EMAIL` / `OWNER_PASSWORD`; no literal credentials anywhere.
 ## Constitution Check
