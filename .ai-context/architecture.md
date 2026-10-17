@@ -4,10 +4,10 @@ Living system design. States current truth in plain present tense. The *why* beh
 lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 
 **Directory-status legend:** ✅ built · 🚧 in progress · ⬜ planned (specified, not built).
-The tree below marks each path's current state; `monorepo-foundation` T01–T08 are built, so
-the workspace, the API core, the `health` module, the boundary checks and the `apps/web`
-scaffold (placeholder pages and the `/api/v1` proxy) exist, while every feature module is
-⬜ planned.
+The tree below marks each path's current state; `monorepo-foundation` T01–T09 are built, so
+the workspace, the API core (including the event bus), the `health` module, the boundary
+checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
+harness and CI exist, while every feature module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -33,12 +33,12 @@ portfolio-builder/
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment
-│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events ⬜
+│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
 │   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness
+│   │       └── testing/          ✅ `MongoTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
@@ -54,6 +54,8 @@ portfolio-builder/
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)
 ├── docs/design-reference/        ✅ the two reference boards
 ├── .agent/  .ai-context/         ✅ this system
+├── .github/workflows/ci.yml      ✅ CI: build · typecheck · lint · test (coverage floor) · drift · cache check · E2E
+├── scripts/check-turbo-cache.mjs ✅ fails if a repeated Turborepo run would not be fully cached (AC1)
 └── turbo.json · package.json · pnpm-workspace.yaml   ✅
 ```
 `.agent/` and `.ai-context/` sit at the repository root and are shared by every app (ADR-0002).
@@ -152,6 +154,15 @@ Rate limiters are per mount, so they run inside each module's router, after the 
 parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. Every
 module router is an `ApiRouter`, so the app knows its mounted route table for the OpenAPI drift
 check (`apps/api/src/app.ts`).
+
+## In-process events
+Cross-module reactions use `core/events` (Observer). A service that emits depends on
+`IEventPublisher<Events>` only; handlers are classes implementing `IEventHandler` and are
+subscribed in `container.ts`, which creates the one `InProcessEventBus`. `publish()` delivers to
+the handlers registered when it was called, one at a time in subscription order, and resolves
+once all have settled. A handler that throws is logged (event name, handler class, request id —
+never the payload) and never fails the emitting operation. Events are not persisted. Each
+module declares its event map in its `index.ts`; core knows no module's events.
 
 ## Draft → publish → site
 1. Each content module holds its own draft document(s) with an integer `revision`.

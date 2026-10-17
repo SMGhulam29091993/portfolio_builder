@@ -26,6 +26,14 @@ also says `publishing` *owns* `IPublishedPointerWriter`, which would make that e
 (`findCycles`), so neither cycle can be built silently. The map itself is unchanged — it is an
 owner decision, raised in `state/blockers.md`, to be settled before `publish-pipeline.T02`.
 
+### 2026-10-17 — monorepo-foundation.T09
+**Finding:** Vitest coverage thresholds are aggregate by default: with several services, one
+fully tested service could lift an untested one over the 80% floor, so "80% on services" would
+hold on paper while a service shipped with no tests.
+**Resulting rule/check added:** `thresholds.perFile: true` in `apps/api/vitest.config.ts`, and
+the constitution now says "per file". Verified by adding a temporary untested service under
+`src/modules/`: `pnpm test` failed on the floor.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

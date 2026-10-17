@@ -51,6 +51,10 @@ appends the tools it installs to this table in the same change.
 | @types/react, @types/react-dom | 19.3.0 | `monorepo-foundation.T08` | |
 | tailwindcss, @tailwindcss/postcss | 4.3.3 | `monorepo-foundation.T08` | v4: configured in CSS, no `tailwind.config` |
 | @playwright/test | 1.64.1 | `monorepo-foundation.T08` | E2E01 uses the `request` fixture, so no browser download yet; axe arrives with the first UI task |
+| @vitest/coverage-v8 | 5.0.5 | `monorepo-foundation.T09` | `apps/api`; matches vitest exactly (peer) |
+| actions/checkout | v7.0.1 (`3d3c42e`) | `monorepo-foundation.T09` | CI; pinned by commit SHA |
+| actions/setup-node | v7.1.0 (`949feb2`) | `monorepo-foundation.T09` | CI; Node 24.12.0 |
+| pnpm/action-setup | v6.1.0 (`ea17c68`) | `monorepo-foundation.T09` | CI; pnpm from `packageManager` |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and

@@ -9,6 +9,11 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** `agent-role.md`, `int-standards.express.md`, `code-review.md`, every plan's Constitution Check
 **Last updated:** 2026-10-11
 
+## In-process event semantics (`IEventBus`)
+**Canonical definition:** `.ai-context/architecture.md` → In-process events
+**Referenced by:** `publish-pipeline` spec (Error Handling) and plan; `apps/api/src/core/events/`
+**Last updated:** 2026-10-17
+
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
 **Referenced by:** every spec's API Contract (exception tables name a code, not a shape)

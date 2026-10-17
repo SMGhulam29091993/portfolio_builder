@@ -28,6 +28,10 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `monorepo-foundation.T09` completed on branch `feat/foundation-t09-test-harness-ci`:
+  `core/events` (`IEventBus`, `InProcessEventBus`), `src/testing/` (`MongoTestHarness`,
+  `FixtureFactory`, `RecordingLogger`), per-file 80% coverage floor on module services, and
+  `.github/workflows/ci.yml` with the AC1 cache check (IT13). CI has not run yet.
 - `monorepo-foundation.T08` completed on branch `feat/foundation-t08-web-scaffold`: `apps/web`
   (Next.js 16, Tailwind v4), `(site)` and `(cms)` placeholder pages, `/api/v1` rewrite,
   `lib/env.ts`, Playwright E2E01 proving AC12. Raised: build artifacts still tracked in git

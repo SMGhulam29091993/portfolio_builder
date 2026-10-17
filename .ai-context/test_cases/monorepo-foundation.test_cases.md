@@ -7,6 +7,10 @@
 |---|---|---|---|
 | monorepo-foundation.UT08 | AC12 | Web `loadEnv` with `API_INTERNAL_URL` absent, malformed, or a non-HTTP URL carrying credentials | Throws naming the variable; no value in the message or error |
 | monorepo-foundation.UT09 | AC12 | `createApiRewrites` with a plain base URL and one with a path prefix and trailing slashes | `/api/v1/:path*` → same path on the base; prefix kept, no `//` |
+| monorepo-foundation.UT10 | Plan (`IEventBus`) | Publish to two handlers | Both receive the frozen event (name, payload, meta, `occurredAt`) in subscription order |
+| monorepo-foundation.UT11 | Plan (`IEventBus`) | First handler throws | `publish` resolves; the error is logged with event, handler and request id, not the payload; the second handler still runs |
+| monorepo-foundation.UT12 | Plan (`IEventBus`) | Unsubscribe, then publish two event names | The removed handler is not called; the other event's handler is |
+| monorepo-foundation.UT13 | Plan (test harness) | `FixtureFactory` build, override, `buildList` | Sequence numbers 1, 2…; overrides applied; no shared objects between fixtures |
 
 ## Integration (real MongoDB, real HTTP)
 | Test ID | Maps to | Scenario | Expected |
@@ -27,9 +31,10 @@
 | monorepo-foundation.IT10 | AC9 | Lint the fixture files in `apps/api/test-fixtures/boundary-lint/` (one per violation) through the API's real config | Four failures, each naming its rule; the legal and exempt fixtures produce none |
 | monorepo-foundation.IT11 | AC9 | Architecture test with an undeclared module edge in a fixture | Fails naming the edge |
 | monorepo-foundation.IT12 | AC10 | Drift check with a route removed from the document | Fails naming path + method |
-| monorepo-foundation.IT13 | AC1 | Run the Turborepo pipeline twice | Second run fully cached |
+| monorepo-foundation.IT13 | AC1 | Run the Turborepo pipeline twice | Second run fully cached — CI step `scripts/check-turbo-cache.mjs` |
 | monorepo-foundation.IT14 | AC9 | Architecture test over the real `apps/api/src` | No undeclared edge, no module missing from the map, and the map's module list equals `architecture.md` → API modules |
 | monorepo-foundation.IT15 | AC9 | Cycle check over the real module graph (constitution: a DAG) | No cycle; a fixture cycle is reported by its path |
+| monorepo-foundation.IT16 | Plan (test harness) | `MongoTestHarness` start and `reset()` | Singleton connected to a real `mongod`; collections emptied, indexes kept |
 
 ## End to end
 | Test ID | Maps to | Scenario | Expected |

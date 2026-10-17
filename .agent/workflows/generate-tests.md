@@ -10,8 +10,10 @@ Tests derive from acceptance criteria, never from reading finished code.
 3. Per-layer convention is in `constitution.md` → Testing Discipline. Name each test with its ID:
    `it('publish-pipeline.UT03 — blocks publish when a placeholder remains', …)`.
 4. Every AC maps to at least one test; every error row in an API exception table maps to one.
-5. Fixtures are built by factory functions in `apps/api/src/testing/` — never copied from seed
-   data, so a seed edit cannot silently change a test's meaning.
+5. Fixtures are built by factories extending `FixtureFactory` in `apps/api/src/testing/` — never
+   copied from seed data, so a seed edit cannot silently change a test's meaning. Integration
+   tests get their `mongod` from `MongoTestHarness` there (one per spec file), and log
+   assertions use its `RecordingLogger`.
 6. A scenario spanning more than one spec goes in `test_cases/_integration.md`.
 7. `E2E` specs live in `apps/web/e2e/` and run with `pnpm test:e2e`, which starts a throwaway
    MongoDB and the built API (`e2e/start-api.ts`) plus `next dev`. They are not part of

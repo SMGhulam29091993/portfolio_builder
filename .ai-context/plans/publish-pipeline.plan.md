@@ -6,14 +6,14 @@ Module `apps/api/src/modules/publishing/`, module file pattern plus `rules/`, `s
 | Class | Role | Implements | Depends on (interfaces) |
 |---|---|---|---|
 | `PublishingController` | Controller | — | `IPublishingService` |
-| `PublishingService` | Service | `IPublishingService`, `ISnapshotReader` | `ISnapshotRepository`, `IDraftAssembler`, `IPublishPipeline`, `IPublishedPointerWriter`, `IPublishedPointerReader`, `IEventBus` |
+| `PublishingService` | Service | `IPublishingService`, `ISnapshotReader` | `ISnapshotRepository`, `IDraftAssembler`, `IPublishPipeline`, `IPublishedPointerWriter`, `IPublishedPointerReader`, `IEventPublisher` |
 | `DraftAssembler` | Service | `IDraftAssembler` | `IDraftContributor[]`, `ISnapshotBuilder` |
 | `SnapshotBuilder` | **Builder** | `ISnapshotBuilder` | `IAssetLookup`, `ICanonicalHasher` |
 | `PublishPipeline` | **Pipeline** | `IPublishPipeline` | `IPublishStep[]` (ordered, constructor) |
 | `ValidateStep`, `PersistSnapshotStep`, `ActivateStep`, `EmitPublishedStep` | Steps | `IPublishStep` | their own narrow dependencies |
 | `PublishRuleRegistry` + nine rule classes | **Strategy + Registry** | `IPublishRule` | `IDesignValidator`, `IAssetLookup` where needed |
 | `SnapshotRepository` | Repository | `ISnapshotRepository` (insert / read / update delivery only) | Mongoose model |
-| `SiteRevalidationListener` | **Observer** | event handler | `IRevalidationClient`, `ISnapshotRepository` |
+| `SiteRevalidationListener` | **Observer** | `IEventHandler` (`core/events`) | `IRevalidationClient`, `ISnapshotRepository` |
 | `HttpRevalidationClient`, `NoopRevalidationClient` | Adapters | `IRevalidationClient` | `Env` |
 | `SnapshotAssetReferenceProvider` | Adapter | `IAssetReferenceProvider` (owned by `assets`) | `ISnapshotRepository` |
 

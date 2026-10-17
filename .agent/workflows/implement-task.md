@@ -10,7 +10,8 @@
 4. Write the failing tests first for anything in the test-first scope (`constitution.md`).
 5. Implement the smallest change that satisfies the named ACs. Do not touch other tasks' scope.
 6. Run typecheck, lint, the affected tests, and the architecture test — plus `pnpm test:e2e`
-   when the change touches `apps/web` or a route an E2E spec calls.
+   when the change touches `apps/web` or a route an E2E spec calls. `pnpm test` also enforces
+   the service coverage floor; CI (`.github/workflows/ci.yml`) runs all of it on every PR.
 7. Run `.agent/workflows/code-review.md` against the diff. Fix findings; record real ones in
    `memory/review-findings.md`.
 8. Update state files and the spec status per `state-tracking.md`; record the DoD self-check

@@ -10,5 +10,5 @@
 - [x] monorepo-foundation.T06 — `health` module in the module file pattern, `container.ts`, `app.ts` (mounting the T05 security middleware and a rate limiter on `/health`); create `openapi/openapi.yaml` and the drift check — Acceptance: AC4, AC5, AC10
 - [x] monorepo-foundation.T07 — Import-boundary lint rules (layer, module, `process.env`, instantiation) and the architecture test against the dependency map — Acceptance: AC9
 - [x] monorepo-foundation.T08 — `apps/web`: Next.js App Router, Tailwind, `(site)` and `(cms)` route groups with placeholder pages, `/api/v1` rewrite, `lib/env.ts` — Acceptance: AC12
-- [ ] monorepo-foundation.T09 — Test harness (`apps/api/src/testing`: Mongo harness, fixture-factory base), Vitest config with the coverage floor, `InProcessEventBus`, CI workflow running build / typecheck / lint / test / drift — Acceptance: AC1
+- [x] monorepo-foundation.T09 — Test harness (`apps/api/src/testing`: Mongo harness, fixture-factory base), Vitest config with the coverage floor, `InProcessEventBus`, CI workflow running build / typecheck / lint / test / drift — Acceptance: AC1
 - [ ] monorepo-foundation.T10 — `docker-compose.dev.yml` (MongoDB), `.env.example` for both apps listing every variable in `architecture.md` → Environment, developer README section — Acceptance: AC12
