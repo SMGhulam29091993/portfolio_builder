@@ -2,6 +2,12 @@
 **Spec:** .ai-context/specs/monorepo-foundation.spec.md
 **Spec-derived unit cases:** UT01–UT07 are defined in the spec and not restated here.
 
+## Unit (added during implementation)
+| Test ID | Maps to | Scenario | Expected |
+|---|---|---|---|
+| monorepo-foundation.UT08 | AC12 | Web `loadEnv` with `API_INTERNAL_URL` absent, malformed, or a non-HTTP URL carrying credentials | Throws naming the variable; no value in the message or error |
+| monorepo-foundation.UT09 | AC12 | `createApiRewrites` with a plain base URL and one with a path prefix and trailing slashes | `/api/v1/:path*` → same path on the base; prefix kept, no `//` |
+
 ## Integration (real MongoDB, real HTTP)
 | Test ID | Maps to | Scenario | Expected |
 |---|---|---|---|

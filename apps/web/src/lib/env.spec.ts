@@ -6,14 +6,14 @@ import { loadEnv, WebEnvValidationError } from './env';
 const FAKE_SECRET = 'not-a-real-secret';
 
 describe('loadEnv', () => {
-  it('returns a frozen env when every variable is valid', () => {
+  it('monorepo-foundation.UT08 — returns a frozen env when every variable is valid', () => {
     const env = loadEnv({ API_INTERNAL_URL: 'http://127.0.0.1:4000' });
 
     expect(env).toEqual({ API_INTERNAL_URL: 'http://127.0.0.1:4000' });
     expect(Object.isFrozen(env)).toBe(true);
   });
 
-  it('names a missing variable', () => {
+  it('monorepo-foundation.UT08 — names a missing variable', () => {
     expect(() => loadEnv({})).toThrow(
       expect.objectContaining({
         name: 'WebEnvValidationError',
@@ -25,11 +25,11 @@ describe('loadEnv', () => {
   it.each([
     ['not a URL', 'api.internal:4000'],
     ['a non-HTTP scheme', 'ftp://api.internal'],
-  ])('rejects %s', (_label, value) => {
+  ])('monorepo-foundation.UT08 — rejects %s', (_label, value) => {
     expect(() => loadEnv({ API_INTERNAL_URL: value })).toThrow(WebEnvValidationError);
   });
 
-  it('never echoes a rejected value, which may carry credentials', () => {
+  it('monorepo-foundation.UT08 — never echoes a rejected value, which may carry credentials', () => {
     const caught = captureError(() =>
       loadEnv({ API_INTERNAL_URL: `ftp://svc:${FAKE_SECRET}@api.internal` }),
     );

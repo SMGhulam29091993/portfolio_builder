@@ -13,3 +13,6 @@ Tests derive from acceptance criteria, never from reading finished code.
 5. Fixtures are built by factory functions in `apps/api/src/testing/` — never copied from seed
    data, so a seed edit cannot silently change a test's meaning.
 6. A scenario spanning more than one spec goes in `test_cases/_integration.md`.
+7. `E2E` specs live in `apps/web/e2e/` and run with `pnpm test:e2e`, which starts a throwaway
+   MongoDB and the built API (`e2e/start-api.ts`) plus `next dev`. They are not part of
+   `pnpm test`.
