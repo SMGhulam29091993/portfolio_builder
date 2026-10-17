@@ -11,7 +11,9 @@ boundaries, approved patterns) are in `constitution.md` and are not repeated her
 5. Router factory — `modules/<name>/<name>.routes.ts`, receives the controller and middleware
    and returns an `ApiRouter` (`core/http`). Register every route with `.route(method, path,
    ...handlers)`, never `router.get()` directly, so the OpenAPI drift check sees it
-6. Wire into `src/container.ts`, then mount the router in `src/app.ts`
+6. Wire into `src/container.ts`, then mount the router in `src/app.ts`. A **new module** also
+   gets its row in `architecture.md` → Module dependency map and in
+   `src/architecture/module-dependency-map.ts`, or the architecture test fails
 7. **Update the OpenAPI document — same PR, mandatory**
 See `.agent/workflows/generate-plan.md` for the full checklist.
 

@@ -108,7 +108,7 @@ describe('module graph', () => {
     expect(collectEdges(files)).toEqual([]);
   });
 
-  it('reports a dependency cycle by its path', () => {
+  it('monorepo-foundation.IT15 — reports a dependency cycle by its path', () => {
     const edges = collectEdges([
       file('modules/alpha/a.ts', '../beta/index.js'),
       file('modules/beta/b.ts', '../alpha/index.js'),
@@ -122,12 +122,12 @@ describe('apps/api', () => {
   const files = readSourceFiles(API_SRC);
   const edges = collectEdges(files);
 
-  it('monorepo-foundation.AC9 — conforms to the module dependency map', () => {
+  it('monorepo-foundation.IT14 — conforms to the module dependency map', () => {
     expect(findUndeclaredEdges(edges, MODULE_DEPENDENCY_MAP)).toEqual([]);
     expect(findUnmappedModules(files, MODULE_DEPENDENCY_MAP)).toEqual([]);
   });
 
-  it('has an acyclic module graph (constitution.md → Module boundaries: a DAG)', () => {
+  it('monorepo-foundation.IT15 — has an acyclic module graph (constitution.md → Module boundaries: a DAG)', () => {
     expect(findCycles(edges)).toEqual([]);
   });
 
@@ -137,7 +137,7 @@ describe('apps/api', () => {
 });
 
 describe('MODULE_DEPENDENCY_MAP', () => {
-  it('lists exactly the modules of architecture.md → API modules', () => {
+  it('monorepo-foundation.IT14 — lists exactly the modules of architecture.md → API modules', () => {
     // Only the "## API modules" section: other tables there also start rows with a code span.
     const section = /^## API modules\n([\s\S]*?)^## /m.exec(readFileSync(ARCHITECTURE_DOC, 'utf8'))?.[1] ?? '';
     const documented = [...section.matchAll(/^\| `([a-z-]+)` \|/gm)].map((match) => match[1]);

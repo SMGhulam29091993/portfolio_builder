@@ -21,7 +21,9 @@ Module `apps/api/src/modules/design/`, module file pattern.
 - **Web:** `ThemeStyle` server component emits `toCssVariables` into a `<style>` block scoped to
   the portfolio root; Tailwind maps utilities to those variables. `/cms/design` uses colour
   inputs with live contrast badges, font and radius selects, effect switches, variant pickers.
-- A lint rule over `packages/sections` forbids hex, `rgb()` and font-family literals (AC8).
+- A lint rule over `packages/sections` forbids hex, `rgb()` and font-family literals (AC8). It is
+  added as a new rule to the existing `portfolio` plugin in `packages/eslint-config/plugin/` and
+  enabled by a sections config next to `api.js` — not a second plugin or a parallel mechanism.
 ## Data Model
 **`designs`** — `_id`, `portfolioId` (unique index), `revision`, `theme`, `layout`, `updatedAt`.
 **Seed:** `DEFAULT_DESIGN` from `packages/design-tokens` — colours from `design_reference.md`

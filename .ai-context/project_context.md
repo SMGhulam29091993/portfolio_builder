@@ -68,7 +68,8 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
   (Proposed) · ADR-0007 tooling baseline (Accepted)
 
 ### Memory (`memory/`)
-- `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — empty until real events
+- `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;
+  `patterns.md` is still empty, the other three hold entries from `monorepo-foundation`
 
 ### Ownership Index
 - `ownership_index.md` — one canonical owner per fact referenced by 2+ files

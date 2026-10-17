@@ -8,7 +8,9 @@
 | `PublicSiteController` | Controller | — | `IPublicSiteService` |
 | `PublicSiteService` | Service | `IPublicSiteService` | `ISnapshotReader` (from `publishing` — `getCurrentForSlug(slug)`), `IAssetReader` (from `assets`), `Env` (`DEFAULT_PORTFOLIO_SLUG`) |
 - It depends on read-only interfaces only; no draft interface is importable from this module —
-  the architecture test asserts it.
+  the architecture test asserts it. The module-level edges (`public-site → publishing, assets`)
+  are already enforced by `apps/api/src/architecture/`; T01 extends that test with the
+  interface-level check (named imports from `publishing`'s index limited to `ISnapshotReader`).
 - Conditional GET (ETag / 304) is handled in the controller; caching headers are set there too.
 - A dedicated rate limiter instance covers `/api/v1/public`.
 

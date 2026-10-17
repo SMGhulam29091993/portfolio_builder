@@ -18,10 +18,12 @@
 ## Tooling checks (run in CI as tests)
 | Test ID | Maps to | Scenario | Expected |
 |---|---|---|---|
-| monorepo-foundation.IT10 | AC9 | Lint a fixture file with each of the four violations | Four failures, each naming its rule |
+| monorepo-foundation.IT10 | AC9 | Lint the fixture files in `apps/api/test-fixtures/boundary-lint/` (one per violation) through the API's real config | Four failures, each naming its rule; the legal and exempt fixtures produce none |
 | monorepo-foundation.IT11 | AC9 | Architecture test with an undeclared module edge in a fixture | Fails naming the edge |
 | monorepo-foundation.IT12 | AC10 | Drift check with a route removed from the document | Fails naming path + method |
 | monorepo-foundation.IT13 | AC1 | Run the Turborepo pipeline twice | Second run fully cached |
+| monorepo-foundation.IT14 | AC9 | Architecture test over the real `apps/api/src` | No undeclared edge, no module missing from the map, and the map's module list equals `architecture.md` → API modules |
+| monorepo-foundation.IT15 | AC9 | Cycle check over the real module graph (constitution: a DAG) | No cycle; a fixture cycle is reported by its path |
 
 ## End to end
 | Test ID | Maps to | Scenario | Expected |
