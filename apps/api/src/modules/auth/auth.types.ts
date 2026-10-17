@@ -3,6 +3,8 @@
  * payloads are owned by `packages/contracts` and re-exported here
  * (`int-standards.express.md` → Input validation).
  */
+import type { AuthUser } from '@portfolio/contracts';
+
 export {
   authUserResponseSchema,
   authUserSchema,
@@ -64,6 +66,48 @@ export interface AccessTokenClaims {
   readonly jti: string;
   readonly iat: number;
   readonly exp: number;
+}
+
+/**
+ * The session cookies a request carried, as the controller and guard read them (`owner-auth.T05`).
+ * Every field is optional because any cookie may be missing; services decide what an absent
+ * one means. Never logged (`owner-auth.AC15`).
+ */
+export interface SessionCookies {
+  /** The `access-token` cookie: the access JWT. */
+  readonly accessToken?: string;
+  /** The `jti` cookie: the session identifier the browser was given. */
+  readonly jti?: string;
+  /** The `refresh-token` cookie. Sent only to `/api/v1/auth`, so the guard never sees it. */
+  readonly refreshToken?: string;
+}
+
+/** What the `jti` triple match reads: the access token and the `jti` cookie. */
+export type SessionCredentials = Pick<SessionCookies, 'accessToken' | 'jti'>;
+
+/** A request whose access token, `jti` cookie and stored session all agree. */
+export interface AuthorizedSession {
+  /** The token's `sub`: the signed-in user. */
+  readonly userId: string;
+  /** The stored session the three `jti` values matched. */
+  readonly session: AuthSession;
+}
+
+/**
+ * The three values a sign-in or refresh hands to the cookie writer (`owner-auth.T05`). They
+ * never appear in a response body (spec → Session contract).
+ */
+export interface SessionTokens {
+  readonly accessToken: string;
+  /** The raw refresh token; only its SHA-256 is stored. */
+  readonly refreshToken: string;
+  readonly jti: string;
+}
+
+/** The result of a sign-in or refresh: the user for the body, the tokens for the cookies. */
+export interface SignedInSession {
+  readonly user: AuthUser;
+  readonly tokens: SessionTokens;
 }
 
 /** The actions a one-time code can authorise. Only one exists today. */

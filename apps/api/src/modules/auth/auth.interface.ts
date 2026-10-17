@@ -4,15 +4,22 @@
  * the services that arrive in `owner-auth.T04` and `T08` and the seeder in `T09` each depend
  * only on the methods they call.
  *
- * `owner-auth.T02` defined the persistence ports and `T03` the hashing, token, randomness and
- * clock ports. Service ports follow with the tasks that introduce them.
+ * `owner-auth.T02` defined the persistence ports, `T03` the hashing, token, randomness and
+ * clock ports, and `T04` the session-authorizer and auth-service ports. The password-reset
+ * service port follows with `T08`.
  */
 import type {
   AccessTokenClaims,
+  AuthorizedSession,
   AuthSession,
+  AuthUser,
+  LoginRequest,
   NewUser,
   OtpIssue,
   OtpRecord,
+  SessionCookies,
+  SessionCredentials,
+  SignedInSession,
   User,
 } from './auth.types.js';
 
@@ -166,4 +173,58 @@ export interface ISecureRandom {
 /** The current time, injectable so expiry, cooldown and TTL tests are deterministic. */
 export interface IClock {
   now(): Date;
+}
+
+/** Options for `ISessionAuthorizer.authorize`. */
+export interface AuthorizeOptions {
+  /**
+   * Accept an access token past its expiry when its signature is valid. Refresh and logout
+   * only (spec → Refresh, API03); the guard never sets it.
+   */
+  readonly ignoreExpiry?: boolean;
+}
+
+/**
+ * The one implementation of the `jti` triple match (spec → Request authorization, steps 1–3),
+ * shared by the guard, refresh and logout so the rule cannot drift between them.
+ */
+export interface ISessionAuthorizer {
+  /**
+   * Verifies the access token, loads the session its `sub` names and checks that the token's
+   * `jti`, the `jti` cookie and the session's `jti` are equal. Never writes to the store.
+   *
+   * @throws {UnauthenticatedError} No or invalid access token, or no session for its `sub`.
+   * @throws {SessionExpiredError} The three `jti` values are not all equal.
+   */
+  authorize(credentials: SessionCredentials, options?: AuthorizeOptions): Promise<AuthorizedSession>;
+}
+
+/** Sign-in, refresh, sign-out and the current user (`owner-auth.API01`–`API04`). */
+export interface IAuthService {
+  /**
+   * Checks the credentials and starts the user's one session, replacing any previous one.
+   *
+   * @throws {UnauthenticatedError} Unknown email or wrong password — one error for both.
+   */
+  login(credentials: LoginRequest): Promise<SignedInSession>;
+  /**
+   * Rotates the `jti`, access token and refresh token of the session the cookies name.
+   *
+   * @throws {UnauthenticatedError} No valid token, no session, or a wrong refresh token (the
+   *   session is then deleted).
+   * @throws {SessionExpiredError} A `jti` mismatch, or another refresh rotated the session
+   *   first.
+   */
+  refresh(cookies: SessionCookies): Promise<SignedInSession>;
+  /**
+   * Ends the session the cookies name, when they still name the current one. Never throws for
+   * missing, invalid or superseded cookies, so sign-out is idempotent.
+   */
+  logout(cookies: SessionCookies): Promise<void>;
+  /**
+   * The signed-in user, for a request the guard already authorised.
+   *
+   * @throws {UnauthenticatedError} The user no longer exists.
+   */
+  me(userId: string): Promise<AuthUser>;
 }
