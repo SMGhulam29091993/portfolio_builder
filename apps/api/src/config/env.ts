@@ -13,6 +13,9 @@ import { z } from 'zod';
 /** Accepted MongoDB connection-string schemes (standard and DNS seed list). */
 const MONGODB_URI_PATTERN = /^mongodb(\+srv)?:\/\//;
 
+/** Accepted Redis URL schemes (plain and TLS). */
+const REDIS_URL_PATTERN = /^rediss?:\/\//;
+
 const envSchema = z.object({
   /** Runtime mode. `production` switches off development-only behaviour (connection caching). */
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -20,6 +23,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535),
   /** MongoDB connection string. Treated as a secret: it may carry credentials. */
   MONGODB_URI: z.string().regex(MONGODB_URI_PATTERN),
+  /**
+   * Redis URL for the `auth` session and one-time-code reference store (ADR-0008). Treated as a
+   * secret: it may carry a password. A trailing `/<n>` selects the logical database.
+   */
+  REDIS_URL: z.string().regex(REDIS_URL_PATTERN),
 });
 
 /** The validated, read-only configuration object. */

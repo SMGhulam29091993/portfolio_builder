@@ -8,7 +8,7 @@ owner moves a spec to `Ready`.
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
-| 2 | `owner-auth` | Owner sign-in, the single Redis session, password reset by one-time code | Draft | BRD-002 | — (revised 2026-10-17; DoR self-check passes, awaiting the owner) |
+| 2 | `owner-auth` | Owner sign-in, the single Redis session, password reset by one-time code | In Progress | BRD-002 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005 |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | — |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text |
@@ -28,6 +28,14 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth` moved `Draft → Ready` by the owner and `Ready → In Progress`. `owner-auth.T01`
+  completed on branch `feat/auth-t01-redis-infra` (cut from the unmerged
+  `feat/auth-t00-spec-revision`): Redis 8.10.2 in `docker-compose.dev.yml` and as a CI service
+  (one digest), `@redis/client` 6.3.0, `core/redis` (`RedisConnection` singleton,
+  `IRedisClientProvider`), `REDIS_URL`, startup MongoDB → Redis with clean-up on failure and
+  reverse-order shutdown in `ApplicationLifecycle`, `RedisTestHarness` (claimed logical
+  database per spec file), the `IDatabaseConnection` contract suite (CT07). Tests now need the
+  compose Redis running.
 - `owner-auth` revised to the owner's design on branch `feat/auth-t00-spec-revision`: JWT access
   token, refresh token and `jti` in three `HttpOnly` cookies; strictly one session per user in
   Redis with a triple `jti` match on every CMS request and `SESSION_EXPIRED` for a superseded

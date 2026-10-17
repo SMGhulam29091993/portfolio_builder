@@ -1,7 +1,8 @@
 /**
- * In-process tests for the startup order and graceful shutdown. The datastore is a fake of
- * `IDatabaseConnection` — the lifecycle is not part of the data layer, and the real connection
- * is covered by `mongo-connection.spec.ts` and the process-level `main.spec.ts`.
+ * In-process tests for the startup order and graceful shutdown. The datastores are fakes of
+ * `IDatabaseConnection` — the lifecycle is not part of the data layer, and the real connections
+ * are covered by `mongo-connection.spec.ts`, `redis-connection.spec.ts` and the process-level
+ * `main.spec.ts`.
  */
 import { createServer, request, type RequestListener } from 'node:http';
 import { connect } from 'node:net';
@@ -9,26 +10,44 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import type { IDatabaseConnection } from '../db/database-connection.interface.js';
 import type { ILogger } from '../logger/logger.interface.js';
-import { ApplicationLifecycle, ExitCode } from './application-lifecycle.js';
+import { ApplicationLifecycle, ExitCode, type NamedDatastore } from './application-lifecycle.js';
 
-/** Records the order of datastore calls; `connect` can be made to fail. */
+/** What a fake should do when called. */
+interface FakeDatabaseBehaviour {
+  readonly connectFailure?: Error;
+  readonly disconnectFailure?: Error;
+}
+
+/**
+ * Records the order of datastore calls; `connect` or `disconnect` can be made to fail. Pass one
+ * shared `calls` array to several fakes to assert the order across datastores — entries are
+ * then prefixed with the fake's name.
+ */
 class FakeDatabase implements IDatabaseConnection {
-  readonly calls: string[] = [];
   private connected = false;
 
-  constructor(private readonly failure?: Error) {}
+  constructor(
+    private readonly behaviour: FakeDatabaseBehaviour = {},
+    readonly calls: string[] = [],
+    private readonly name?: string,
+  ) {}
 
   connect(): Promise<void> {
-    this.calls.push('connect');
-    if (this.failure) return Promise.reject(this.failure);
+    this.record('connect');
+    if (this.behaviour.connectFailure) return Promise.reject(this.behaviour.connectFailure);
     this.connected = true;
     return Promise.resolve();
   }
 
   disconnect(): Promise<void> {
-    this.calls.push('disconnect');
+    this.record('disconnect');
     this.connected = false;
+    if (this.behaviour.disconnectFailure) return Promise.reject(this.behaviour.disconnectFailure);
     return Promise.resolve();
+  }
+
+  private record(call: string): void {
+    this.calls.push(this.name ? `${this.name} ${call}` : call);
   }
 
   isConnected(): boolean {
@@ -49,13 +68,19 @@ const respondOk: RequestListener = (_req, res) => {
 
 const started: ApplicationLifecycle[] = [];
 
+/** Wraps one fake as the single datastore most tests need. */
+function only(database: IDatabaseConnection): NamedDatastore[] {
+  return [{ name: 'fake', connection: database }];
+}
+
 /** Builds a lifecycle on an OS-assigned port and tracks it for cleanup. */
 function createLifecycle(
-  database: IDatabaseConnection,
+  database: IDatabaseConnection | readonly NamedDatastore[],
   listener: RequestListener = respondOk,
   shutdownGraceMs = 5_000,
 ): ApplicationLifecycle {
-  const lifecycle = new ApplicationLifecycle(database, () => listener, silentLogger, {
+  const datastores = Array.isArray(database) ? database : only(database as IDatabaseConnection);
+  const lifecycle = new ApplicationLifecycle(datastores, () => listener, silentLogger, {
     port: 0,
     shutdownGraceMs,
   });
@@ -114,7 +139,7 @@ describe('ApplicationLifecycle.start', () => {
   it('connects, then builds the request handler, then listens', async () => {
     const database = new FakeDatabase();
     const lifecycle = new ApplicationLifecycle(
-      database,
+      only(database),
       () => {
         database.calls.push('build handler');
         return respondOk;
@@ -134,7 +159,7 @@ describe('ApplicationLifecycle.start', () => {
     const port = await findFreePort();
     let handlerBuilt = false;
     const lifecycle = new ApplicationLifecycle(
-      new FakeDatabase(new Error('server selection timed out')),
+      only(new FakeDatabase({ connectFailure: new Error('server selection timed out') })),
       () => {
         handlerBuilt = true;
         return respondOk;
@@ -146,6 +171,58 @@ describe('ApplicationLifecycle.start', () => {
     await expect(lifecycle.start()).rejects.toThrow('server selection timed out');
     await expect(isPortOpen(port)).resolves.toBe(false);
     expect(handlerBuilt).toBe(false);
+  });
+
+  it('owner-auth.T01 — connects every datastore in order before building the handler', async () => {
+    const calls: string[] = [];
+    const lifecycle = new ApplicationLifecycle(
+      [
+        { name: 'mongodb', connection: new FakeDatabase({}, calls, 'mongodb') },
+        { name: 'redis', connection: new FakeDatabase({}, calls, 'redis') },
+      ],
+      () => {
+        calls.push('build handler');
+        return respondOk;
+      },
+      silentLogger,
+      { port: 0, shutdownGraceMs: 5_000 },
+    );
+    started.push(lifecycle);
+
+    await lifecycle.start();
+
+    expect(calls).toEqual(['mongodb connect', 'redis connect', 'build handler']);
+  });
+
+  it('owner-auth.IT13 — closes MongoDB again and opens no port when Redis is unreachable', async () => {
+    const port = await findFreePort();
+    const calls: string[] = [];
+    let handlerBuilt = false;
+    const lifecycle = new ApplicationLifecycle(
+      [
+        { name: 'mongodb', connection: new FakeDatabase({}, calls, 'mongodb') },
+        {
+          name: 'redis',
+          connection: new FakeDatabase(
+            { connectFailure: new Error('connect ECONNREFUSED') },
+            calls,
+            'redis',
+          ),
+        },
+      ],
+      () => {
+        handlerBuilt = true;
+        return respondOk;
+      },
+      silentLogger,
+      { port, shutdownGraceMs: 5_000 },
+    );
+
+    await expect(lifecycle.start()).rejects.toThrow('connect ECONNREFUSED');
+    await expect(isPortOpen(port)).resolves.toBe(false);
+    expect(handlerBuilt).toBe(false);
+    // Redis never opened, so only MongoDB is closed.
+    expect(calls).toEqual(['mongodb connect', 'redis connect', 'mongodb disconnect']);
   });
 });
 
@@ -193,6 +270,35 @@ describe('ApplicationLifecycle.stop', () => {
     await expect(lifecycle.stop('SIGTERM')).resolves.toBe(ExitCode.Failure);
     await expect(inFlight).rejects.toThrow();
     expect(database.calls).toEqual(['connect', 'disconnect']);
+  });
+
+  it('owner-auth.T01 — closes datastores in reverse order after the server drains', async () => {
+    const calls: string[] = [];
+    const lifecycle = createLifecycle([
+      { name: 'mongodb', connection: new FakeDatabase({}, calls, 'mongodb') },
+      { name: 'redis', connection: new FakeDatabase({}, calls, 'redis') },
+    ]);
+    await lifecycle.start();
+
+    await expect(lifecycle.stop('SIGTERM')).resolves.toBe(ExitCode.Clean);
+
+    expect(calls).toEqual(['mongodb connect', 'redis connect', 'redis disconnect', 'mongodb disconnect']);
+  });
+
+  it('owner-auth.T01 — still closes the other datastores when one disconnect fails, and reports failure', async () => {
+    const calls: string[] = [];
+    const lifecycle = createLifecycle([
+      { name: 'mongodb', connection: new FakeDatabase({}, calls, 'mongodb') },
+      {
+        name: 'redis',
+        connection: new FakeDatabase({ disconnectFailure: new Error('socket hang up') }, calls, 'redis'),
+      },
+    ]);
+    await lifecycle.start();
+
+    await expect(lifecycle.stop('SIGTERM')).resolves.toBe(ExitCode.Failure);
+
+    expect(calls).toEqual(['mongodb connect', 'redis connect', 'redis disconnect', 'mongodb disconnect']);
   });
 
   it('runs shutdown once when stop is called repeatedly', async () => {

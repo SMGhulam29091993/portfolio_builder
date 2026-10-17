@@ -46,7 +46,8 @@ A module may add sub-folders for its own strategies (`sections/`, `rules/`, `pro
   handler is a class implementing `IEventHandler`, subscribed in `container.ts`. Semantics:
   `architecture.md` → In-process events.
 - **Tests:** specs sit next to the file under test. Repository and route specs get a real
-  `mongod` from `MongoTestHarness`, fixtures come from a `FixtureFactory` subclass in
+  `mongod` from `MongoTestHarness` (and, for Redis-backed stores, a real Redis database from
+  `RedisTestHarness`), fixtures come from a `FixtureFactory` subclass in
   `src/testing/`, and log assertions use `RecordingLogger` — `.agent/workflows/generate-tests.md`.
 
 ## Standardised response shape

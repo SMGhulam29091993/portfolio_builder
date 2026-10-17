@@ -28,6 +28,19 @@ jobs:
     name: Build, check and test
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # The API test suite and the E2E harness run against a real Redis (ADR-0008); there is no
+    # in-memory server for it. Same image and digest as `docker-compose.dev.yml`, published on
+    # the address both test harnesses use.
+    services:
+      redis:
+        image: redis:8.10.2@sha256:2c2dff791878316e3b083188be0d578423b24813cdda5de0e80ea4f7b3e6bfd6
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       # The web build bakes the `/api/v1` rewrite target in and fails fast without one
       # (`apps/web/src/lib/env.ts`). Nothing listens here during the build; E2E sets its own.

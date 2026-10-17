@@ -2,6 +2,10 @@
  * E2E harness process: starts a throwaway MongoDB and the built API in front of it, for
  * `playwright.config.ts` → `webServer`. Run directly by Node (type stripping), not by Next.js.
  *
+ * Redis has no in-memory server, so the API uses the Redis that `docker-compose.dev.yml` runs
+ * locally and CI runs as a service, on logical database 15 — reserved for E2E, so a run never
+ * touches development sessions (database 0) or the API unit-test harness (1-14; ADR-0008).
+ *
  * The API runs from `apps/api/dist` with exactly the environment it needs — nothing inherited —
  * the same way `apps/api/src/main.spec.ts` isolates its child process. On SIGTERM / SIGINT the
  * API gets its own graceful shutdown first, then MongoDB is stopped.
@@ -14,6 +18,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const API_ROOT = fileURLToPath(new URL('../../api', import.meta.url));
 
+/** The local / CI Redis, database 15 (see above). */
+const E2E_REDIS_URL = 'redis://127.0.0.1:6379/15';
+
 const port = process.argv[2];
 if (!port) throw new Error('usage: node e2e/start-api.ts <port>');
 
@@ -21,7 +28,7 @@ const mongo = await MongoMemoryServer.create();
 
 const api = spawn(process.execPath, ['dist/main.js'], {
   cwd: API_ROOT,
-  env: { NODE_ENV: 'test', PORT: port, MONGODB_URI: mongo.getUri() },
+  env: { NODE_ENV: 'test', PORT: port, MONGODB_URI: mongo.getUri(), REDIS_URL: E2E_REDIS_URL },
   stdio: 'inherit',
 });
 

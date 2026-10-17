@@ -11,11 +11,11 @@ the build order below; live status is in `.ai-context/status.md`.
 
 ## Local development
 **Prerequisites:** Node.js 24.12 or later, pnpm 11.1.2 (`corepack enable` picks up the version
-pinned in `package.json`), and Docker with Compose for the local MongoDB.
+pinned in `package.json`), and Docker with Compose for the local MongoDB and Redis.
 
 ```sh
 pnpm install                                        # also downloads mongod for the test suites
-cp apps/api/.env.example apps/api/.env              # works as is against the compose MongoDB
+cp apps/api/.env.example apps/api/.env              # works as is against the compose MongoDB and Redis
 cp apps/web/.env.example apps/web/.env
 docker compose -f docker-compose.dev.yml up -d --wait
 pnpm dev                                            # API on :4000, web on :3000
@@ -33,13 +33,21 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
 - **MongoDB.** `docker-compose.dev.yml` runs `mongod` 8.2.6 — the version the tests use — on
   `127.0.0.1:27017` only, without authentication, with data in the `mongo-data` volume. Stop it
   with `docker compose -f docker-compose.dev.yml down`; add `-v` to delete the data as well.
-- **Tests do not need Docker.** They start their own throwaway `mongod`.
+- **Redis.** The same file runs Redis 8.10.2 on `127.0.0.1:6379`, loopback only, without a
+  password or persistence: it holds only auth sessions and one-time-code references, which are
+  safe to lose (ADR-0008). `pnpm dev` uses logical database 0. An existing `apps/api/.env` needs
+  the `REDIS_URL` line from `.env.example` added, or the API refuses to start.
+- **Tests need the compose Redis running.** They start their own throwaway `mongod`, but Redis
+  has no in-memory server: each API spec file claims its own logical database (1-14) on the
+  compose Redis, and the E2E harness uses database 15, so tests never touch development data.
+  Start it with `docker compose -f docker-compose.dev.yml up -d --wait redis`; CI runs the same
+  image as a service container.
 
 | Command | Runs |
 |---|---|
 | `pnpm turbo run build typecheck lint test drift` | Everything CI runs on a pull request (`.github/workflows/ci.yml`) |
 | `pnpm test` | Unit and integration tests, with the 80% coverage floor on module services |
-| `pnpm test:e2e` | Playwright end-to-end specs (boots its own API and MongoDB) |
+| `pnpm test:e2e` | Playwright end-to-end specs (boots its own API and MongoDB; uses the compose Redis) |
 | `pnpm drift` | Fails when `apps/api/openapi/openapi.yaml` and the mounted routes disagree |
 
 ## Where to start
@@ -57,7 +65,7 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
 apps/api/            Express + Mongoose API (class-based modules, composition root, OpenAPI)
 apps/web/            Next.js App Router: the published site (site) and the CMS (cms)
 packages/            contracts · design-tokens · sections · tsconfig · eslint-config
-docker-compose.dev.yml   local MongoDB for `pnpm dev`
+docker-compose.dev.yml   local MongoDB and Redis for `pnpm dev` and the tests
 .github/workflows/ci.yml build · typecheck · lint · test · drift · cache check · E2E
 .agent/rules/        agent-role · constitution · int-standards.express · int-standards.nextjs
                      state-tracking · governance · .agentignore

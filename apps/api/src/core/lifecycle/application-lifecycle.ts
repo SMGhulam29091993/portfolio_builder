@@ -1,10 +1,12 @@
 /**
  * Startup and graceful shutdown of the API process.
  *
- * Enforces the order required by `constitution.md` → Infrastructure: connect to the datastore
- * and confirm it answered → build the request handler (the container and app) → listen. A
- * half-configured process never serves traffic (`monorepo-foundation.AC3`). On shutdown it stops accepting connections, lets in-flight
- * requests finish, then closes the datastore (`monorepo-foundation.AC13`).
+ * Enforces the order required by `constitution.md` → Infrastructure: connect to each datastore
+ * in turn and confirm it answered (MongoDB, then Redis — ADR-0008) → build the request handler
+ * (the container and app) → listen. A half-configured process never serves traffic
+ * (`monorepo-foundation.AC3`): if any datastore fails, the ones already open are closed again
+ * and no port is opened. On shutdown it stops accepting connections, lets in-flight requests
+ * finish, then closes the datastores in reverse order (`monorepo-foundation.AC13`).
  *
  * Exiting the process is left to the caller (`main.ts`); this class only reports the exit code,
  * which keeps it testable in-process.
@@ -15,6 +17,13 @@ import type { AddressInfo } from 'node:net';
 import type { IDatabaseConnection } from '../db/database-connection.interface.js';
 import type { ILogger } from '../logger/logger.interface.js';
 
+/** A datastore the process must reach before serving, with the name its log lines carry. */
+export interface NamedDatastore {
+  /** Short, non-secret label for logs, e.g. `mongodb`. Never the connection string. */
+  readonly name: string;
+  readonly connection: IDatabaseConnection;
+}
+
 export interface ApplicationLifecycleOptions {
   /** Port to bind. `0` asks the OS for a free port (tests). */
   readonly port: number;
@@ -24,9 +33,9 @@ export interface ApplicationLifecycleOptions {
 
 /** Process exit codes reported by `stop()`. */
 export const ExitCode = {
-  /** Every in-flight request finished and the datastore closed. */
+  /** Every in-flight request finished and every datastore closed. */
   Clean: 0,
-  /** Shutdown had to cut connections off or failed to close the datastore. */
+  /** Shutdown had to cut connections off or failed to close a datastore. */
   Failure: 1,
 } as const;
 export type ExitCode = (typeof ExitCode)[keyof typeof ExitCode];
@@ -37,24 +46,37 @@ export class ApplicationLifecycle {
   /** The first `stop()` call's result, so repeated signals do not run shutdown twice. */
   private stopping: Promise<ExitCode> | undefined;
 
+  /** Datastores connected so far, in connection order; shutdown closes them in reverse. */
+  private readonly connected: NamedDatastore[] = [];
+
   constructor(
-    private readonly database: IDatabaseConnection,
-    /** Builds the request handler; called once, only after the datastore has answered. */
+    /** Connected in this order before the handler is built. */
+    private readonly datastores: readonly NamedDatastore[],
+    /** Builds the request handler; called once, only after every datastore has answered. */
     private readonly createRequestListener: () => RequestListener,
     private readonly logger: ILogger,
     private readonly options: ApplicationLifecycleOptions,
   ) {}
 
   /**
-   * Connects to the datastore, builds the request handler, then starts listening.
+   * Connects to each datastore in order, builds the request handler, then starts listening.
    *
    * @returns The bound address.
-   * @throws When the datastore is unreachable or the handler cannot be built — in both cases
-   *   no port has been opened.
+   * @throws When a datastore is unreachable or the handler cannot be built — in both cases no
+   *   port has been opened, and every datastore this call opened has been closed again.
    */
   async start(): Promise<AddressInfo> {
-    await this.database.connect();
-    this.logger.info('database connected');
+    try {
+      for (const datastore of this.datastores) {
+        await datastore.connection.connect();
+        this.connected.push(datastore);
+        this.logger.info('database connected', { datastore: datastore.name });
+      }
+    } catch (error) {
+      // Release what did open (MongoDB when Redis fails), so the failed process can exit.
+      await this.disconnectAll();
+      throw error;
+    }
 
     const server = createServer(this.createRequestListener());
     await new Promise<void>((resolve, reject) => {
@@ -86,19 +108,31 @@ export class ApplicationLifecycle {
     this.logger.info('shutdown started', { reason });
 
     const drained = this.server ? await this.closeServer(this.server) : true;
+    const datastoresClosed = await this.disconnectAll();
 
-    let databaseClosed = true;
-    try {
-      await this.database.disconnect();
-      this.logger.info('database disconnected');
-    } catch (error) {
-      databaseClosed = false;
-      this.logger.error('database disconnect failed', { error });
-    }
-
-    const exitCode = drained && databaseClosed ? ExitCode.Clean : ExitCode.Failure;
+    const exitCode = drained && datastoresClosed ? ExitCode.Clean : ExitCode.Failure;
     this.logger.info('shutdown complete', { exitCode });
     return exitCode;
+  }
+
+  /**
+   * Closes every connected datastore, newest first, and keeps going past a failure so one
+   * stuck datastore cannot leave the others open.
+   *
+   * @returns `true` when every disconnect succeeded.
+   */
+  private async disconnectAll(): Promise<boolean> {
+    let allClosed = true;
+    for (const datastore of this.connected.splice(0).reverse()) {
+      try {
+        await datastore.connection.disconnect();
+        this.logger.info('database disconnected', { datastore: datastore.name });
+      } catch (error) {
+        allClosed = false;
+        this.logger.error('database disconnect failed', { datastore: datastore.name, error });
+      }
+    }
+    return allClosed;
   }
 
   /**

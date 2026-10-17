@@ -60,6 +60,8 @@ appends the tools it installs to this table in the same change.
 | actions/setup-node | v7.1.0 (`949feb2`) | `monorepo-foundation.T09` | CI; Node 24.12.0 |
 | pnpm/action-setup | v6.1.0 (`ea17c68`) | `monorepo-foundation.T09` | CI; pnpm from `packageManager` |
 | mongo (Docker image) | 8.2.6 (`sha256:9690b26`) | `monorepo-foundation.T10` | `docker-compose.dev.yml`, local development only; pinned by image-index digest; tracks the `mongod` version `mongodb-memory-server` downloads |
+| @redis/client | 6.3.0 | `owner-auth.T01` | `apps/api`; the core of the official `redis` package without the module add-ons (JSON, search, bloom, time series), which nothing uses |
+| redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and

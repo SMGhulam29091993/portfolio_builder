@@ -17,7 +17,7 @@
 | owner-auth.IT10 | AC10 | Two refreshes fired together with the same cookies | Exactly one 200, one `SESSION_EXPIRED` |
 | owner-auth.IT11 | AC11 | Login → logout → refresh; and A/B from IT07 with A calling logout | Logout 200, refresh 401; B's session still present |
 | owner-auth.IT12 | AC12 | POST login with no `Origin`, and with a foreign `Origin` | 403 `ORIGIN_NOT_ALLOWED` each |
-| owner-auth.IT13 | ADR-0008 | Start the API with Redis unreachable; stop Redis while running and call a guarded route | Startup exits 1 naming Redis; guarded route → 503 `SERVICE_UNAVAILABLE` |
+| owner-auth.IT13 | ADR-0008 | Start the API with Redis unreachable; stop Redis while running and call a guarded route | Startup exits 1 without opening a port and closes MongoDB again (`main.spec.ts`, `application-lifecycle.spec.ts`, `redis-connection.spec.ts` — T01); guarded route → 503 `SERVICE_UNAVAILABLE` (T05) |
 | owner-auth.IT14 | AC13 | Run the owner seeder twice | One user; `passwordHash` unchanged on the second run |
 | owner-auth.IT15 | AC15 | Capture logs across IT01–IT11 and IT16–IT21 | No password, cookie, token, `jti`, code, identifier, reference or email substring present |
 | owner-auth.IT16 | AC16 | Forgot with the owner's email (`RecordingMailSender`) | 200 with a reference; one `otps` document with a bcrypt `otpHash` and `expiresAt` = `sentAt` + 10 min; Redis maps the reference to the identifier; one mail with a 6-digit code |
@@ -39,6 +39,7 @@
 | owner-auth.CT03 | `ISessionStore` | get / replace / compareAndSet / delete and TTL behave identically for `RedisSessionStore` and the in-memory fake; compareAndSet fails when the `jti` changed |
 | owner-auth.CT04 | `IOtpReferenceStore` | put / resolve / delete and TTL behave identically for `RedisOtpReferenceStore` and the in-memory fake |
 | owner-auth.CT05 | `IOtpHasher` | compare true for the right code, false for wrong; two hashes of one value differ |
+| owner-auth.CT07 | `IDatabaseConnection` | `MongoConnection` and `RedisConnection` connect, reject when unreachable, share a concurrent connect and disconnect idempotently, identically (`core/db/database-connection.contract.spec.ts` — T01) |
 | owner-auth.CT06 | `IMailSender` | `GmailMailSender` (against a local SMTP test server), `DisabledMailSender` and `RecordingMailSender` accept the same message; provider failures surface as `UpstreamError` |
 
 ## Data variations

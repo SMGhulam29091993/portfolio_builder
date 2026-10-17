@@ -2,7 +2,7 @@
 ## Derived From
 .ai-context/plans/owner-auth.plan.md
 ## Sequence
-- [ ] owner-auth.T01 — Redis infrastructure: pinned `redis` image in `docker-compose.dev.yml`, Redis service in CI, `core` Redis client (singleton), `REDIS_URL` in `env.ts`, startup ping after MongoDB, close on shutdown; pins in ADR-0007 — Acceptance: ADR-0008 (startup and shutdown), IT13
+- [x] owner-auth.T01 — Redis infrastructure: pinned `redis` image in `docker-compose.dev.yml`, Redis service in CI, `core` Redis client (singleton), `REDIS_URL` in `env.ts`, startup ping after MongoDB, close on shutdown; pins in ADR-0007 — Acceptance: ADR-0008 (startup and shutdown), IT13 startup half (the guarded-route half needs `requireOwner`, so it lands with T05)
 - [ ] owner-auth.T02 — Contract schemas (`packages/contracts/src/auth`, API01–API07), `users` and `otps` models with indexes, `UserRepository`, `OtpRepository`; `ISessionStore` → `RedisSessionStore` (with compare-and-set), `IOtpReferenceStore` → `RedisOtpReferenceStore`, in-memory fakes and their contract suites — Acceptance: AC1, AC10, AC16
 - [ ] owner-auth.T03 — `IPasswordHasher` → `Argon2PasswordHasher`; `IOtpHasher` → `BcryptOtpHasher`; `ITokenIssuer` → `JwtTokenIssuer`; `ISecureRandom` → `CryptoSecureRandom`; `IClock` → `SystemClock`; `core/crypto` SHA-256 helper; contract suites — Acceptance: AC1, AC5
 - [ ] owner-auth.T04 — `SessionAuthorizer` (triple `jti` match) and `AuthService`: login (constant-work on unknown email, replaces the session), refresh (signature-only verify, refresh-hash check, compare-and-set rotation), logout, me — Acceptance: AC1, AC2, AC4–AC11

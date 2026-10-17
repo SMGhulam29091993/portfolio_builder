@@ -2,8 +2,9 @@
  * `pnpm drift` — fails when `openapi/openapi.yaml` and the mounted routes differ
  * (`monorepo-foundation.AC10`). Run by CI alongside build, typecheck, lint and test.
  *
- * Builds the real container and app to read the route table, but never connects to MongoDB:
- * the configuration below is a fixed, unreachable placeholder that only satisfies validation.
+ * Builds the real container and app to read the route table, but never connects to MongoDB or
+ * Redis: the configuration below is a fixed, unreachable placeholder that only satisfies
+ * validation.
  */
 import { readFileSync } from 'node:fs';
 
@@ -16,11 +17,12 @@ import { findDrift, readDocumentedOperations } from './openapi-drift.js';
 
 const OPENAPI_DOCUMENT = new URL('../../openapi/openapi.yaml', import.meta.url);
 
-/** Static configuration for building the route table. No port is bound, no URI connected. */
+/** Static configuration for building the route table. No port is bound, no URL connected. */
 const ROUTE_TABLE_ENV = {
   NODE_ENV: 'test',
   PORT: '1',
   MONGODB_URI: 'mongodb://127.0.0.1:1/openapi-drift-check',
+  REDIS_URL: 'redis://127.0.0.1:1/0',
 };
 
 const logger = new JsonLogger(process.stdout);

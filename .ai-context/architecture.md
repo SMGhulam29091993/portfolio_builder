@@ -33,21 +33,21 @@ portfolio-builder/
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → container + app → listen → graceful shutdown
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
 │   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ✅ `MongoTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
-│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API
+│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API (Redis database 15)
 │       └── src/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
 │           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜

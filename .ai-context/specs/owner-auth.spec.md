@@ -2,7 +2,9 @@
 ## Spec ID
 owner-auth
 ## Status
-Draft
+In Progress
+- DoR self-check: 2026-10-17, pass. Moved `Draft → Ready` by the owner on 2026-10-17 ("start"),
+  then `Ready → In Progress` with `owner-auth.T01` started the same day.
 - Revised 2026-10-17 to the owner's session and password-reset design, before the spec was ever
   `Ready` (no `⚠️ REVISED` marker is needed): JWT access token plus `jti` held in a Redis
   session (ADR-0008), strictly one session, OTP password reset by email (ADR-0009).
