@@ -4,10 +4,17 @@
  * the services that arrive in `owner-auth.T04` and `T08` and the seeder in `T09` each depend
  * only on the methods they call.
  *
- * `owner-auth.T02` defines the persistence ports. Service, hasher and token ports follow with
- * the tasks that introduce them.
+ * `owner-auth.T02` defined the persistence ports and `T03` the hashing, token, randomness and
+ * clock ports. Service ports follow with the tasks that introduce them.
  */
-import type { AuthSession, NewUser, OtpIssue, OtpRecord, User } from './auth.types.js';
+import type {
+  AccessTokenClaims,
+  AuthSession,
+  NewUser,
+  OtpIssue,
+  OtpRecord,
+  User,
+} from './auth.types.js';
 
 /** Looks users up. Used by sign-in, refresh, `me` and the password-reset request. */
 export interface IUserReader {
@@ -90,4 +97,73 @@ export interface IOtpReferenceStore {
   resolve(reference: string): Promise<string | null>;
   /** Removes the mapping; a missing one is not an error. */
   delete(reference: string): Promise<void>;
+}
+
+/** Slow, salted password hashing — argon2id (ADR-0007). */
+export interface IPasswordHasher {
+  /** Hashes a password with a fresh salt; two calls on one password give different hashes. */
+  hash(password: string): Promise<string>;
+  /**
+   * `true` when `password` matches `hash`. Takes the same time for a wrong password as for a
+   * right one, so sign-in can run it for an unknown email too (`owner-auth.AC2`).
+   *
+   * @throws {Error} When `hash` is not a hash this hasher produced.
+   */
+  verify(hash: string, password: string): Promise<boolean>;
+}
+
+/**
+ * Salted hashing for one-time codes and their references — bcrypt (ADR-0007). Kept apart from
+ * `IPasswordHasher` because the inputs, algorithm and cost differ.
+ */
+export interface IOtpHasher {
+  /** Hashes `value` with a fresh salt. */
+  hash(value: string): Promise<string>;
+  /** `true` when `value` matches `hash`; `false` for a mismatch or a malformed hash. */
+  compare(value: string, hash: string): Promise<boolean>;
+}
+
+/** What signing an access token needs; `iat` and `exp` come from the issuer's clock. */
+export interface AccessTokenSubject {
+  readonly userId: string;
+  readonly jti: string;
+}
+
+/** Options for verifying an access token. */
+export interface VerifyAccessTokenOptions {
+  /**
+   * Accept an expired token whose signature is valid. Used by refresh and logout only, which
+   * must read the session an expired token names (spec → Refresh); never by the guard.
+   */
+  readonly ignoreExpiry?: boolean;
+}
+
+/** Signs and verifies access tokens (JWT, HS256, signed with `JWT_ACCESS_SECRET`). */
+export interface ITokenIssuer {
+  /** A signed token with the claims `sub`, `jti`, `iat` and `exp` (`iat` + 15 minutes). */
+  signAccessToken(subject: AccessTokenSubject): Promise<string>;
+  /**
+   * The token's claims, or `null` when it is malformed, tampered, signed with another secret
+   * or algorithm, carries other claims, or — unless `ignoreExpiry` — has expired beyond the
+   * 30-second leeway. Never throws for a bad token.
+   */
+  verifyAccessToken(
+    token: string,
+    options?: VerifyAccessTokenOptions,
+  ): Promise<AccessTokenClaims | null>;
+}
+
+/** Cryptographically secure randomness, injectable so tests are deterministic. */
+export interface ISecureRandom {
+  /** `byteLength` random bytes, base64url without padding (refresh tokens, `jti`). */
+  base64url(byteLength: number): string;
+  /** `byteLength` random bytes as lower-case hex (one-time-code identifiers). */
+  hex(byteLength: number): string;
+  /** A uniformly random string of `length` decimal digits, leading zeros kept (codes). */
+  numericCode(length: number): string;
+}
+
+/** The current time, injectable so expiry, cooldown and TTL tests are deterministic. */
+export interface IClock {
+  now(): Date;
 }

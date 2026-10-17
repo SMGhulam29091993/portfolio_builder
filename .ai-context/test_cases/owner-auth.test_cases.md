@@ -34,11 +34,13 @@
 ## Contract suites (one suite, every implementation)
 | Test ID | Interface | Asserts |
 |---|---|---|
-| owner-auth.CT01 | `IPasswordHasher` | hash ≠ input; verify true for the right password, false for wrong; two hashes of one password differ |
+| owner-auth.CT01 | `IPasswordHasher` | hash ≠ input; verify true for the right password, false for wrong; two hashes of one password differ — `Argon2PasswordHasher` and `FakePasswordHasher` (T03) |
 | owner-auth.CT02 | `ITokenIssuer` | verify(sign(x)) = x; rejects expired (unless ignore-expiry), tampered and wrong-secret tokens; the claims are exactly `sub`, `jti`, `iat`, `exp` |
 | owner-auth.CT03 | `ISessionStore` | get / replace / compareAndSet / delete and TTL behave identically for `RedisSessionStore` and the in-memory fake; compareAndSet fails when the `jti` changed |
 | owner-auth.CT04 | `IOtpReferenceStore` | put / resolve / delete and TTL behave identically for `RedisOtpReferenceStore` and the in-memory fake |
-| owner-auth.CT05 | `IOtpHasher` | compare true for the right code, false for wrong; two hashes of one value differ |
+| owner-auth.CT05 | `IOtpHasher` | compare true for the right code, false for wrong; two hashes of one value differ — `BcryptOtpHasher` and `FakeOtpHasher` (T03) |
+| owner-auth.CT08 | `ISecureRandom` | `CryptoSecureRandom` and `SequenceSecureRandom`: base64url 32 → 43 / 16 → 22 characters, hex 32 → 64, 6-digit codes, no repeats (T03) |
+| owner-auth.CT09 | `IClock` | `SystemClock` and `ManualClock` return a valid, current, non-decreasing `Date` (T03) |
 | owner-auth.CT07 | `IDatabaseConnection` | `MongoConnection` and `RedisConnection` connect, reject when unreachable, share a concurrent connect and disconnect idempotently, identically (`core/db/database-connection.contract.spec.ts` — T01) |
 | owner-auth.CT06 | `IMailSender` | `GmailMailSender` (against a local SMTP test server), `DisabledMailSender` and `RecordingMailSender` accept the same message; provider failures surface as `UpstreamError` |
 

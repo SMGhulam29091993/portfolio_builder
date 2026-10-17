@@ -36,6 +36,9 @@ follows ADR-0009.
   script that replaces the session only while the stored `jti` equals the presented one.
 - Patterns: Repository; Adapter + Factory (`IMailSender` strategies, hashers, token issuer) —
   all from the approved list.
+- argon2id cost, measured 2026-10-17 (`owner-auth.T03`): m=64 MiB, t=3, p=4 takes ~33 ms per
+  hash and per verify on the development machine — above the OWASP minimum (19 MiB, t=2) and
+  cheap for one owner's sign-ins. Pinned in `Argon2PasswordHasher`, not left to library defaults.
 ## Data Model
 **`users`** (MongoDB) — `_id`, `email` (unique, lower-case), `passwordHash`, `displayName`,
 `passwordChangedAt`, `createdAt`, `updatedAt`.

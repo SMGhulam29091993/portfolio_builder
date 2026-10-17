@@ -4,14 +4,22 @@
  * `AuthContext`, the only things other modules will need.
  */
 export type {
+  AccessTokenSubject,
+  IClock,
+  IOtpHasher,
   IOtpReferenceStore,
   IOtpRepository,
   ISessionStore,
   IUserCreator,
   IUserPasswordWriter,
   IUserReader,
+  IPasswordHasher,
+  ISecureRandom,
+  ITokenIssuer,
+  VerifyAccessTokenOptions,
 } from './auth.interface.js';
 export type {
+  AccessTokenClaims,
   AuthSession,
   NewUser,
   OtpIssue,

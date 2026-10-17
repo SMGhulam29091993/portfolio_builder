@@ -53,6 +53,19 @@ export interface AuthSession {
   readonly issuedAt: Date;
 }
 
+/**
+ * The claims of an access token — exactly these four, nothing personal (`owner-auth` spec →
+ * Session contract; `owner-auth.CT02`). Times are whole seconds since the epoch, as in JWT.
+ */
+export interface AccessTokenClaims {
+  /** The user id. */
+  readonly sub: string;
+  /** The session identifier; must match the `jti` cookie and the stored session. */
+  readonly jti: string;
+  readonly iat: number;
+  readonly exp: number;
+}
+
 /** The actions a one-time code can authorise. Only one exists today. */
 export const OTP_PURPOSES = ['password_reset'] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];

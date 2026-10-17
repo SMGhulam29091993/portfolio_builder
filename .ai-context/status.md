@@ -28,6 +28,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth.T03` completed on `feat/auth-t02-models-stores` with T02 (owner's instruction):
+  `Argon2PasswordHasher` (argon2id m=64 MiB, t=3, p=4, ~33 ms), `BcryptOtpHasher` (cost 10,
+  72-byte guard), `JwtTokenIssuer` (HS256 pinned, exactly four claims, 30 s leeway,
+  signature-only mode for refresh), `CryptoSecureRandom`, `SystemClock`, `core/crypto`
+  `sha256Hex`; fakes for service tests; contract suites CT01, CT02, CT05, CT08, CT09. Pinned
+  argon2 0.45.1, bcryptjs 3.0.3, jose 6.2.12.
 - `owner-auth.T02` completed on branch `feat/auth-t02-models-stores` (stacked on T01):
   `packages/contracts/src/auth` (API01–API07 payloads), `users` and `otps` models with their
   indexes, `UserRepository` (reader / creator / password-writer roles) and `OtpRepository`,

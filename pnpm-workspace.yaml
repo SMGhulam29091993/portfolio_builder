@@ -6,7 +6,10 @@ packages:
 # - esbuild: verifies its platform binary; used by tsx and Vitest.
 # - mongodb-memory-server: downloads the `mongod` binary at install time, so integration tests
 #   never stall on a first-run download (constitution.md → real MongoDB in tests).
+# - argon2: `node-gyp-build` picks the bundled prebuilt binary, compiling only on a platform
+#   with none (`owner-auth.T03`, password hashing — ADR-0007).
 allowBuilds:
+  argon2: true
   esbuild: true
   mongodb-memory-server: true
 

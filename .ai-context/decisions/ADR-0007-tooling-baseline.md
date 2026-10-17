@@ -61,6 +61,9 @@ appends the tools it installs to this table in the same change.
 | pnpm/action-setup | v6.1.0 (`ea17c68`) | `monorepo-foundation.T09` | CI; pnpm from `packageManager` |
 | mongo (Docker image) | 8.2.6 (`sha256:9690b26`) | `monorepo-foundation.T10` | `docker-compose.dev.yml`, local development only; pinned by image-index digest; tracks the `mongod` version `mongodb-memory-server` downloads |
 | @redis/client | 6.3.0 | `owner-auth.T01` | `apps/api`; the core of the official `redis` package without the module add-ons (JSON, search, bloom, time series), which nothing uses |
+| argon2 | 0.45.1 | `owner-auth.T03` | `apps/api`; native with bundled prebuilds (`allowBuilds` in `pnpm-workspace.yaml`); argon2id m=64 MiB, t=3, p=4 pinned in `Argon2PasswordHasher` |
+| bcryptjs | 3.0.3 | `owner-auth.T03` | `apps/api`; pure JavaScript, ships its own types; cost 10 for one-time codes and references |
+| jose | 6.2.12 | `owner-auth.T03` | `apps/api`; HS256 access tokens, algorithm pinned on verify |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but

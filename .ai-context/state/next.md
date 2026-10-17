@@ -2,11 +2,11 @@
 ## Queued
 1. Confirm the CI run on `master` after the PR #9 merge (`monorepo-foundation.T10`); a red run
    reopens T10 and moves the spec back to `In Progress`.
-2. `owner-auth.T03` — `Argon2PasswordHasher`, `BcryptOtpHasher`, `JwtTokenIssuer`,
-   `CryptoSecureRandom`, `SystemClock`, the `core/crypto` SHA-256 helper and their contract
-   suites; pins argon2, bcrypt and the JWT library in ADR-0007. Unblocked: T02 is completed.
-   When T04 adds in-memory fakes of `IUserReader` / `IOtpRepository`, they join a contract
-   suite with the Mongo repositories (constitution → Liskov).
+2. `owner-auth.T04` — `SessionAuthorizer` (triple `jti` match) and `AuthService` (login,
+   refresh, logout, me) on the fakes from T02 and T03. Unblocked: T03 is completed. Branch: ask
+   the owner — T03 continued T02's branch by instruction. In-memory fakes of `IUserReader`
+   need a contract suite with `UserRepository`. `JWT_ACCESS_SECRET` joins `env.ts` with the
+   container wiring in T05.
 3. `section-engine.T01` — blocked on: ADR-0005 accepted; `owner-auth` implemented.
 4. `cms-panel-shell` picks up the revised session handling (AC3, `SESSION_EXPIRED`, cross-tab
    refresh lock) and the forgot-password screen (AC15) when it is built.

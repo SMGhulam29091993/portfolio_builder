@@ -101,3 +101,8 @@
   spec files / 214 tests, contracts 22 tests; coverage floor held — no auth service exists yet),
   `pnpm test:e2e` passed. OpenAPI item not applicable: no route changed. Container wiring is
   deferred to T05, the first task with a consumer.
+- owner-auth.T03 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks; API 33
+  spec files / 269 tests; coverage floor held — no auth service yet), `pnpm test:e2e` passed.
+  OpenAPI item not applicable: no route changed. Built on T02's branch by the owner's
+  instruction.

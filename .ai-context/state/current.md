@@ -1,7 +1,10 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01 and T02 are completed; T03
-  (hasher, token, random and clock adapters) is next.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T03 are completed; T04
+  (`SessionAuthorizer` and `AuthService`) is next.
+- Deviation: by the owner's instruction (2026-10-17, "continue in the same branch"), T03 was built
+  on `feat/auth-t02-models-stores` with T02 instead of on a branch of its own, so that branch's
+  PR carries both tasks.
 - Deviation: T01 and T02 branches are stacked (`master` ← T00 ← T01 ← T02, branch
   `feat/auth-t02-models-stores`) because none was
   merged when the next began. Merge them in that order; each PR then shows only its own
