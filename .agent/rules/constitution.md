@@ -9,7 +9,9 @@ stop, raise it, and fix the spec.
   Chosen in ADR-0007 (accepted 2026-10-15), which pins their versions.
 - **Integration testing:** run against a real MongoDB process (`mongodb-memory-server` locally
   and in CI, or a containerised `mongod`). Never mock Mongoose models or the driver — a mocked
-  data layer hides responses that are not actually backed by stored data.
+  data layer hides responses that are not actually backed by stored data. Redis-backed stores
+  likewise run against a real Redis server (compose locally, a service container in CI;
+  ADR-0008), never a mocked client.
 - **Test file location:** colocated with the code under test (`<name>.spec.ts` next to
   `<name>.ts`). Playwright specs are the one exception: `apps/web/e2e/`.
 - **Coverage floor:** 80% lines and branches on `apps/api/src/modules/**/**.service.ts`, per
@@ -65,12 +67,13 @@ stop, raise it, and fix the spec.
   provider URLs are configuration, never literals in code.
 - **Security hardening backlog** (kept current, not aspirational):
   - `helmet()` — ✅ built `monorepo-foundation.T05` (`createSecurityHeaders`), mounted `monorepo-foundation.T06` (`app.ts`)
-  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; auth, AI and public limiters ⬜ `owner-auth.T05` and their own specs
-  - Origin allow-list on state-changing CMS requests — ⬜ `owner-auth.T05`
+  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; auth, AI and public limiters ⬜ `owner-auth.T06` (login) and `owner-auth.T08` (code sends), and their own specs
+  - Origin allow-list on state-changing CMS requests — ⬜ `owner-auth.T06`
   - Input sanitisation for free-text fields — ⬜ `section-engine.T03`
   - File upload MIME / size validation before storage — ⬜ `media-assets.T03`
-  - Encryption at rest for sensitive fields — not applicable yet: the only secret at rest is the
-    password hash (argon2id) and hashed refresh tokens
+  - Encryption at rest for sensitive fields — not applicable yet: the only secrets at rest are
+    the password hash (argon2id), SHA-256 refresh-token hashes in Redis and bcrypt one-time-code
+    hashes (`owner-auth`)
 
 ## Architectural Constraints
 
@@ -118,12 +121,12 @@ stop, raise it, and fix the spec.
 |---|---|---|
 | Repository | every module | Isolates Mongoose; makes services testable with fakes |
 | Strategy + Registry | `SectionRegistry`, `PublishRuleRegistry`, layout variant registry | Open/Closed for section types, publish rules, variants |
-| Adapter + Factory | `IDesignGenerator` (Gemini / OpenRouter / Ollama / Stub), `IFileStorage` | Provider chosen by configuration, no code change |
+| Adapter + Factory | `IDesignGenerator` (Gemini / OpenRouter / Ollama / Stub), `IFileStorage`, `IMailSender` (Gmail / Disabled; ADR-0009) | Provider chosen by configuration, no code change |
 | Decorator | `TimeoutDesignGenerator`, `RetryDesignGenerator` | Cross-cutting behaviour without touching adapters |
 | Pipeline (Chain of Responsibility) | `PublishPipeline` of `IPublishStep` | Ordered, individually testable publish stages |
 | Observer (in-process events) | `IEventBus` — `portfolio.published` → site revalidation | Decouples publishing from the web app |
 | Builder | `SnapshotBuilder` | Deterministic assembly + canonical hashing |
-| Singleton | MongoDB connection only | One pool; see below |
+| Singleton | MongoDB connection and the Redis client (ADR-0008) only | One pool each; see below |
 
 A pattern not in this table needs an ADR. A pattern from this table is used only where its seam
 is real — no interface with a single trivial implementation and no second implementation planned.
@@ -132,11 +135,14 @@ is real — no interface with a single trivial implementation and no second impl
 - **Singleton for the DB connection:** one Mongoose connection via a global cache to prevent
   connection leaks on hot-reload; production skips the cache so the process restarts cleanly.
 - **Startup sequence must verify reachability before serving traffic:** load and validate env →
-  connect to MongoDB and confirm it succeeded → build the container → recover interrupted work
+  connect to MongoDB and confirm it succeeded → connect to Redis and ping it (ADR-0008) → build
+  the container → recover interrupted work
   (stale `pending` AI proposals) → listen. Fail fast (`process.exit(1)`) on startup DB failure.
-- **Approved datastores and integrations:** MongoDB (including GridFS for files). Gemini,
-  OpenRouter and Ollama for design generation. No new datastore, queue, cache or external service
-  without an ADR — that includes Redis and S3.
+- **Approved datastores and integrations:** MongoDB (including GridFS for files). Redis, for the
+  `auth` module's sessions and one-time-code references only (ADR-0008). Gemini, OpenRouter and
+  Ollama for design generation. Gmail SMTP through nodemailer for mail, behind `IMailSender`
+  (ADR-0009). No other datastore, queue, cache or external service without an ADR — that
+  includes any other use of Redis, and S3.
 
 ## Non-Functional Baselines
 - **Status:** any target still unset reads "not yet defined" rather than a soft adjective.

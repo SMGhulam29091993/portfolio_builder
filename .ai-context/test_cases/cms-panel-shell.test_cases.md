@@ -8,7 +8,7 @@
 | cms-panel-shell.E2E01 | AC1 | Open `/cms/sections/about` signed out, then sign in | Redirect to login with `next`; lands on the about editor |
 | cms-panel-shell.E2E02 | AC1 | Login with `?next=https://evil.example` | Lands on `/cms` |
 | cms-panel-shell.E2E03 | AC2 | Wrong password | Generic inline error; field values kept except password |
-| cms-panel-shell.E2E04 | AC3 | Delete `pb_access` mid-session, then save | Save succeeds after a silent refresh |
+| cms-panel-shell.E2E04 | AC3 | Expire the access token mid-session, then save | Save succeeds after a silent refresh |
 | cms-panel-shell.E2E05 | AC5 | Edit a field and save | Save enabled only when dirty + valid; confirmation announced; reload shows the new value |
 | cms-panel-shell.E2E06 | AC7 | Edit the same section in two pages; save both | Second shows the conflict dialog; "Load latest" shows the first save; "Overwrite with mine" stores the second |
 | cms-panel-shell.E2E07 | AC8 | Edit, then click another nav item | Confirmation; cancel keeps edits |
@@ -18,6 +18,8 @@
 | cms-panel-shell.E2E11 | AC14 | axe on login, overview, a section editor | No serious or critical violations |
 | cms-panel-shell.E2E12 | AC12 | Inspect `/cms` response | `noindex, nofollow` present |
 | cms-panel-shell.E2E13 | AC11 | Header before any publish, after a publish, and after a further edit | "Never published"; version and time; "Unpublished changes" badge |
+| cms-panel-shell.E2E14 | AC3 | Sign in on context A, then on context B, then save in A | A lands on `/cms/login` with the "signed in elsewhere" notice; no refresh request |
+| cms-panel-shell.E2E15 | AC15 | Forgot password with the recorded code, a wrong code, then the right one | Inline `OTP_INVALID` message; then login screen with "password updated"; new password signs in |
 
 ## Component
 | Test ID | Maps to | Scenario | Expected |

@@ -17,6 +17,8 @@ draft into an immutable snapshot; the public site renders only the current snaps
 
 ```
  Browser (owner) ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
+                                                      │  └──► Redis (auth sessions, ADR-0008)
+                                                      └─────► Gmail SMTP (one-time codes, ADR-0009)
  Browser (visitor) ─► apps/web (site) ─server fetch────► apps/api /public ─► snapshots
                           ▲                                   │
                           └── POST /api/revalidate ◄── portfolio.published event
@@ -69,7 +71,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Owner login, sessions, the `requireOwner` guard | `users`, `auth_sessions` | `owner-auth` |
+| `auth` | Owner login, the single Redis session, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -125,7 +127,8 @@ One writing module per collection. Field-level schemas live in the owning plan's
 | Collection | Writer | Purpose |
 |---|---|---|
 | `users` | `auth` | The owner account; password hash |
-| `auth_sessions` | `auth` | Hashed refresh tokens, rotation family, expiry (TTL index) |
+| `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
+| Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
 | `portfolios` | `portfolio` | One per owner: slug, `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |
@@ -152,7 +155,8 @@ derived at render time from the visible order; they are never stored.
 
 ## Request lifecycle (CMS write)
 `helmet` → request id → JSON body → [module router: rate limiter] → Origin allow-list (non-GET) →
-`requireOwner` (auth: verifies the access cookie, attaches `userId`) → `resolvePortfolio`
+`requireOwner` (auth: verifies the access cookie, matches its `jti` against the `jti` cookie and
+the Redis session, attaches `userId`) → `resolvePortfolio`
 (portfolio: attaches `portfolioId`) → `validate(schema)` → controller → service → repository → envelope → error middleware.
 
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
@@ -216,6 +220,9 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `MONGODB_URI` | api | Datastore |
 | `WEB_ORIGIN` | api | Origin allow-list for CMS writes |
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
+| `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); unset outside production → mail disabled |
+| `MAIL_FROM` | api | Sender address; defaults to `GMAIL_USER` |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (seed only) | Creates the owner account |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |

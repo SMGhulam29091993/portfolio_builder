@@ -86,3 +86,7 @@
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass
 -->
+- owner-auth spec revision — 2026-10-17 — the owner's session design (three `HttpOnly`
+  cookies, one Redis session, triple `jti` match, no grace window) and OTP password reset;
+  ADR-0008 and ADR-0009 accepted, ADR-0007 amended. Not an implementation task, so no DoD
+  self-check line applies; the spec's DoR self-check passes (2026-10-17) and it awaits `Ready`.

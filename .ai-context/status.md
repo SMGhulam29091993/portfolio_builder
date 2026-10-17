@@ -8,7 +8,7 @@ owner moves a spec to `Ready`.
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
-| 2 | `owner-auth` | Owner sign-in and sessions | Draft | BRD-002 | — |
+| 2 | `owner-auth` | Owner sign-in, the single Redis session, password reset by one-time code | Draft | BRD-002 | — (revised 2026-10-17; DoR self-check passes, awaiting the owner) |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005 |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | — |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text |
@@ -28,6 +28,14 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth` revised to the owner's design on branch `feat/auth-t00-spec-revision`: JWT access
+  token, refresh token and `jti` in three `HttpOnly` cookies; strictly one session per user in
+  Redis with a triple `jti` match on every CMS request and `SESSION_EXPIRED` for a superseded
+  browser; refresh by signature-only verify and compare-and-set rotation, no grace window;
+  password reset by a 6-digit emailed code (bcrypt, 10-minute expiry, 5 attempts, 60-second
+  resend). ADR-0008 (Redis) and ADR-0009 (mail strategy, Gmail default) accepted by the owner;
+  ADR-0007 amended; constitution, architecture, error codes, `cms-panel-shell` and BRD-002
+  follow. Tasks are now T01–T09. The spec stays `Draft` until the owner moves it to `Ready`.
 - `monorepo-foundation.T10` completed on branch `feat/foundation-t10-local-dev-env`, and with it
   the spec (`In Progress → Implemented`): `docker-compose.dev.yml` (`mongo` 8.2.6 pinned by
   digest, loopback only), `.env.example` for both apps with drift tests UT14 / UT15,

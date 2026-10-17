@@ -1,5 +1,6 @@
 # ADR-0007: Tooling baseline
-**Status:** Accepted — owner, 2026-10-15 (accepted as proposed, no line changed)
+**Status:** Accepted — owner, 2026-10-15 (accepted as proposed, no line changed). Amended
+2026-10-17 by the owner: bcrypt, Redis and nodemailer rows added for `owner-auth`.
 
 ## Context
 `constitution.md` requires actual tooling choices to be recorded rather than assumed. The
@@ -14,6 +15,9 @@ reference design's footer names Tailwind and Motion. The rest is unspecified.
 | ODM | Mongoose | Listed in the owner's résumé stack |
 | Validation / contracts | zod, shared via `packages/contracts` | Proposed |
 | Password hashing | argon2id | Proposed |
+| One-time-code and reference hashing | bcrypt, cost 10 | Owner, 2026-10-17 (`owner-auth` → Password reset). Passwords stay on argon2id |
+| Session and reference store | Redis | Owner, 2026-10-17 — ADR-0008 |
+| Mail | nodemailer (Gmail SMTP) behind `IMailSender` | Owner, 2026-10-17 — ADR-0009 |
 | Unit + integration tests | Vitest, Supertest, `mongodb-memory-server` | Proposed |
 | E2E + visual tests | Playwright with axe | Proposed |
 | Styling / motion | Tailwind, Motion | Named in the reference design's footer |

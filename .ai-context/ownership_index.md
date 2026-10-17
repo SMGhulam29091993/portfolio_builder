@@ -17,7 +17,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
 **Referenced by:** every spec's API Contract (exception tables name a code, not a shape)
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-17
 
 ## Module router convention (`ApiRouter`, mounted route table)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
@@ -101,10 +101,20 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** `ai-design-studio`, `publish-pipeline`, `public-site-rendering`, `cms-panel-shell` specs
 **Last updated:** 2026-10-11
 
-## Session contract (cookies, `requireOwner`, Origin allow-list)
-**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract
-**Referenced by:** every spec with a `/api/v1/cms/**` endpoint, `cms-panel-shell` spec
-**Last updated:** 2026-10-11
+## Session contract (cookies, Redis session, `requireOwner`, Origin allow-list)
+**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract · Request authorization · Refresh
+**Referenced by:** every spec with a `/api/v1/cms/**` endpoint, `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008
+**Last updated:** 2026-10-17
+
+## One-time codes (password reset: code, identifier, reference, expiry, attempts)
+**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Password reset by one-time code
+**Referenced by:** `cms-panel-shell` spec (AC15), `architecture.md` → Data ownership, ADR-0007 (bcrypt row), ADR-0008
+**Last updated:** 2026-10-17
+
+## Mail port and strategy selection (`IMailSender`, `MailSenderFactory`)
+**Canonical definition:** `.ai-context/decisions/ADR-0009-mail-delivery.md` → Decision
+**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment
+**Last updated:** 2026-10-17
 
 ## `PublishedContent` snapshot shape, `IDraftContributor`, publish rules
 **Canonical definition:** `.ai-context/specs/publish-pipeline.spec.md` → Published content · Publish rules
