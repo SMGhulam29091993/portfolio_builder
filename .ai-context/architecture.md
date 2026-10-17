@@ -40,9 +40,9 @@ portfolio-builder/
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
@@ -52,7 +52,7 @@ portfolio-builder/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
 │           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
 ├── packages/
-│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — skeleton
+│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅
 │   ├── sections/                 🚧 React section renderers + variant registry — skeleton
 │   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)

@@ -1,10 +1,11 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01 (Redis infrastructure) is
-  completed on branch `feat/auth-t01-redis-infra`; T02 is next.
-- Deviation: the T01 branch starts from `feat/auth-t00-spec-revision`, not from `master`,
-  because the spec revision it builds on was not merged when T01 began. Merge T00 first; T01's
-  PR then shows only its own commits.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01 and T02 are completed; T03
+  (hasher, token, random and clock adapters) is next.
+- Deviation: T01 and T02 branches are stacked (`master` ← T00 ← T01 ← T02, branch
+  `feat/auth-t02-models-stores`) because none was
+  merged when the next began. Merge them in that order; each PR then shows only its own
+  commits.
 - Since T01, `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose Redis
   (`docker compose -f docker-compose.dev.yml up -d --wait redis`), and an existing
   `apps/api/.env` needs the `REDIS_URL` line from `.env.example`.

@@ -28,6 +28,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth.T02` completed on branch `feat/auth-t02-models-stores` (stacked on T01):
+  `packages/contracts/src/auth` (API01–API07 payloads), `users` and `otps` models with their
+  indexes, `UserRepository` (reader / creator / password-writer roles) and `OtpRepository`,
+  `RedisSessionStore` (hash per user; `MULTI` replace, Lua compare-and-set and conditional
+  delete) and `RedisOtpReferenceStore`, in-memory fakes and fixture factories, contract suites
+  CT03 / CT04. One pitfall found and fixed: upsert filter keys skip Mongoose validation.
 - `owner-auth` moved `Draft → Ready` by the owner and `Ready → In Progress`. `owner-auth.T01`
   completed on branch `feat/auth-t01-redis-infra` (cut from the unmerged
   `feat/auth-t00-spec-revision`): Redis 8.10.2 in `docker-compose.dev.yml` and as a CI service

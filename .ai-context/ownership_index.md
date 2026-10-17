@@ -41,7 +41,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT07), `README.md` → Local development (which Redis databases the harnesses use)
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
 **Last updated:** 2026-10-17
 
 ## Module list, dependency map, collection writers

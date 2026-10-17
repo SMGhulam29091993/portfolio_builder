@@ -6,3 +6,5 @@ export { FixtureFactory } from './fixture-factory.js';
 export { MongoTestHarness, type MongoTestHarnessOptions } from './mongo-test-harness.js';
 export { RecordingLogger, type RecordedLogEntry } from './recording-logger.js';
 export { RedisTestHarness, type RedisTestHarnessOptions } from './redis-test-harness.js';
+export { AuthSessionFactory, NewUserFactory, OtpIssueFactory } from './auth/auth-fixtures.js';
+export { InMemoryOtpReferenceStore, InMemorySessionStore, type Clock } from './auth/in-memory-stores.js';

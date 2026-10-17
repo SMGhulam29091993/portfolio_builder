@@ -6,5 +6,6 @@
  * reuse (`architecture.md` → Shared packages). One folder per area; shared payload primitives
  * arrive with `section-engine`.
  */
+export * from './auth/index.js';
 export * from './health/index.js';
 //# sourceMappingURL=index.js.map

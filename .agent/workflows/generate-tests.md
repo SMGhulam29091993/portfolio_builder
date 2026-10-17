@@ -15,7 +15,8 @@ Tests derive from acceptance criteria, never from reading finished code.
    tests get their `mongod` from `MongoTestHarness` there (one per spec file), Redis-backed
    store tests get a claimed logical database on the real compose / CI Redis from
    `RedisTestHarness` (one per spec file; `reset()` between tests), and log assertions use its
-   `RecordingLogger`.
+   `RecordingLogger`. Service tests use the in-memory fakes there (`InMemorySessionStore`, …),
+   each of which passes its interface's contract suite.
 6. A scenario spanning more than one spec goes in `test_cases/_integration.md`.
 7. `E2E` specs live in `apps/web/e2e/` and run with `pnpm test:e2e`, which starts a throwaway
    MongoDB and the built API (`e2e/start-api.ts`) plus `next dev`. They are not part of

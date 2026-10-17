@@ -296,6 +296,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
   a real reference can reach it.
 - Hashing, signing, Redis or mail failures → 500 `INTERNAL_ERROR`, 503 or 502 as listed; nothing
   about the cause is returned.
+- Creating a user whose email already exists → `ConflictError` with code `USER_EXISTS`. Only the
+  owner seeder creates users and it checks first, so this surfaces only when two seeder runs
+  race; no HTTP route can reach it.
 - Login and send rate-limit counters are in process memory (`RateLimiterFactory`); a restart
   resets them. The resend cooldown is enforced from `sentAt` in MongoDB and survives restarts.
 ## Unit Test Cases (spec-derived)
