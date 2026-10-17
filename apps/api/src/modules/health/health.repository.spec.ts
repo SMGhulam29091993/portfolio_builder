@@ -1,37 +1,30 @@
 /**
  * Repository tests hit a real `mongod` (`constitution.md` → Per-layer convention).
  */
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { MongoConnection } from '../../core/db/mongo-connection.js';
+import { MongoTestHarness } from '../../testing/index.js';
 import { HealthRepository } from './health.repository.js';
 
-let server: MongoMemoryServer;
-let connection: MongoConnection;
+let mongo: MongoTestHarness;
 
 beforeAll(async () => {
-  server = await MongoMemoryServer.create();
-  connection = MongoConnection.getInstance({
-    uri: server.getUri(),
-    serverSelectionTimeoutMs: 2_000,
-    cacheAcrossReloads: false,
-  });
+  // Not connected yet: the first case checks behaviour before the connection opens.
+  mongo = await MongoTestHarness.start({ connect: false });
 });
 
 afterAll(async () => {
-  await connection.disconnect();
-  await server.stop();
+  await mongo.stop();
 });
 
 describe('HealthRepository', () => {
   it('rejects while the connection is not open', async () => {
-    await expect(new HealthRepository(connection).ping()).rejects.toThrow('not open');
+    await expect(new HealthRepository(mongo.connection).ping()).rejects.toThrow('not open');
   });
 
   it('resolves when MongoDB answers the ping', async () => {
-    await connection.connect();
+    await mongo.connection.connect();
 
-    await expect(new HealthRepository(connection).ping()).resolves.toBeUndefined();
+    await expect(new HealthRepository(mongo.connection).ping()).resolves.toBeUndefined();
   });
 });

@@ -2,39 +2,22 @@
  * The real app built from the real container, over real HTTP, against a real `mongod`.
  * Re-proves on the live wiring what the core specs proved on test mounts (AC6, AC11).
  */
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp, type ApiApplication } from './app.js';
 import { loadEnv } from './config/env.js';
 import { buildContainer } from './container.js';
-import { MongoConnection } from './core/db/mongo-connection.js';
-import type { ILogger } from './core/logger/logger.interface.js';
+import { MongoTestHarness, RecordingLogger } from './testing/index.js';
 
-const silentLogger: ILogger = {
-  debug: () => undefined,
-  info: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-};
-
-/** Starts a `mongod`, connects the singleton to it and builds the app. */
-async function startStack(): Promise<{
-  server: MongoMemoryServer;
-  mongo: MongoConnection;
-  api: ApiApplication;
-}> {
-  const server = await MongoMemoryServer.create();
-  const env = loadEnv({ NODE_ENV: 'test', PORT: '4100', MONGODB_URI: server.getUri() });
-  const mongo = MongoConnection.getInstance({
-    uri: env.MONGODB_URI,
-    serverSelectionTimeoutMs: 2_000,
-    cacheAcrossReloads: false,
-  });
-  await mongo.connect();
-  const api = createApp(buildContainer({ env, logger: silentLogger, mongo }));
-  return { server, mongo, api };
+/** Starts a harness `mongod`, connects the singleton to it and builds the app. */
+async function startStack(): Promise<{ mongo: MongoTestHarness; api: ApiApplication }> {
+  const mongo = await MongoTestHarness.start();
+  const env = loadEnv({ NODE_ENV: 'test', PORT: '4100', MONGODB_URI: mongo.uri });
+  const api = createApp(
+    buildContainer({ env, logger: new RecordingLogger(), mongo: mongo.connection }),
+  );
+  return { mongo, api };
 }
 
 describe('app with MongoDB reachable', () => {
@@ -45,8 +28,7 @@ describe('app with MongoDB reachable', () => {
   });
 
   afterAll(async () => {
-    await stack.mongo.disconnect();
-    await stack.server.stop();
+    await stack.mongo.stop();
   });
 
   it('monorepo-foundation.IT01 / AC4 — GET /api/v1/health answers 200 with the API01 body', async () => {
@@ -108,7 +90,7 @@ describe('app with MongoDB lost after startup', () => {
   it('monorepo-foundation.IT02 / AC5 — GET /api/v1/health answers 503 with db down within the probe timeout', async () => {
     const stack = await startStack();
     try {
-      await stack.server.stop();
+      await stack.mongo.stopServer();
       const started = Date.now();
 
       const response = await request(stack.api.handler).get('/api/v1/health');
@@ -122,7 +104,7 @@ describe('app with MongoDB lost after startup', () => {
       // Probe timeout is 1 s; allow scheduling slack, but far below the 5 s driver timeout.
       expect(Date.now() - started).toBeLessThan(2_000);
     } finally {
-      await stack.mongo.disconnect();
+      await stack.mongo.stop();
     }
   });
 });
