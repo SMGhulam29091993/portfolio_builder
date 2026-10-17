@@ -7,7 +7,7 @@ owner moves a spec to `Ready`.
 ## Active Specs
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
-| 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | In Progress | BRD-007 | — |
+| 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
 | 2 | `owner-auth` | Owner sign-in and sessions | Draft | BRD-002 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005 |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | — |
@@ -28,6 +28,11 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `monorepo-foundation.T10` completed on branch `feat/foundation-t10-local-dev-env`, and with it
+  the spec (`In Progress → Implemented`): `docker-compose.dev.yml` (`mongo` 8.2.6 pinned by
+  digest, loopback only), `.env.example` for both apps with drift tests UT14 / UT15,
+  `README.md` → Local development; `architecture.md` is now a `test` input in `turbo.json`. The
+  first CI run (PR #8) passed, closing the CI gap recorded against T01–T09.
 - `monorepo-foundation.T09` completed on branch `feat/foundation-t09-test-harness-ci`:
   `core/events` (`IEventBus`, `InProcessEventBus`), `src/testing/` (`MongoTestHarness`,
   `FixtureFactory`, `RecordingLogger`), per-file 80% coverage floor on module services, and

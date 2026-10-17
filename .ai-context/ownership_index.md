@@ -31,7 +31,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Tooling choices and pinned versions
 **Canonical definition:** `.ai-context/decisions/ADR-0007-tooling-baseline.md` → Decision · Pinned versions
-**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`, `.github/workflows/ci.yml` (action SHAs, Node version)
+**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`, `.github/workflows/ci.yml` (action SHAs, Node version), `docker-compose.dev.yml` (mongo image), `README.md` → Local development (prerequisites)
 **Last updated:** 2026-10-17
 
 ## Service coverage floor (80% lines and branches, per file)
@@ -63,7 +63,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Environment variables
 **Canonical definition:** `.ai-context/architecture.md` → Environment
-**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`)
+**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `.agent/workflows/generate-plan.md` step 9; `.agent/workflows/code-review.md` (Security); `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development
 **Last updated:** 2026-10-17
 
 ## Reference content, visual tokens, design unknowns

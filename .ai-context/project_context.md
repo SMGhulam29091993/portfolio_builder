@@ -5,11 +5,11 @@ Portfolio Builder is a single-owner CMS panel that edits, designs and publishes 
 portfolio site. The site to publish is the reference design in `docs/design-reference/`
 (hero, about, selected work, experience, stack, contact). Turborepo monorepo: `apps/api`
 (Express, TypeScript, MongoDB) and `apps/web` (Next.js — public site and CMS). AI design
-generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: implementation of
-`monorepo-foundation` (started 2026-10-15).**
+generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: `monorepo-foundation`
+implemented 2026-10-17; `owner-auth` is next once the owner moves it to `Ready`.**
 
 ## Current sprint
-Spec set authored 2026-10-11. `monorepo-foundation` is `In Progress`; the other 15 specs are
+Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; the other 15 specs are
 `Draft`. Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 

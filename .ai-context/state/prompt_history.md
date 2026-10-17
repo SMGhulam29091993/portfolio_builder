@@ -54,3 +54,11 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 **User Request:** Check that every related `.agent/` and `.ai-context/` file was updated for T09.
 **Agent Action:** Audited both folders for event-bus, test-harness, coverage and CI references. Fixed: `monorepo-foundation` plan (built-in-T09 notes on `core/events` and sequence step 9); `int-standards.express.md` per-module pattern gains Events and Tests rules; ownership index gains the coverage floor and API test support entries, and lists `ci.yml` under tooling and the new referencing files under event semantics.
 
+### [2026-10-17 19:32 IST] — monorepo-foundation.T10 (spec close-out)
+**User Request:** Complete the entire foundation step in a single branch.
+**Agent Action:** On `feat/foundation-t10-local-dev-env` (T10 is the last open task): confirmed the PR #8 CI run passed; added `docker-compose.dev.yml` (`mongo` 8.2.6 by digest, `127.0.0.1` only, healthcheck, named volume), `apps/api/.env.example` and `apps/web/.env.example` (every row of `architecture.md` → Environment; unread ones commented under their spec; secrets blank), drift tests UT14 / UT15, `README.md` → Local development, and `architecture.md` as a `test` input in `turbo.json`. Split the revalidation row in `architecture.md` (web reads only the secret). Verified AC12 and AC5 by hand against the compose MongoDB. Moved the spec to `Implemented`; updated architecture, ADR-0007, int-standards (both), governance, ownership index, plan, tasks, test cases, project context, status, state, memory.
+
+### [2026-10-17 19:52 IST] — monorepo-foundation.T10 (records audit)
+**User Request:** Check that every related `.agent/` and `.ai-context/` file was updated for T10 and the spec close-out.
+**Agent Action:** Audited both folders for stale status wording, env-variable instructions, `.env.example`, compose and README references. Status wording was already current. Fixed: `public-site-rendering` plan now requires the `.env.example` line with each new web variable; `generate-plan.md` step 9 and a `code-review.md` Security item cover a new environment variable end to end; ownership index lists both workflows under Environment variables.
+

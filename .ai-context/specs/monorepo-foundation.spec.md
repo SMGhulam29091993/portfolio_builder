@@ -2,10 +2,12 @@
 ## Spec ID
 monorepo-foundation
 ## Status
-In Progress
+Implemented
 - Draft → Ready — owner, 2026-10-15 (ADR-0007 accepted the same day)
 - DoR self-check: 2026-10-15, pass
 - Ready → In Progress — 2026-10-15, `monorepo-foundation.T01` marked `inprogress`
+- In Progress → Implemented — 2026-10-17, T01–T10 `completed`, each with a DoD self-check line
+  in `state/completed.md`
 ## Linked BRD
 .ai-context/BRD.md#BRD-007
 ## Intent

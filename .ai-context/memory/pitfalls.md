@@ -43,6 +43,16 @@ check always fails.
 **Fix:** `scripts/check-turbo-cache.mjs` ignores entries whose command is `<NONEXISTENT>`.
 **Regression test:** `monorepo-foundation.IT13` (the CI step running that script).
 
+### 2026-10-17 — A test that reads `.ai-context/architecture.md` stays cached after the doc changes
+**Root cause:** Turborepo's default task inputs are the files of the package being run. IT14
+(`apps/api`) and the `.env.example` drift tests read `architecture.md` at the repository root, so
+editing the doc left their `test` tasks as cache hits and a stale pass could be replayed — in
+CI too, once a remote cache is used.
+**Fix:** `turbo.json` → `test.inputs` adds `$TURBO_ROOT$/.ai-context/architecture.md` beside
+`$TURBO_DEFAULT$`. A new test reading another root file adds that file there too.
+**Regression test:** none automated — verified by `turbo run test --dry=json` reporting `MISS`
+for every `test` task after editing the doc (`monorepo-foundation.T10` DoD line).
+
 <!-- Template
 ### <date> — <symptom>
 **Root cause:** ...

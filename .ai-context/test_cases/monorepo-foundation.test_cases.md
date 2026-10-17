@@ -11,6 +11,8 @@
 | monorepo-foundation.UT11 | Plan (`IEventBus`) | First handler throws | `publish` resolves; the error is logged with event, handler and request id, not the payload; the second handler still runs |
 | monorepo-foundation.UT12 | Plan (`IEventBus`) | Unsubscribe, then publish two event names | The removed handler is not called; the other event's handler is |
 | monorepo-foundation.UT13 | Plan (test harness) | `FixtureFactory` build, override, `buildList` | Sequence numbers 1, 2…; overrides applied; no shared objects between fixtures |
+| monorepo-foundation.UT14 | AC12 (T10) | `apps/api/.env.example` against `architecture.md` → Environment and `config/env.ts` | Lists exactly the API rows, once each; uncommented lines equal the keys `loadEnv` returns and pass it |
+| monorepo-foundation.UT15 | AC12 (T10) | `apps/web/.env.example` against `architecture.md` → Environment and `lib/env.ts` | Lists exactly the web rows, once each; uncommented lines equal the keys `loadEnv` returns and pass it |
 
 ## Integration (real MongoDB, real HTTP)
 | Test ID | Maps to | Scenario | Expected |

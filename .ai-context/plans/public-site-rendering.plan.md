@@ -17,7 +17,8 @@
 **Web — `apps/web/src/app/(site)/`**
 - Replaces the `monorepo-foundation.T08` placeholder `page.tsx`. `API_INTERNAL_URL`,
   `NEXT_PUBLIC_SITE_URL` and `REVALIDATE_SECRET` are read through `src/lib/env.ts` only, each
-  added there and to `turbo.json` in the same change (`architecture.md` → Environment).
+  added there and to `turbo.json`, and uncommented in `apps/web/.env.example`, in the same
+  change (`architecture.md` → Environment; `lib/env-example.spec.ts` fails otherwise).
 - `lib/published.ts` — server-only fetch of API01 with a cache tag and a 300-second time-based
   fallback; maps 404 / network failure to typed results.
 - `page.tsx` — Server Component: fetch → `adaptSnapshot` (per `schemaVersion`) → `ThemeStyle` →
