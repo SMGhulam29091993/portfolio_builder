@@ -5,10 +5,13 @@
   "description": "Shared ESLint flat configuration for every workspace.",
   "type": "module",
   "files": [
-    "base.js"
+    "base.js",
+    "api.js",
+    "plugin"
   ],
   "exports": {
-    "./base": "./base.js"
+    "./base": "./base.js",
+    "./api": "./api.js"
   },
   "scripts": {
     "lint": "eslint ."

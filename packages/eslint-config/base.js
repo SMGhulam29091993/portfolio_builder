@@ -2,9 +2,9 @@
 /**
  * Baseline ESLint flat config shared by every workspace.
  *
- * Holds only the rules every workspace agrees on. The architecture rules — layer and module
- * import boundaries, `process.env` access, instantiation outside `container.ts` — are added by
- * `monorepo-foundation.T07` (spec AC9), not here.
+ * Holds only the rules every workspace agrees on. The API's architecture rules — module import
+ * boundaries, framework imports in services, `process.env` access, instantiation outside
+ * `container.ts` — live in `api.js` (`monorepo-foundation.AC9`), which extends this baseline.
  */
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
