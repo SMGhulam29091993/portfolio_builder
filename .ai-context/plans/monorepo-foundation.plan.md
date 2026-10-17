@@ -56,4 +56,5 @@ No collections. The health probe issues a `ping` admin command only.
 8. Web scaffold + proxy
 9. Test harness, coverage floor, CI _(built in T09: `apps/api/src/testing/`, per-file floor in
    `apps/api/vitest.config.ts`, `.github/workflows/ci.yml` + `scripts/check-turbo-cache.mjs`)_
-10. Local dev environment
+10. Local dev environment _(built in T10: `docker-compose.dev.yml` (MongoDB only), both
+    `.env.example` files kept in step by `env-example.spec.ts`, `README.md` → Local development)_

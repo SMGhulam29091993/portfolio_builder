@@ -4,10 +4,11 @@ Living system design. States current truth in plain present tense. The *why* beh
 lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 
 **Directory-status legend:** ✅ built · 🚧 in progress · ⬜ planned (specified, not built).
-The tree below marks each path's current state; `monorepo-foundation` T01–T09 are built, so
+The tree below marks each path's current state; `monorepo-foundation` is implemented, so
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
-harness and CI exist, while every feature module is ⬜ planned.
+harness, CI and the local development environment exist, while every feature module is
+⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -27,12 +28,13 @@ draft into an immutable snapshot; the public site renders only the current snaps
 portfolio-builder/
 ├── apps/
 │   ├── api/                      🚧 Express + TypeScript + Mongoose
+│   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
 │   │       ├── main.ts           ✅ startup sequence — env → MongoDB → container + app → listen → graceful shutdown
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
-│   │       ├── config/env.ts     ✅ zod-validated environment
+│   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
 │   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
@@ -41,10 +43,11 @@ portfolio-builder/
 │   │       └── testing/          ✅ `MongoTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
+│       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
 │       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API
 │       └── src/
-│           ├── lib/env.ts        ✅ zod-validated environment (server-only)
+│           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
 │           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
 ├── packages/
 │   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — skeleton
@@ -55,6 +58,8 @@ portfolio-builder/
 ├── docs/design-reference/        ✅ the two reference boards
 ├── .agent/  .ai-context/         ✅ this system
 ├── .github/workflows/ci.yml      ✅ CI: build · typecheck · lint · test (coverage floor) · drift · cache check · E2E
+├── docker-compose.dev.yml        ✅ local MongoDB for `pnpm dev` (development only)
+├── README.md                     ✅ local development setup
 ├── scripts/check-turbo-cache.mjs ✅ fails if a repeated Turborepo run would not be fully cached (AC1)
 └── turbo.json · package.json · pnpm-workspace.yaml   ✅
 ```
@@ -199,6 +204,12 @@ variable read at build time goes in `build.env` (it then keys the cache), and ev
 an app reads in development goes in `dev.passThroughEnv`. Adding a row here adds it there in
 the same change. `PORT` belongs to the API: `next dev` would also bind to it, so the web dev
 script pins port 3000 explicitly.
+Each app's `.env.example` (`apps/api/.env.example`, `apps/web/.env.example`) lists exactly the
+rows below for that app: uncommented if the app reads the variable today, commented under the
+spec that will read it. A test per app (`env-example.spec.ts`, next to each `env.ts`) fails when
+an example and this table drift apart, or when the uncommented lines do not pass that app's
+`loadEnv`. Local MongoDB for development comes from `docker-compose.dev.yml` (`mongo` pinned to
+the `mongod` version the tests run, loopback-only, no auth); setup steps are in `README.md`.
 | Variable | App | Purpose |
 |---|---|---|
 | `NODE_ENV`, `PORT` | api | Runtime |
@@ -211,5 +222,6 @@ script pins port 3000 explicitly.
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |
 | `AI_TIMEOUT_MS`, `AI_DAILY_PROPOSAL_LIMIT` | api | AI bounds |
-| `WEB_REVALIDATE_URL`, `REVALIDATE_SECRET` | api, web | Publish → site revalidation |
+| `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
+| `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_SITE_URL` | web | Server-side fetch target; canonical URL |

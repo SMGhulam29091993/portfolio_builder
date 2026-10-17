@@ -62,6 +62,26 @@
   Records: architecture (tree, In-process events), constitution coverage wording, ADR-0007 pins,
   ownership index, publish-pipeline plan (`IEventPublisher`, `IEventHandler`), test cases
   UT10–UT13 and IT16, two workflow steps, review finding and pitfall.
+- monorepo-foundation.T10 — 2026-10-17 — DoD self-check: 2026-10-17, pass. CI for this branch
+  runs on its PR; the CI gap recorded against T01–T09 is closed — the first CI run (PR #8,
+  "Build, check and test") passed on 2026-10-17. Checked locally:
+  `pnpm turbo run build typecheck lint test drift` — 20 tasks pass, 132 API tests;
+  `scripts/check-turbo-cache.mjs` reports all 20 cached on the second run; editing
+  `architecture.md` now misses the `test` cache; `pnpm test:e2e` passes; UT14 / UT15 fail on a
+  missing example line, a commented-out required variable, a malformed value and a new
+  `architecture.md` row. AC12 proven by hand on the documented path: both examples copied,
+  `docker compose -f docker-compose.dev.yml up -d --wait` healthy, `pnpm dev`, then
+  `GET http://localhost:3000/api/v1/health` → 200 `db: "up"` with the API `x-request-id`;
+  stopping the container → 503 `SERVICE_UNAVAILABLE` within the 1 s probe timeout, no secret in
+  the logs. OpenAPI item not applicable: no route changed. Judgement calls: the examples list
+  every variable in `architecture.md` → Environment as the task says, but only the ones read
+  today are uncommented, and secrets are blank; the compose MongoDB runs without auth and is
+  bound to `127.0.0.1` rather than carrying a password literal; Ollama is not in compose, since
+  `ai-design-studio` first uses it; the `WEB_REVALIDATE_URL, REVALIDATE_SECRET` row in
+  `architecture.md` was split because the web app reads only the secret. Records: architecture
+  (tree, header, Environment), ADR-0007 (mongo image pin), both int-standards Configuration
+  sections, ownership index, plan, test cases UT14 / UT15, governance Status, project context,
+  spec status `Implemented`, status board, pitfall.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

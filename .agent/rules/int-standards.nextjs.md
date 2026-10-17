@@ -72,8 +72,10 @@ The page composer, the section editor host and the section engine are not edited
 
 ## Configuration
 - Every environment variable is read through `src/lib/env.ts` (zod; errors name variables,
-  never values). A new variable is also declared in `turbo.json` — the rule and the variable
-  list are owned by `architecture.md` → Environment.
+  never values). A new variable is also declared in `turbo.json` and listed in
+  `apps/web/.env.example` (commented until `env.ts` reads it; `lib/env-example.spec.ts` fails if
+  the example drifts) — the rule and the variable list are owned by `architecture.md` →
+  Environment.
 
 ## Framework-specific notes
 - Next.js 16 ships version-matched docs in `node_modules/next/dist/docs/`; check them before

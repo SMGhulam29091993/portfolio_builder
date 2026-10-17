@@ -104,7 +104,9 @@ repository performs a single conditional update (`{ _id, revision: expected }` �
 
 ## Configuration
 `config/env.ts` parses `process.env` once with zod and exports a frozen, typed `env`. It is
-injected through the container. No other file reads `process.env`.
+injected through the container. No other file reads `process.env`. A new variable is added in the
+same change to `architecture.md` → Environment, `apps/api/.env.example` (commented until
+`env.ts` reads it) and `turbo.json`; `config/env-example.spec.ts` fails if the example drifts.
 
 ## Logging
 Structured JSON logs with a request id. See `constitution.md` → PII / logging rules for what
