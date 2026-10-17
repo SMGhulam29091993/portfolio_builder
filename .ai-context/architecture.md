@@ -4,9 +4,10 @@ Living system design. States current truth in plain present tense. The *why* beh
 lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 
 **Directory-status legend:** ✅ built · 🚧 in progress · ⬜ planned (specified, not built).
-The tree below marks each path's current state; `monorepo-foundation` T01–T07 are built, so
-the workspace, the API core, the `health` module and the boundary checks exist, while
-`apps/web` and every feature module are ⬜ planned.
+The tree below marks each path's current state; `monorepo-foundation` T01–T08 are built, so
+the workspace, the API core, the `health` module, the boundary checks and the `apps/web`
+scaffold (placeholder pages and the `/api/v1` proxy) exist, while every feature module is
+⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -39,15 +40,18 @@ portfolio-builder/
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ⬜ fixture factories, in-memory fakes, Mongo test harness
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
-│   └── web/                      ⬜ Next.js App Router
-│       ├── e2e/                  ⬜ Playwright
-│       └── src/app/{(site),(cms)/cms,api/revalidate}
+│   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
+│       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
+│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API
+│       └── src/
+│           ├── lib/env.ts        ✅ zod-validated environment (server-only)
+│           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
 ├── packages/
 │   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — skeleton
 │   ├── sections/                 🚧 React section renderers + variant registry — skeleton
 │   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
-│   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`)
+│   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)
 ├── docs/design-reference/        ✅ the two reference boards
 ├── .agent/  .ai-context/         ✅ this system
 └── turbo.json · package.json · pnpm-workspace.yaml   ✅
@@ -179,6 +183,11 @@ restart are marked `failed` during startup.
 
 ## Environment
 Read only by `config/env.ts` (API) and `apps/web/src/lib/env.ts` (web).
+Turborepo runs in strict env mode, so a task sees only the variables `turbo.json` declares: a
+variable read at build time goes in `build.env` (it then keys the cache), and every variable
+an app reads in development goes in `dev.passThroughEnv`. Adding a row here adds it there in
+the same change. `PORT` belongs to the API: `next dev` would also bind to it, so the web dev
+script pins port 3000 explicitly.
 | Variable | App | Purpose |
 |---|---|---|
 | `NODE_ENV`, `PORT` | api | Runtime |

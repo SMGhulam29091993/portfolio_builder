@@ -46,6 +46,11 @@ appends the tools it installs to this table in the same change.
 | @types/supertest | 7.2.1 | `monorepo-foundation.T04` | |
 | helmet | 8.3.0 | `monorepo-foundation.T05` | Security headers, defaults unchanged |
 | yaml | 2.9.1 | `monorepo-foundation.T06` | Dev only: reads `openapi.yaml` in the drift check |
+| next | 16.4.2 | `monorepo-foundation.T08` | `apps/web`; Turbopack for dev and build |
+| react, react-dom | 19.3.1 | `monorepo-foundation.T08` | |
+| @types/react, @types/react-dom | 19.3.0 | `monorepo-foundation.T08` | |
+| tailwindcss, @tailwindcss/postcss | 4.3.3 | `monorepo-foundation.T08` | v4: configured in CSS, no `tailwind.config` |
+| @playwright/test | 1.64.1 | `monorepo-foundation.T08` | E2E01 uses the `request` fixture, so no browser download yet; axe arrives with the first UI task |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and
