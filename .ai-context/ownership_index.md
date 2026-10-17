@@ -103,7 +103,12 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Session contract (cookies, Redis session, `requireOwner`, Origin allow-list)
 **Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract · Request authorization · Refresh
-**Referenced by:** every spec with a `/api/v1/cms/**` endpoint, `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008
+**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008
+**Last updated:** 2026-10-17
+
+## Redis logical databases (0 development · 1–14 API test harness · 15 E2E)
+**Canonical definition:** `README.md` → Local development (Redis, tests)
+**Referenced by:** `docker-compose.dev.yml` (redis service comment), `apps/api/.env.example` (`REDIS_URL`), `apps/api/src/testing/redis-test-harness.ts`, `apps/web/e2e/start-api.ts`
 **Last updated:** 2026-10-17
 
 ## One-time codes (password reset: code, identifier, reference, expiry, attempts)

@@ -28,10 +28,10 @@ None of its own. Consumes `owner-auth.API01`–`API07`, `section-engine.API01`�
 | `/cms/sections/[type]` | Section editor host + live preview |
 | `/cms/identity`, `/cms/design`, `/cms/assets`, `/cms/ai`, `/cms/publish` | Mount points filled by `site-identity`, `design-theme`, `media-assets`, `ai-design-studio`, `publish-pipeline` |
 ## Acceptance Criteria
-1. cms-panel-shell.AC1 — Given no session, when any `/cms/**` route except `/cms/login` is
-   opened, then the browser is redirected to `/cms/login?next=<path>`; and after a successful
-   sign-in it lands on `next` only if `next` is a same-origin path starting with `/cms`,
-   otherwise on `/cms`.
+1. cms-panel-shell.AC1 — Given no session, when any `/cms/**` route except `/cms/login` and
+   `/cms/forgot-password` is opened, then the browser is redirected to
+   `/cms/login?next=<path>`; and after a successful sign-in it lands on `next` only if `next`
+   is a same-origin path starting with `/cms`, otherwise on `/cms`.
 2. cms-panel-shell.AC2 — Given the login form, when credentials are rejected, then one generic
    inline error is shown; when the API answers 429, then the form shows how long to wait and
    disables submit until then; the password is never placed in a URL or in client logs.

@@ -336,5 +336,5 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 - Test-first: every endpoint, the guard and the password-reset flow.
 - Redis-backed stores are tested against a real Redis server, as MongoDB repositories are
   against a real `mongod` (ADR-0008).
-- No latency target defined yet for auth routes; argon2 cost parameters are chosen at
-  implementation and recorded in the plan once measured.
+- No latency target defined yet for auth routes. argon2 cost parameters were measured and
+  pinned in `owner-auth.T03` (plan → Architecture Approach: m=64 MiB, t=3, p=4, ~33 ms).

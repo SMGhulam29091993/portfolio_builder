@@ -55,7 +55,7 @@ An issue is `{ "rule", "severity", "path", "message" }`, with `path` such as
             "revalidation": { "status": "ok | failed | pending", "at": "ISO-8601" } } }
 ```
 `published` and `revalidation` are `null` before the first publish.
-**Exceptions:** 401 `UNAUTHENTICATED`.
+**Exceptions:** 401 `UNAUTHENTICATED` / `SESSION_EXPIRED` (the guard — `owner-auth` → Request authorization).
 ### publish-pipeline.API02 — POST /api/v1/cms/publishing/validate
 **Request payload:** none.
 **Success response (200):** `data: { "publishable": false, "draftContentHash": "hex", "issues": [Issue] }`

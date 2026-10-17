@@ -41,14 +41,14 @@ All routes require the owner session and resolve the owner's portfolio.
                   "updatedAt": "ISO-8601", "data": { } } ] } }
 ```
 `sectionOrder` lists orderable types only; `hero` is always rendered first.
-**Exceptions:** 401 `UNAUTHENTICATED`.
+**Exceptions:** 401 `UNAUTHENTICATED` / `SESSION_EXPIRED` (the guard — `owner-auth` → Request authorization).
 ### section-engine.API02 — GET /api/v1/cms/portfolio/section-types
 **Success response (200):**
 ```json
 { "data": { "types": [ { "type": "about", "label": "About",
   "orderable": true, "hideable": true, "inNav": true } ] } }
 ```
-**Exceptions:** 401 `UNAUTHENTICATED`.
+**Exceptions:** 401 `UNAUTHENTICATED` / `SESSION_EXPIRED` (the guard — `owner-auth` → Request authorization).
 ### section-engine.API03 — PUT /api/v1/cms/portfolio/sections/:type
 **Request payload:**
 ```json
@@ -59,7 +59,7 @@ All routes require the owner session and resolve the owner's portfolio.
 | Code | Condition | Response body |
 |---|---|---|
 | 400 | `data` fails that type's schema, or a list has duplicate item ids | `VALIDATION_FAILED` with paths relative to `data` |
-| 401 | No session | `UNAUTHENTICATED` |
+| 401 | No valid session; a superseded session | `UNAUTHENTICATED`; `SESSION_EXPIRED` |
 | 403 | `Origin` not allowed | `ORIGIN_NOT_ALLOWED` |
 | 404 | `:type` is not registered | `NOT_FOUND` |
 | 409 | `expectedRevision` is stale | `REVISION_CONFLICT`, `currentRevision` |

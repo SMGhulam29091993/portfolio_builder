@@ -7,11 +7,11 @@ portfolio site. The site to publish is the reference design in `docs/design-refe
 (Express, TypeScript, MongoDB) and `apps/web` (Next.js — public site and CMS). AI design
 generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: `monorepo-foundation`
 implemented 2026-10-17; `owner-auth` (revised 2026-10-17: Redis session, OTP password reset) is
-next once the owner moves it to `Ready`.**
+in progress.**
 
 ## Current sprint
-Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; the other 15 specs are
-`Draft`. Live picture: `state/current.md`,
+Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
+`In Progress` (T01–T03 completed 2026-10-17); the other 14 specs are `Draft`. Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 
 ## Architecture, in one paragraph
@@ -19,7 +19,8 @@ A class-based modular monolith in `apps/api`: each module is controller → serv
 behind interfaces, wired in one composition root, with one writing module per collection.
 Content is typed sections behind a registry; publishing freezes the draft into an immutable
 snapshot and swaps a pointer; the Next.js site renders only the current snapshot through
-shared section components that the CMS preview also uses. Full detail: `architecture.md`.
+shared section components that the CMS preview also uses. MongoDB is the system of record;
+Redis holds only the `auth` module's sessions and one-time-code references (ADR-0008). Full detail: `architecture.md`.
 
 ## Critical, non-negotiable rules
 - SOLID and module boundaries override everything — `constitution.md` → Architectural Constraints.
@@ -71,7 +72,8 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
 
 ### Memory (`memory/`)
 - `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;
-  `patterns.md` is still empty, the other three hold entries from `monorepo-foundation`
+  `patterns.md` is still empty, the other three hold entries from `monorepo-foundation` and
+  `owner-auth`
 
 ### Ownership Index
 - `ownership_index.md` — one canonical owner per fact referenced by 2+ files

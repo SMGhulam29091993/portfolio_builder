@@ -7,8 +7,9 @@ lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 The tree below marks each path's current state; `monorepo-foundation` is implemented, so
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
-harness, CI and the local development environment exist, while every feature module is
-⬜ planned.
+harness, CI and the local development environment exist. `owner-auth` is in progress: the
+Redis infrastructure and the `auth` module's persistence and adapters exist (T01–T03); every
+other feature module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or

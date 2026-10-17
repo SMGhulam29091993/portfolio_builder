@@ -5,7 +5,7 @@ Tests derive from acceptance criteria, never from reading finished code.
 1. Start from the spec's `Unit Test Cases` table — those IDs are fixed. Add cases to
    `test_cases/<slug>.test_cases.md`; never renumber an existing ID.
 2. ID prefixes: `UT` unit (service with fakes) · `IT` integration (repository or route against
-   real MongoDB) · `CT` contract suite shared by every implementation of an interface ·
+   real MongoDB, and real Redis for Redis-backed stores) · `CT` contract suite shared by every implementation of an interface ·
    `E2E` Playwright journey · `VR` Playwright visual baseline.
 3. Per-layer convention is in `constitution.md` → Testing Discipline. Name each test with its ID:
    `it('publish-pipeline.UT03 — blocks publish when a placeholder remains', …)`.
@@ -19,5 +19,5 @@ Tests derive from acceptance criteria, never from reading finished code.
    each of which passes its interface's contract suite.
 6. A scenario spanning more than one spec goes in `test_cases/_integration.md`.
 7. `E2E` specs live in `apps/web/e2e/` and run with `pnpm test:e2e`, which starts a throwaway
-   MongoDB and the built API (`e2e/start-api.ts`) plus `next dev`. They are not part of
-   `pnpm test`.
+   MongoDB and the built API (`e2e/start-api.ts`, on the compose Redis's E2E database) plus
+   `next dev`. They are not part of `pnpm test`.

@@ -7,8 +7,9 @@
 2. Look up every shared fact the spec uses in `ownership_index.md`; link to it, never restate it.
 3. Write **Architecture Approach**: modules touched, new vs existing classes, the interfaces
    crossing each boundary, and which approved pattern (`constitution.md`) each seam uses.
-4. Write **Data Model**: collections, fields, indexes, seed data. One writing module per
-   collection.
+4. Write **Data Model**: collections, fields, indexes, seed data, and any Redis keyspace with
+   its TTL (Redis is approved for `auth` only — ADR-0008). One writing module per collection
+   or keyspace.
 5. Tick the **Constitution Check** honestly. A box that cannot be ticked stops the plan — raise
    it instead of working around it.
 6. Write **Explicitly Deferred** with a reason per item.

@@ -22,7 +22,7 @@ reference design's footer names Tailwind and Motion. The rest is unspecified.
 | E2E + visual tests | Playwright with axe | Proposed |
 | Styling / motion | Tailwind, Motion | Named in the reference design's footer |
 | CMS data + forms | TanStack Query, react-hook-form, Zustand for UI state | TanStack Query and Zustand are in the owner's résumé stack |
-| File storage | MongoDB GridFS behind `IFileStorage` | Keeps MongoDB the only datastore |
+| File storage | MongoDB GridFS behind `IFileStorage` | Keeps files in MongoDB, with no object store |
 | Coverage floor | 80% lines and branches on API services | Proposed |
 
 ## Pinned versions
@@ -73,6 +73,7 @@ moves to 7.x only when a typescript-eslint release supports it.
 
 ## Consequences
 - Versions are pinned exactly (table above); an upgrade is a deliberate change to that table.
-- GridFS keeps infrastructure to one datastore; moving to object storage later is a new adapter
+- GridFS keeps file storage in MongoDB (Redis, added by ADR-0008, holds auth sessions only);
+  moving to object storage later is a new adapter
   plus an ADR.
 - `mongodb-memory-server` runs a real `mongod`, satisfying the "no mocked data layer" rule.
