@@ -1,10 +1,12 @@
 # next.md
 ## Queued
-1. Confirm the CI run on `master` after the PR #9 merge (`monorepo-foundation.T10`); a red run
-   reopens T10 and moves the spec back to `In Progress`.
+1. Confirm the CI run on `master` after the PR #9 merge (`monorepo-foundation.T10`), and the
+   first CI run of `feat/owner-auth-t01-t03` once pushed — it is the first to use the Redis
+   service container. A red run reopens the task it breaks.
 2. `owner-auth.T04` — `SessionAuthorizer` (triple `jti` match) and `AuthService` (login,
    refresh, logout, me) on the fakes from T02 and T03. Unblocked: T03 is completed. Branch: ask
-   the owner — T03 continued T02's branch by instruction. In-memory fakes of `IUserReader`
+   the owner whether T04 continues `feat/owner-auth-t01-t03` or starts its own after that
+   branch is merged. In-memory fakes of `IUserReader`
    need a contract suite with `UserRepository`. `JWT_ACCESS_SECRET` joins `env.ts` with the
    container wiring in T05.
 3. `section-engine.T01` — blocked on: ADR-0005 accepted; `owner-auth` implemented.
