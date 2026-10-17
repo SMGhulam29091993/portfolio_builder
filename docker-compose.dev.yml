@@ -1,0 +1,41 @@
+# Local development services — `monorepo-foundation.T10` (serves AC12: `pnpm dev` needs a
+# reachable MongoDB before the API will open its port, AC3).
+#
+# Development only. Hosting and production images are out of scope for `monorepo-foundation`
+# (spec → Explicitly Out of Scope); nothing here is a deployment target.
+#
+#   docker compose -f docker-compose.dev.yml up -d     # start MongoDB in the background
+#   docker compose -f docker-compose.dev.yml down      # stop it; the data volume is kept
+#   docker compose -f docker-compose.dev.yml down -v   # stop it and delete the local data
+#
+# MongoDB is the only service: it is the project's only datastore (`constitution.md`), and the
+# Ollama provider is added by `ai-design-studio`, the spec that first uses it.
+name: portfolio-builder
+
+services:
+  mongo:
+    # Same server version the tests run against (`mongodb-memory-server` downloads `mongod`
+    # 8.2.6 — ADR-0007 → Pinned versions), so local data behaves like the test datastore. The
+    # digest pins the multi-arch image index, so a re-pushed tag cannot change what runs.
+    image: mongo:8.2.6@sha256:9690b268c50317b2988a7f84f514a2cdcf4de6836e12c295b48f3a203731fce1
+    restart: unless-stopped
+    # Bound to the loopback interface only: the instance runs without authentication, so it must
+    # not be reachable from the local network. Credentials would only add a password literal to
+    # this file (`constitution.md` → Secrets).
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    # Lets `docker compose up --wait` return only once the server answers a ping — the same
+    # admin command the API's health probe issues.
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  # A named volume rather than a bind mount, so file ownership inside the container never
+  # clashes with the host user and no data directory appears in the working tree.
+  mongo-data:

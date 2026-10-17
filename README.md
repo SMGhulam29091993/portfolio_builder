@@ -1,11 +1,46 @@
-# Portfolio Builder — specification set
+# Portfolio Builder
 
-A hybrid SDD + AIPOS context system for a Turborepo project: a CMS panel that edits, designs
-and publishes the portfolio in `docs/design-reference/`.
+A Turborepo project, specified and tracked with a hybrid SDD + AIPOS context system: a CMS panel
+that edits, designs and publishes the portfolio in `docs/design-reference/`.
 
 **Stack:** Next.js · Node.js + Express · TypeScript · MongoDB · Gemini / OpenRouter for AI design
 generation, Ollama for local development.
-**State:** specification only. No application code exists yet; every spec is `Draft`.
+**State:** the `monorepo-foundation` spec is implemented (workspace, API bootstrap, `GET
+/api/v1/health`, boundary lint, OpenAPI drift check, web scaffold, CI). Feature specs follow in
+the build order below; live status is in `.ai-context/status.md`.
+
+## Local development
+**Prerequisites:** Node.js 24.12 or later, pnpm 11.1.2 (`corepack enable` picks up the version
+pinned in `package.json`), and Docker with Compose for the local MongoDB.
+
+```sh
+pnpm install                                        # also downloads mongod for the test suites
+cp apps/api/.env.example apps/api/.env              # works as is against the compose MongoDB
+cp apps/web/.env.example apps/web/.env
+docker compose -f docker-compose.dev.yml up -d --wait
+pnpm dev                                            # API on :4000, web on :3000
+```
+
+Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the web app's
+`/api/v1` proxy to the API and answers `200` with `"db": "up"`.
+
+- **Environment.** Each `.env.example` lists every variable its app will ever read
+  (`.ai-context/architecture.md` → Environment). Uncommented lines are read today; commented
+  ones belong to a later spec and stay off until it lands. The API refuses to start, naming the
+  variable, when one is missing or malformed. Copied `.env` files are git-ignored — never commit
+  a real secret. A variable added to an app also goes into `turbo.json`, because Turborepo runs
+  in strict env mode.
+- **MongoDB.** `docker-compose.dev.yml` runs `mongod` 8.2.6 — the version the tests use — on
+  `127.0.0.1:27017` only, without authentication, with data in the `mongo-data` volume. Stop it
+  with `docker compose -f docker-compose.dev.yml down`; add `-v` to delete the data as well.
+- **Tests do not need Docker.** They start their own throwaway `mongod`.
+
+| Command | Runs |
+|---|---|
+| `pnpm turbo run build typecheck lint test drift` | Everything CI runs on a pull request (`.github/workflows/ci.yml`) |
+| `pnpm test` | Unit and integration tests, with the 80% coverage floor on module services |
+| `pnpm test:e2e` | Playwright end-to-end specs (boots its own API and MongoDB) |
+| `pnpm drift` | Fails when `apps/api/openapi/openapi.yaml` and the mounted routes disagree |
 
 ## Where to start
 | You want to | Read |
@@ -19,14 +54,19 @@ generation, Ollama for local development.
 
 ## What is here
 ```
+apps/api/            Express + Mongoose API (class-based modules, composition root, OpenAPI)
+apps/web/            Next.js App Router: the published site (site) and the CMS (cms)
+packages/            contracts · design-tokens · sections · tsconfig · eslint-config
+docker-compose.dev.yml   local MongoDB for `pnpm dev`
+.github/workflows/ci.yml build · typecheck · lint · test · drift · cache check · E2E
 .agent/rules/        agent-role · constitution · int-standards.express · int-standards.nextjs
                      state-tracking · governance · .agentignore
 .agent/workflows/    generate-plan · implement-task · generate-tests · code-review · spec-readiness-check
 .ai-context/         project_context · architecture · BRD · design_reference · ownership_index · status
   specs/ plans/ tasks/ test_cases/   one file each per feature slug (16 slugs) + _integration.md
   decisions/         ADR-0001 … ADR-0007
-  state/ memory/     working state; lessons (empty until real events)
-AGENTS.md CLAUDE.md GEMINI.md .cursor/ .windsurf/ .github/   thin pointers to the rules
+  state/ memory/     working state; lessons, pitfalls and review findings from real events
+AGENTS.md CLAUDE.md GEMINI.md .cursor/ .windsurf/ .github/copilot-instructions.md   thin pointers to the rules
 docs/design-reference/   the two boards extracted from the HTML export
 ```
 
