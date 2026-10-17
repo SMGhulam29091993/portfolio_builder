@@ -16,3 +16,12 @@
 - **Link targets** — confirm the GitHub, LinkedIn and Second Brain URLs taken from the résumé.
   `site-identity` (OQ1).
 - **BRD-008** — is résumé import wanted? Parked; nothing is specified for it.
+
+## Raised 2026-10-17
+- **Module dependency map allows two cycles** — `architecture.md` → Module dependency map lists
+  `publishing → portfolio` and `publishing → design` as well as `portfolio → publishing` and
+  `design → publishing` (`IDraftContributor`). The constitution requires a DAG, and the
+  architecture test now fails on any cycle in real code. Decide which side owns each interface
+  (the section's footnote already says `publishing` owns `IPublishedPointerWriter`). Does not
+  block `monorepo-foundation`; blocks `publish-pipeline.T02`. See `memory/review-findings.md`,
+  2026-10-17.

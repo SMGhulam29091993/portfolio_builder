@@ -60,6 +60,7 @@ the next session flags it before doing anything else.
 - A deprecated spec is archived, not deleted; its slug is never reused.
 
 ## Status
-As of 2026-10-11 none of these rules has fired: the spec set is authored and every spec is
-`Draft`. No task has started, so no DoD self-check exists yet. Restoring review gates later means
-superseding ADR-0001 and re-adding the reviewer roles here — nothing else needs to move.
+The lifecycle is in use: `monorepo-foundation` moved `Draft → Ready → In Progress` on
+2026-10-15, and every completed task carries a DoD self-check line in `state/completed.md`. The
+other specs are `Draft`. Restoring review gates later means superseding ADR-0001 and re-adding
+the reviewer roles here — nothing else needs to move.

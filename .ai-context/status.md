@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-15_
+_Last updated: 2026-10-17_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -27,6 +27,11 @@ owner moves a spec to `Ready`.
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
 ## Daily Execution Log
+### 2026-10-17
+- `monorepo-foundation.T07` completed on branch `feat/foundation-t07-boundary-lint`: the
+  `portfolio/*` boundary lint rules (AC9 a–d) and the architecture test against the module
+  dependency map (IT10, IT11). Raised: the map, as written, allows two cycles the constitution
+  forbids — owner decision before `publish-pipeline.T02` (`state/blockers.md`).
 ### 2026-10-15
 - ADR-0007 accepted by the owner as proposed; `monorepo-foundation` moved to `Ready`, then
   `In Progress` with `monorepo-foundation.T01` started.

@@ -16,7 +16,8 @@ unticked item means the task stays `inprogress`.
 - [ ] Every new implementation of an existing interface is added to that interface's contract
       suite.
 - [ ] No module dependency edge or collection writer was added without updating
-      `architecture.md`.
+      `architecture.md` — and, for an edge, `apps/api/src/architecture/module-dependency-map.ts`
+      in the same change (the architecture test enforces the table, not the prose).
 
 ## Security
 - [ ] No hardcoded business payload; no secret, model ID or URL literal.

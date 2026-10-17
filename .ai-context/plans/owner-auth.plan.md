@@ -31,7 +31,7 @@ Seed: one user from `OWNER_EMAIL` / `OWNER_PASSWORD`; no literal credentials any
 - [x] Only interfaces cross layers; classes instantiated in `container.ts`
 - [x] Nothing logged from the PII/secret list
 - [x] Test-first scope covers all four endpoints and the guard
-- [ ] argon2id as the hasher — pending acceptance of ADR-0007
+- [x] argon2id as the hasher — ADR-0007, accepted 2026-10-15
 ## Explicitly Deferred
 - Password change / reset — no requirement yet (BRD-002 open items).
 - 2FA — open at BRD stage.
