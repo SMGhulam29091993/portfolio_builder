@@ -1,13 +1,13 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T03 are completed; T04
-  (`SessionAuthorizer` and `AuthService`) is next.
-- All unmerged `owner-auth` work is on one branch, `feat/owner-auth-t01-t03` (2026-10-17, by the
-  owner's request): the spec revision, T01, T02, T03 and the records audit, in creation order.
-  It was created at the tip of the stacked branches (`feat/auth-t00-spec-revision` ←
-  `feat/auth-t01-redis-infra` ← `feat/auth-t02-models-stores`), which formed one linear chain
-  on `master`, so no commit was rewritten or merged. The three older branches are kept locally
-  until the owner decides to delete them.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T04 are completed; T05
+  (controller, cookies, routes API01–API04, `requireOwner`, container wiring) is next.
+- T04 was built on its own branch, `feat/owner-auth-t04-auth-service`, cut from `master` after
+  the PR #10 merge; check `git log` / `git branch -a` for whether it has been merged.
+- T00–T03 (the spec revision, T01, T02, T03 and the records audit) reached `master` through
+  PR #10 from `feat/owner-auth-t01-t03`. The three older stacked branches
+  (`feat/auth-t00-spec-revision`, `feat/auth-t01-redis-infra`, `feat/auth-t02-models-stores`)
+  are kept locally until the owner decides to delete them.
 - Since T01, `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose Redis
   (`docker compose -f docker-compose.dev.yml up -d --wait redis`), and `apps/api/.env` needs
   `REDIS_URL`.

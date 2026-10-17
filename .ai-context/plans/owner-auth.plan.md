@@ -7,10 +7,10 @@ follows ADR-0009.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
 | `AuthController` | Controller | — | `IAuthService`, `IPasswordResetService` |
-| `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserRepository`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom` |
+| `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserReader`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom`, `IClock` (the session's `issuedAt`; added in `owner-auth.T04`) |
 | `SessionAuthorizer` | Service | `ISessionAuthorizer` (guard steps 1–3, with an "ignore expiry" mode for refresh and logout) | `ITokenIssuer`, `ISessionStore` |
-| `PasswordResetService` | Service | `IPasswordResetService` (requestCode, resend, reset) | `IUserRepository`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `ISessionStore`, `IMailSender`, `ISecureRandom`, `IClock` |
-| `UserRepository`, `OtpRepository` | Repository | `IUserRepository`, `IOtpRepository` | Mongoose models |
+| `PasswordResetService` | Service | `IPasswordResetService` (requestCode, resend, reset) | `IUserReader`, `IUserPasswordWriter`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `ISessionStore`, `IMailSender`, `ISecureRandom`, `IClock` |
+| `UserRepository`, `OtpRepository` | Repository | `IUserReader`, `IUserCreator`, `IUserPasswordWriter` (role-sized, `owner-auth.T02`), `IOtpRepository` | Mongoose models |
 | `RedisSessionStore`, `RedisOtpReferenceStore` | Repository (Redis) | `ISessionStore` (get, replace, compareAndSet, delete), `IOtpReferenceStore` (put, resolve, delete) | the `core` Redis client |
 | `Argon2PasswordHasher` | Adapter | `IPasswordHasher` | — |
 | `BcryptOtpHasher` | Adapter | `IOtpHasher` (hash, compare) | — |
@@ -22,7 +22,7 @@ follows ADR-0009.
 | `RequireOwnerMiddleware` | HTTP | — | `ISessionAuthorizer` |
 | `SessionCookieWriter` | HTTP | — | `Env` |
 | `OriginAllowListMiddleware` | HTTP (`core/http`) | — | `Env` |
-| `OwnerSeeder` | Seed | `ISeeder` | `IUserRepository`, `IPasswordHasher`, `Env` |
+| `OwnerSeeder` | Seed | `ISeeder` | `IUserReader`, `IUserCreator`, `IPasswordHasher`, `Env` |
 - `index.ts` exports `IAuthGuard` (the `requireOwner` handler type) and `AuthContext`; other
   modules receive the guard instance from the container and import nothing else.
 - The three cookies are read and written only by `SessionCookieWriter`, used by the controller

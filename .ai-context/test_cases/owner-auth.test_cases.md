@@ -42,6 +42,7 @@
 | owner-auth.CT08 | `ISecureRandom` | `CryptoSecureRandom` and `SequenceSecureRandom`: base64url 32 → 43 / 16 → 22 characters, hex 32 → 64, 6-digit codes, no repeats (T03) |
 | owner-auth.CT09 | `IClock` | `SystemClock` and `ManualClock` return a valid, current, non-decreasing `Date` (T03) |
 | owner-auth.CT07 | `IDatabaseConnection` | `MongoConnection` and `RedisConnection` connect, reject when unreachable, share a concurrent connect and disconnect idempotently, identically (`core/db/database-connection.contract.spec.ts` — T01) |
+| owner-auth.CT10 | `IUserReader`, `IUserCreator` | `UserRepository` (real `mongod`) and `InMemoryUserRepository`: create returns the stored user with an ObjectId id; email stored lower-case and found in any case; null for an unknown email, unknown id and malformed id; a duplicate email in any case is `USER_EXISTS` (T04) |
 | owner-auth.CT06 | `IMailSender` | `GmailMailSender` (against a local SMTP test server), `DisabledMailSender` and `RecordingMailSender` accept the same message; provider failures surface as `UpstreamError` |
 
 ## Data variations

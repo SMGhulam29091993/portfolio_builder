@@ -5,6 +5,8 @@
  */
 export type {
   AccessTokenSubject,
+  AuthorizeOptions,
+  IAuthService,
   IClock,
   IOtpHasher,
   IOtpReferenceStore,
@@ -15,15 +17,21 @@ export type {
   IUserReader,
   IPasswordHasher,
   ISecureRandom,
+  ISessionAuthorizer,
   ITokenIssuer,
   VerifyAccessTokenOptions,
 } from './auth.interface.js';
 export type {
   AccessTokenClaims,
+  AuthorizedSession,
   AuthSession,
   NewUser,
   OtpIssue,
   OtpPurpose,
   OtpRecord,
+  SessionCookies,
+  SessionCredentials,
+  SessionTokens,
+  SignedInSession,
   User,
 } from './auth.types.js';

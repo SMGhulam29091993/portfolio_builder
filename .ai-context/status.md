@@ -28,6 +28,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth.T04` completed on `feat/owner-auth-t04-auth-service`: `SessionAuthorizer` (the one
+  `jti` triple match, with an ignore-expiry mode for refresh and logout) and `AuthService`
+  (login with a decoy hash for unknown emails, refresh with refresh-hash check and
+  compare-and-set rotation, idempotent logout, `me`); `SessionExpiredError` (401
+  `SESSION_EXPIRED`); `InMemoryUserRepository` and contract suite CT10. Both services at 100%
+  line and branch coverage. Not yet wired into `container.ts` or routed — T05.
 - `owner-auth.T03` completed on `feat/auth-t02-models-stores` with T02 (owner's instruction):
   `Argon2PasswordHasher` (argon2id m=64 MiB, t=3, p=4, ~33 ms), `BcryptOtpHasher` (cost 10,
   72-byte guard), `JwtTokenIssuer` (HS256 pinned, exactly four claims, 30 s leeway,

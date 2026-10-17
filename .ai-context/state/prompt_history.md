@@ -86,3 +86,11 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-17 22:12 IST] — owner-auth (branch consolidation)
 **User Request:** Combine every completed but unpushed or unmerged branch into one branch, in creation order, with nothing lost.
 **Agent Action:** Found three unmerged, unpushed branches (`feat/auth-t00-spec-revision`, `feat/auth-t01-redis-infra`, `feat/auth-t02-models-stores`); every `feat/foundation-*` branch was already in `master`. Verified they form one linear chain on `origin/master` with no merge commits, so created `feat/owner-auth-t01-t03` at the tip without rewriting any commit. Verified it contains all three, deletes and renames no file (36 added, 57 modified), and passes an uncached `pnpm turbo run build typecheck lint test drift` plus `pnpm test:e2e`. Old branches kept locally pending the owner's decision.
+
+### [2026-10-17 23:20 IST] — owner-auth.T04
+**User Request:** Start the next step.
+**Agent Action:** New branch `feat/owner-auth-t04-auth-service` off `master` (PR #10 merged). Added `ISessionAuthorizer`, `IAuthService`, `AuthorizeOptions` and the session cookie / token / result types; `auth.errors.ts` (`SessionExpiredError`, 401 `SESSION_EXPIRED`); `session-authorizer.service.ts` (the one `jti` triple match, ignore-expiry mode); `auth.service.ts` (login with a memoised decoy hash, refresh with refresh-hash check and compare-and-set rotation, idempotent logout, `me`); `InMemoryUserRepository` and contract suite CT10 against `UserRepository`. Tests written first (UT01–UT09, AC4–AC11). Updated tasks, plan (`IClock` dependency), test cases, architecture, status, state.
+
+### [2026-10-17 23:35 IST] — owner-auth (records audit, T04)
+**User Request:** Check that every related `.agent/` and `.ai-context/` file was updated for T04.
+**Agent Action:** Swept both folders for the T04 classes, ports, error code, contract IDs and stale progress wording. Fixed: plan still named a non-existent `IUserRepository` (split into role interfaces in T02) for `PasswordResetService`, the repositories row and `OwnerSeeder`; ownership index API-test-support entry now lists CT10; T05 task wording notes `SessionExpiredError` exists and the generic mapping covers it. Everything else (tasks, test cases, architecture, status, project context, state files, workflows, rules) was already current.

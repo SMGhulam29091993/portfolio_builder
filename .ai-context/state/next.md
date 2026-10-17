@@ -1,14 +1,16 @@
 # next.md
 ## Queued
-1. Confirm the CI run on `master` after the PR #9 merge (`monorepo-foundation.T10`), and the
-   first CI run of `feat/owner-auth-t01-t03` once pushed — it is the first to use the Redis
-   service container. A red run reopens the task it breaks.
-2. `owner-auth.T04` — `SessionAuthorizer` (triple `jti` match) and `AuthService` (login,
-   refresh, logout, me) on the fakes from T02 and T03. Unblocked: T03 is completed. Branch: ask
-   the owner whether T04 continues `feat/owner-auth-t01-t03` or starts its own after that
-   branch is merged. In-memory fakes of `IUserReader`
-   need a contract suite with `UserRepository`. `JWT_ACCESS_SECRET` joins `env.ts` with the
-   container wiring in T05.
+1. Confirm CI on `master` after the PR #10 merge — the first `master` run with the Redis service
+   container — and the first CI run of `feat/owner-auth-t04-auth-service` once pushed. A red
+   run reopens the task it breaks.
+2. `owner-auth.T05` — `AuthController`, `SessionCookieWriter`, `auth.routes.ts` (API01–API04),
+   `RequireOwnerMiddleware` on `ISessionAuthorizer`; wire `SessionAuthorizer` and `AuthService`
+   (built in T04, not yet in `container.ts`) and `JWT_ACCESS_SECRET` into `env.ts`; OpenAPI.
+   Unblocked: T04 is completed. Branch: a new `feat/owner-auth-t05-…` off `master` once T04 is
+   merged. Carried from T04: services throw `SessionExpiredError` / `UnauthenticatedError` and
+   never touch cookies, so the controller and guard clear all three cookies on those 401s
+   (spec → API02 exceptions); a Redis outage currently surfaces as a plain error (500), and the
+   spec wants 503 `SERVICE_UNAVAILABLE` from the guard and every auth route (IT13 second half).
 3. `section-engine.T01` — blocked on: ADR-0005 accepted; `owner-auth` implemented.
 4. `cms-panel-shell` picks up the revised session handling (AC3, `SESSION_EXPIRED`, cross-tab
    refresh lock) and the forgot-password screen (AC15) when it is built.
