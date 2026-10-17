@@ -7,7 +7,7 @@ follows ADR-0009.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
 | `AuthController` | Controller | — | `IAuthService`, `IPasswordResetService` |
-| `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserRepository`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom` |
+| `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserReader`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom`, `IClock` (the session's `issuedAt`; added in `owner-auth.T04`) |
 | `SessionAuthorizer` | Service | `ISessionAuthorizer` (guard steps 1–3, with an "ignore expiry" mode for refresh and logout) | `ITokenIssuer`, `ISessionStore` |
 | `PasswordResetService` | Service | `IPasswordResetService` (requestCode, resend, reset) | `IUserRepository`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `ISessionStore`, `IMailSender`, `ISecureRandom`, `IClock` |
 | `UserRepository`, `OtpRepository` | Repository | `IUserRepository`, `IOtpRepository` | Mongoose models |

@@ -8,7 +8,8 @@ The tree below marks each path's current state; `monorepo-foundation` is impleme
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
 harness, CI and the local development environment exist. `owner-auth` is in progress: the
-Redis infrastructure and the `auth` module's persistence and adapters exist (T01–T03); every
+Redis infrastructure, the `auth` module's persistence and adapters (T01–T03) and its
+`SessionAuthorizer` and `AuthService` (T04) exist, not yet wired or routed (T05); every
 other feature module is ⬜ planned.
 
 ## System overview
@@ -41,7 +42,7 @@ portfolio-builder/
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec

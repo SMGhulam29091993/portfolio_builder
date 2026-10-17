@@ -106,3 +106,10 @@
   spec files / 269 tests; coverage floor held — no auth service yet), `pnpm test:e2e` passed.
   OpenAPI item not applicable: no route changed. Built on T02's branch by the owner's
   instruction.
+- owner-auth.T04 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks, with
+  `API_INTERNAL_URL` set as CI sets it; API 36 spec files / 312 tests; `AuthService` and
+  `SessionAuthorizer` at 100% lines and branches, above the 80% floor). OpenAPI item not
+  applicable: no route changed. E2E not run: neither `apps/web` nor a route changed. Deviation
+  recorded in the plan: `AuthService` also takes `IClock`. Container wiring and cookie clearing
+  are T05's scope.
