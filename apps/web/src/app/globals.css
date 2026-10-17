@@ -1,0 +1,5 @@
+/*
+ * Global stylesheet: Tailwind v4 only. Theme values arrive later as CSS variables emitted from
+ * `ThemeTokens` (`packages/design-tokens`); no colour, font or spacing value is defined here.
+ */
+@import 'tailwindcss';
