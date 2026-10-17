@@ -7,8 +7,9 @@ lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 The tree below marks each path's current state; `monorepo-foundation` is implemented, so
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
-harness, CI and the local development environment exist, while every feature module is
-⬜ planned.
+harness, CI and the local development environment exist. `owner-auth` is in progress: the
+Redis infrastructure and the `auth` module's persistence and adapters exist (T01–T03); every
+other feature module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -17,6 +18,8 @@ draft into an immutable snapshot; the public site renders only the current snaps
 
 ```
  Browser (owner) ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
+                                                      │  └──► Redis (auth sessions, ADR-0008)
+                                                      └─────► Gmail SMTP (one-time codes, ADR-0009)
  Browser (visitor) ─► apps/web (site) ─server fetch────► apps/api /public ─► snapshots
                           ▲                                   │
                           └── POST /api/revalidate ◄── portfolio.published event
@@ -31,26 +34,26 @@ portfolio-builder/
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → container + app → listen → graceful shutdown
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ✅ `MongoTestHarness`, `FixtureFactory` base, `RecordingLogger` (test-only, excluded from the build)
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
-│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API
+│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API (Redis database 15)
 │       └── src/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
 │           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
 ├── packages/
-│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — skeleton
+│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅
 │   ├── sections/                 🚧 React section renderers + variant registry — skeleton
 │   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
@@ -69,7 +72,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Owner login, sessions, the `requireOwner` guard | `users`, `auth_sessions` | `owner-auth` |
+| `auth` | Owner login, the single Redis session, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -125,7 +128,8 @@ One writing module per collection. Field-level schemas live in the owning plan's
 | Collection | Writer | Purpose |
 |---|---|---|
 | `users` | `auth` | The owner account; password hash |
-| `auth_sessions` | `auth` | Hashed refresh tokens, rotation family, expiry (TTL index) |
+| `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
+| Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
 | `portfolios` | `portfolio` | One per owner: slug, `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |
@@ -152,7 +156,8 @@ derived at render time from the visible order; they are never stored.
 
 ## Request lifecycle (CMS write)
 `helmet` → request id → JSON body → [module router: rate limiter] → Origin allow-list (non-GET) →
-`requireOwner` (auth: verifies the access cookie, attaches `userId`) → `resolvePortfolio`
+`requireOwner` (auth: verifies the access cookie, matches its `jti` against the `jti` cookie and
+the Redis session, attaches `userId`) → `resolvePortfolio`
 (portfolio: attaches `portfolioId`) → `validate(schema)` → controller → service → repository → envelope → error middleware.
 
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
@@ -216,6 +221,9 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `MONGODB_URI` | api | Datastore |
 | `WEB_ORIGIN` | api | Origin allow-list for CMS writes |
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
+| `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); unset outside production → mail disabled |
+| `MAIL_FROM` | api | Sender address; defaults to `GMAIL_USER` |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (seed only) | Creates the owner account |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |

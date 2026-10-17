@@ -22,8 +22,9 @@ form and analytics are not part of the reference design and are out of scope.
 **Sponsor:** Owner
 **Priority:** P0
 **Decided:** One owner account, created by a seeder from environment variables. No public
-sign-up.
-**Open at BRD stage:** Two-factor authentication; password reset by email.
+sign-up. Strictly one signed-in session at a time: a new sign-in ends the previous one. A
+forgotten password is reset with a 6-digit code sent by email (owner, 2026-10-17).
+**Open at BRD stage:** Two-factor authentication at sign-in.
 **Notes:** The AI providers are never a login path.
 
 ### BRD-003: The published site matches the reference design

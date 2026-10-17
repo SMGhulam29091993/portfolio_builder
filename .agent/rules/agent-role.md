@@ -6,7 +6,8 @@ panel that edits, designs and publishes a personal portfolio site.
 ## Project
 
 - **Path:** repository root (Turborepo monorepo, pnpm workspaces)
-- **Stack:** TypeScript everywhere · `apps/api` Node.js + Express + Mongoose on MongoDB ·
+- **Stack:** TypeScript everywhere · `apps/api` Node.js + Express + Mongoose on MongoDB, with
+  Redis for auth sessions only (ADR-0008) ·
   `apps/web` Next.js (App Router) + Tailwind + Motion · AI design generation through Gemini or
   OpenRouter, Ollama for local development
 - **Architecture:** `apps/api` is a strictly modular, fully class-based monolith — no

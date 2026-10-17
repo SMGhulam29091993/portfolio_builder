@@ -12,6 +12,8 @@
 6. Run typecheck, lint, the affected tests, and the architecture test — plus `pnpm test:e2e`
    when the change touches `apps/web` or a route an E2E spec calls. `pnpm test` also enforces
    the service coverage floor; CI (`.github/workflows/ci.yml`) runs all of it on every PR.
+   Locally the API tests and E2E need the compose Redis running (`README.md` → Local
+   development).
 7. Run `.agent/workflows/code-review.md` against the diff. Fix findings; record real ones in
    `memory/review-findings.md`.
 8. Update state files and the spec status per `state-tracking.md`; record the DoD self-check

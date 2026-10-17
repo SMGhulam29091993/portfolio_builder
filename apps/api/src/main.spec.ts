@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { RedisTestHarness } from './testing/index.js';
+
 const API_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /** A credential that must never appear in any log line. */
@@ -28,13 +30,17 @@ interface RunningApi {
 }
 
 let mongo: MongoMemoryServer;
+/** Claims a Redis database for the spawned API; this process never connects to it. */
+let redis: RedisTestHarness;
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
+  redis = await RedisTestHarness.start({ connect: false });
 });
 
 afterAll(async () => {
   await mongo.stop();
+  await redis.stop();
 });
 
 /**
@@ -96,7 +102,7 @@ describe('main', () => {
       expect.objectContaining({
         level: 'error',
         msg: 'invalid environment configuration',
-        variables: ['MONGODB_URI'],
+        variables: ['MONGODB_URI', 'REDIS_URL'],
       }),
     );
     expect(api.output()).not.toContain('4999');
@@ -107,6 +113,7 @@ describe('main', () => {
       NODE_ENV: 'test',
       PORT: '4999',
       MONGODB_URI: `postgres://svc:${FAKE_SECRET}@db.internal/portfolio`,
+      REDIS_URL: redis.url,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -120,6 +127,7 @@ describe('main', () => {
       NODE_ENV: 'test',
       PORT: String(port),
       MONGODB_URI: `mongodb://svc:${FAKE_SECRET}@127.0.0.1:1/portfolio`,
+      REDIS_URL: redis.url,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -130,9 +138,36 @@ describe('main', () => {
     expect(api.output()).not.toContain(FAKE_SECRET);
   });
 
-  it('monorepo-foundation.AC4 / AC13 — serves /api/v1/health, then on SIGTERM closes MongoDB and exits 0', async () => {
+  it('owner-auth.IT13 — exits 1 without opening a port when Redis is unreachable, closing MongoDB', async () => {
     const port = await findFreePort();
-    const api = startApi({ NODE_ENV: 'test', PORT: String(port), MONGODB_URI: mongo.getUri() });
+    const api = startApi({
+      NODE_ENV: 'test',
+      PORT: String(port),
+      MONGODB_URI: mongo.getUri(),
+      REDIS_URL: `redis://default:${FAKE_SECRET}@127.0.0.1:1/0`,
+    });
+
+    await expect(api.exited).resolves.toBe(1);
+    const messages = api.lines.map((line) => line.msg);
+    expect(messages).not.toContain('http server listening');
+    // MongoDB had opened, so it is closed again before the failure is reported.
+    expect(api.lines).toContainEqual(
+      expect.objectContaining({ msg: 'database disconnected', datastore: 'mongodb' }),
+    );
+    expect(api.lines).toContainEqual(
+      expect.objectContaining({ level: 'error', msg: 'startup failed' }),
+    );
+    expect(api.output()).not.toContain(FAKE_SECRET);
+  });
+
+  it('monorepo-foundation.AC4 / AC13 — serves /api/v1/health, then on SIGTERM closes Redis and MongoDB and exits 0', async () => {
+    const port = await findFreePort();
+    const api = startApi({
+      NODE_ENV: 'test',
+      PORT: String(port),
+      MONGODB_URI: mongo.getUri(),
+      REDIS_URL: redis.url,
+    });
 
     const listening = await waitForLog(api, 'http server listening');
     expect(listening.port).toBe(port);
@@ -153,5 +188,10 @@ describe('main', () => {
     expect(messages.indexOf('http server closed')).toBeLessThan(
       messages.indexOf('database disconnected'),
     );
+    // owner-auth.T01: both datastores connected at startup and closed newest first.
+    const closed = api.lines
+      .filter((line) => line.msg === 'database disconnected')
+      .map((line) => line.datastore);
+    expect(closed).toEqual(['redis', 'mongodb']);
   });
 });

@@ -1,15 +1,18 @@
 # Local development services — `monorepo-foundation.T10` (serves AC12: `pnpm dev` needs a
-# reachable MongoDB before the API will open its port, AC3).
+# reachable MongoDB before the API will open its port, AC3) and `owner-auth.T01` (Redis, which
+# the API also needs before it opens its port, and which the API test suite runs against —
+# ADR-0008).
 #
 # Development only. Hosting and production images are out of scope for `monorepo-foundation`
 # (spec → Explicitly Out of Scope); nothing here is a deployment target.
 #
-#   docker compose -f docker-compose.dev.yml up -d     # start MongoDB in the background
+#   docker compose -f docker-compose.dev.yml up -d     # start MongoDB and Redis in the background
 #   docker compose -f docker-compose.dev.yml down      # stop it; the data volume is kept
 #   docker compose -f docker-compose.dev.yml down -v   # stop it and delete the local data
 #
-# MongoDB is the only service: it is the project's only datastore (`constitution.md`), and the
-# Ollama provider is added by `ai-design-studio`, the spec that first uses it.
+# MongoDB is the system of record; Redis holds only the `auth` module's sessions and one-time-code
+# references (ADR-0008). Those are the approved datastores (`constitution.md`). The Ollama
+# provider is added by `ai-design-studio`, the spec that first uses it.
 name: portfolio-builder
 
 services:
@@ -34,6 +37,26 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  redis:
+    # Pinned by image-index digest for the same reason as `mongo`. The CI service container in
+    # `.github/workflows/ci.yml` runs this exact image (ADR-0007 → Pinned versions).
+    image: redis:8.10.2@sha256:2c2dff791878316e3b083188be0d578423b24813cdda5de0e80ea4f7b3e6bfd6
+    restart: unless-stopped
+    # Loopback only, as for `mongo`: the instance has no password. Logical database 0 is for
+    # `pnpm dev`; the test harness claims databases 1-14 and the E2E harness uses 15, so running
+    # the tests never touches development sessions.
+    ports:
+      - '127.0.0.1:6379:6379'
+    # No volume and no persistence: losing Redis loses sessions and pending one-time-code
+    # references only, and MongoDB stays the system of record (ADR-0008).
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
 volumes:
   # A named volume rather than a bind mount, so file ownership inside the container never

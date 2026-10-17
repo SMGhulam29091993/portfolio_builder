@@ -8,7 +8,7 @@ owner moves a spec to `Ready`.
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
-| 2 | `owner-auth` | Owner sign-in and sessions | Draft | BRD-002 | — |
+| 2 | `owner-auth` | Owner sign-in, the single Redis session, password reset by one-time code | In Progress | BRD-002 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005 |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | — |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text |
@@ -28,6 +28,34 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-17
+- `owner-auth.T03` completed on `feat/auth-t02-models-stores` with T02 (owner's instruction):
+  `Argon2PasswordHasher` (argon2id m=64 MiB, t=3, p=4, ~33 ms), `BcryptOtpHasher` (cost 10,
+  72-byte guard), `JwtTokenIssuer` (HS256 pinned, exactly four claims, 30 s leeway,
+  signature-only mode for refresh), `CryptoSecureRandom`, `SystemClock`, `core/crypto`
+  `sha256Hex`; fakes for service tests; contract suites CT01, CT02, CT05, CT08, CT09. Pinned
+  argon2 0.45.1, bcryptjs 3.0.3, jose 6.2.12.
+- `owner-auth.T02` completed on branch `feat/auth-t02-models-stores` (stacked on T01):
+  `packages/contracts/src/auth` (API01–API07 payloads), `users` and `otps` models with their
+  indexes, `UserRepository` (reader / creator / password-writer roles) and `OtpRepository`,
+  `RedisSessionStore` (hash per user; `MULTI` replace, Lua compare-and-set and conditional
+  delete) and `RedisOtpReferenceStore`, in-memory fakes and fixture factories, contract suites
+  CT03 / CT04. One pitfall found and fixed: upsert filter keys skip Mongoose validation.
+- `owner-auth` moved `Draft → Ready` by the owner and `Ready → In Progress`. `owner-auth.T01`
+  completed on branch `feat/auth-t01-redis-infra` (cut from the unmerged
+  `feat/auth-t00-spec-revision`): Redis 8.10.2 in `docker-compose.dev.yml` and as a CI service
+  (one digest), `@redis/client` 6.3.0, `core/redis` (`RedisConnection` singleton,
+  `IRedisClientProvider`), `REDIS_URL`, startup MongoDB → Redis with clean-up on failure and
+  reverse-order shutdown in `ApplicationLifecycle`, `RedisTestHarness` (claimed logical
+  database per spec file), the `IDatabaseConnection` contract suite (CT07). Tests now need the
+  compose Redis running.
+- `owner-auth` revised to the owner's design on branch `feat/auth-t00-spec-revision`: JWT access
+  token, refresh token and `jti` in three `HttpOnly` cookies; strictly one session per user in
+  Redis with a triple `jti` match on every CMS request and `SESSION_EXPIRED` for a superseded
+  browser; refresh by signature-only verify and compare-and-set rotation, no grace window;
+  password reset by a 6-digit emailed code (bcrypt, 10-minute expiry, 5 attempts, 60-second
+  resend). ADR-0008 (Redis) and ADR-0009 (mail strategy, Gmail default) accepted by the owner;
+  ADR-0007 amended; constitution, architecture, error codes, `cms-panel-shell` and BRD-002
+  follow. Tasks are now T01–T09. The spec stays `Draft` until the owner moves it to `Ready`.
 - `monorepo-foundation.T10` completed on branch `feat/foundation-t10-local-dev-env`, and with it
   the spec (`In Progress → Implemented`): `docker-compose.dev.yml` (`mongo` 8.2.6 pinned by
   digest, loopback only), `.env.example` for both apps with drift tests UT14 / UT15,

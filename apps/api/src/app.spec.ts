@@ -13,7 +13,13 @@ import { MongoTestHarness, RecordingLogger } from './testing/index.js';
 /** Starts a harness `mongod`, connects the singleton to it and builds the app. */
 async function startStack(): Promise<{ mongo: MongoTestHarness; api: ApiApplication }> {
   const mongo = await MongoTestHarness.start();
-  const env = loadEnv({ NODE_ENV: 'test', PORT: '4100', MONGODB_URI: mongo.uri });
+  // The container reads no Redis yet, so an unreachable placeholder satisfies validation.
+  const env = loadEnv({
+    NODE_ENV: 'test',
+    PORT: '4100',
+    MONGODB_URI: mongo.uri,
+    REDIS_URL: 'redis://127.0.0.1:1/0',
+  });
   const api = createApp(
     buildContainer({ env, logger: new RecordingLogger(), mongo: mongo.connection }),
   );

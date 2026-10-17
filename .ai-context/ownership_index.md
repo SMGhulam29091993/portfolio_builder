@@ -17,7 +17,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
 **Referenced by:** every spec's API Contract (exception tables name a code, not a shape)
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-17
 
 ## Module router convention (`ApiRouter`, mounted route table)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
@@ -31,7 +31,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Tooling choices and pinned versions
 **Canonical definition:** `.ai-context/decisions/ADR-0007-tooling-baseline.md` → Decision · Pinned versions
-**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`, `.github/workflows/ci.yml` (action SHAs, Node version), `docker-compose.dev.yml` (mongo image), `README.md` → Local development (prerequisites)
+**Referenced by:** `constitution.md` (Testing Discipline), `pnpm-workspace.yaml`, every workspace `package.json`, `.github/workflows/ci.yml` (action SHAs, Node version), `docker-compose.dev.yml` (mongo and redis images), `.github/workflows/ci.yml` (redis service image), `README.md` → Local development (prerequisites)
 **Last updated:** 2026-10-17
 
 ## Service coverage floor (80% lines and branches, per file)
@@ -39,9 +39,9 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** ADR-0007, ADR-0001, `governance.md` (Definition of Done), `monorepo-foundation` spec (Non-Functional Constraints), `.agent/workflows/implement-task.md`, `apps/api/vitest.config.ts`
 **Last updated:** 2026-10-17
 
-## API test support (`MongoTestHarness`, `FixtureFactory`, `RecordingLogger`)
+## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13)
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
 **Last updated:** 2026-10-17
 
 ## Module list, dependency map, collection writers
@@ -101,10 +101,25 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** `ai-design-studio`, `publish-pipeline`, `public-site-rendering`, `cms-panel-shell` specs
 **Last updated:** 2026-10-11
 
-## Session contract (cookies, `requireOwner`, Origin allow-list)
-**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract
-**Referenced by:** every spec with a `/api/v1/cms/**` endpoint, `cms-panel-shell` spec
-**Last updated:** 2026-10-11
+## Session contract (cookies, Redis session, `requireOwner`, Origin allow-list)
+**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract · Request authorization · Refresh
+**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008
+**Last updated:** 2026-10-17
+
+## Redis logical databases (0 development · 1–14 API test harness · 15 E2E)
+**Canonical definition:** `README.md` → Local development (Redis, tests)
+**Referenced by:** `docker-compose.dev.yml` (redis service comment), `apps/api/.env.example` (`REDIS_URL`), `apps/api/src/testing/redis-test-harness.ts`, `apps/web/e2e/start-api.ts`
+**Last updated:** 2026-10-17
+
+## One-time codes (password reset: code, identifier, reference, expiry, attempts)
+**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Password reset by one-time code
+**Referenced by:** `cms-panel-shell` spec (AC15), `architecture.md` → Data ownership, ADR-0007 (bcrypt row), ADR-0008
+**Last updated:** 2026-10-17
+
+## Mail port and strategy selection (`IMailSender`, `MailSenderFactory`)
+**Canonical definition:** `.ai-context/decisions/ADR-0009-mail-delivery.md` → Decision
+**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment
+**Last updated:** 2026-10-17
 
 ## `PublishedContent` snapshot shape, `IDraftContributor`, publish rules
 **Canonical definition:** `.ai-context/specs/publish-pipeline.spec.md` → Published content · Publish rules

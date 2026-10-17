@@ -46,7 +46,8 @@ A module may add sub-folders for its own strategies (`sections/`, `rules/`, `pro
   handler is a class implementing `IEventHandler`, subscribed in `container.ts`. Semantics:
   `architecture.md` → In-process events.
 - **Tests:** specs sit next to the file under test. Repository and route specs get a real
-  `mongod` from `MongoTestHarness`, fixtures come from a `FixtureFactory` subclass in
+  `mongod` from `MongoTestHarness` (and, for Redis-backed stores, a real Redis database from
+  `RedisTestHarness`), fixtures come from a `FixtureFactory` subclass in
   `src/testing/`, and log assertions use `RecordingLogger` — `.agent/workflows/generate-tests.md`.
 
 ## Standardised response shape
@@ -60,7 +61,10 @@ Every endpoint returns this shape through `core/http/respond.ts` (`ok`, `created
 | HTTP | `data.code` | Extra fields in `data` |
 |---|---|---|
 | 400 | `VALIDATION_FAILED` | `errors: [{ path, message }]` |
+| 400 | `OTP_INVALID` | — (unknown reference, used-up attempts or wrong code; `owner-auth`) |
+| 400 | `OTP_EXPIRED` | — (`owner-auth`) |
 | 401 | `UNAUTHENTICATED` | — |
+| 401 | `SESSION_EXPIRED` | — (a newer sign-in replaced this session; `owner-auth`) |
 | 403 | `ORIGIN_NOT_ALLOWED` | — |
 | 404 | `NOT_FOUND` | — |
 | 409 | `REVISION_CONFLICT` | `currentRevision` |

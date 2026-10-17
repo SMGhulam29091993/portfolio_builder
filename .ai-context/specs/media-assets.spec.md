@@ -117,5 +117,5 @@ visitors receive published files through `public-site-rendering.API02`.
 - Serving files to anonymous visitors — `public-site-rendering.API02`.
 ## Non-Functional Constraints (from constitution.md)
 - Uploads: content-sniffed type, size capped before buffering, SVG rejected.
-- MongoDB (GridFS) is the only datastore used.
+- Files are stored in MongoDB (GridFS) only; no object store or other datastore is added.
 - Filenames and file contents are never logged.

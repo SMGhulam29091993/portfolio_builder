@@ -86,3 +86,23 @@
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass
 -->
+- owner-auth spec revision — 2026-10-17 — the owner's session design (three `HttpOnly`
+  cookies, one Redis session, triple `jti` match, no grace window) and OTP password reset;
+  ADR-0008 and ADR-0009 accepted, ADR-0007 amended. Not an implementation task, so no DoD
+  self-check line applies; the spec's DoR self-check passes (2026-10-17) and it awaits `Ready`.
+- owner-auth.T01 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks; API 25 spec
+  files / 160 tests incl. the new contract suite, coverage floor held), `pnpm test:e2e` (E2E01
+  against Redis database 15), and an immediate second run fully cached. CI not yet run on this
+  branch — the new Redis service container is first exercised by its PR. OpenAPI item not
+  applicable: no route changed.
+- owner-auth.T02 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks; API 29
+  spec files / 214 tests, contracts 22 tests; coverage floor held — no auth service exists yet),
+  `pnpm test:e2e` passed. OpenAPI item not applicable: no route changed. Container wiring is
+  deferred to T05, the first task with a consumer.
+- owner-auth.T03 — 2026-10-17 — DoD self-check: 2026-10-17, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks; API 33
+  spec files / 269 tests; coverage floor held — no auth service yet), `pnpm test:e2e` passed.
+  OpenAPI item not applicable: no route changed. Built on T02's branch by the owner's
+  instruction.

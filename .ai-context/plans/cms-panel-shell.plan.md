@@ -7,10 +7,12 @@ provides the same-origin `/api/v1` proxy, `lib/env.ts` and a placeholder `(cms)/
 (noindex metadata) and `page.tsx`; this plan extends those files rather than creating parallel
 ones.
 - **`lib/api/client.ts`** — typed fetch wrapper: same-origin `/api/v1`, envelope unwrapping,
-  `ApiError` carrying `code` + details, single-flight refresh-and-retry on 401.
+  `ApiError` carrying `code` + details, refresh-and-retry on 401 `UNAUTHENTICATED` serialised
+  across tabs with `navigator.locks`; 401 `SESSION_EXPIRED` goes straight to login.
 - **`lib/api/<area>.ts`** — TanStack Query hooks per area (`auth`, `portfolio`); types from
   `packages/contracts`.
-- **`middleware.ts`** — redirects `/cms/**` without a `pb_access` cookie to `/cms/login`. Cookie
+- **`middleware.ts`** — redirects `/cms/**` without an `access-token` cookie to `/cms/login`
+  (`/cms/forgot-password` is public). Cookie
   presence only; the API remains the authority.
 - **`(cms)/cms/layout.tsx`** — session check via `owner-auth.API04`, navigation, publish status
   header, toast region, unsaved-changes registry (Zustand).

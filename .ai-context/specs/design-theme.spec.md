@@ -56,7 +56,7 @@ maps to a bundled `next/font` loader. Its contents are blocked on OQ1.
             "catalogue": { "variants": { "hero": [ { "id": "split-code-card", "label": "Split with code card" } ] },
                            "fonts": [ { "id": "string", "label": "string", "role": "sans" } ] } } }
 ```
-**Exceptions:** 401 `UNAUTHENTICATED`.
+**Exceptions:** 401 `UNAUTHENTICATED` / `SESSION_EXPIRED` (the guard — `owner-auth` → Request authorization).
 ### design-theme.API02 — PUT /api/v1/cms/design
 **Request payload:** `{ "expectedRevision": 1, "theme": { }, "layout": { } }`
 **Success response (200):** `data: { "design": { … } }`

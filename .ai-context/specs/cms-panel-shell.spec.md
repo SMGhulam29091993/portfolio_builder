@@ -17,26 +17,30 @@ editors into this shell; they do not rebuild any of it.
 - Shared facts used: .ai-context/ownership_index.md (Session contract · Section engine endpoints ·
   Optimistic concurrency · Section type catalogue)
 ## API Contract
-None of its own. Consumes `owner-auth.API01`–`API04`, `section-engine.API01`–`API05` and
+None of its own. Consumes `owner-auth.API01`–`API07`, `section-engine.API01`–`API05` and
 `publish-pipeline.API01`.
 ## Screens
 | Route | Purpose |
 |---|---|
 | `/cms/login` | Sign in |
+| `/cms/forgot-password` | Request a one-time code (`owner-auth.API05`), then enter it with a new password (`API07`); resend (`API06`) |
 | `/cms` | Overview: section list with visibility and order, publish status |
 | `/cms/sections/[type]` | Section editor host + live preview |
 | `/cms/identity`, `/cms/design`, `/cms/assets`, `/cms/ai`, `/cms/publish` | Mount points filled by `site-identity`, `design-theme`, `media-assets`, `ai-design-studio`, `publish-pipeline` |
 ## Acceptance Criteria
-1. cms-panel-shell.AC1 — Given no session, when any `/cms/**` route except `/cms/login` is
-   opened, then the browser is redirected to `/cms/login?next=<path>`; and after a successful
-   sign-in it lands on `next` only if `next` is a same-origin path starting with `/cms`,
-   otherwise on `/cms`.
+1. cms-panel-shell.AC1 — Given no session, when any `/cms/**` route except `/cms/login` and
+   `/cms/forgot-password` is opened, then the browser is redirected to
+   `/cms/login?next=<path>`; and after a successful sign-in it lands on `next` only if `next`
+   is a same-origin path starting with `/cms`, otherwise on `/cms`.
 2. cms-panel-shell.AC2 — Given the login form, when credentials are rejected, then one generic
    inline error is shown; when the API answers 429, then the form shows how long to wait and
    disables submit until then; the password is never placed in a URL or in client logs.
-3. cms-panel-shell.AC3 — Given an expired access cookie, when any CMS request returns 401, then
-   the client calls refresh once and retries the request once; given the retry also returns 401,
-   then the user is sent to `/cms/login` with the current path as `next`.
+3. cms-panel-shell.AC3 — Given an expired access cookie, when any CMS request returns 401
+   `UNAUTHENTICATED`, then the client calls refresh once — holding a cross-tab Web Lock, and
+   retrying the original request first if another tab refreshed meanwhile — and retries the
+   request once; given the retry also returns 401, then the user is sent to `/cms/login` with
+   the current path as `next`; given any response is 401 `SESSION_EXPIRED`, then no refresh is
+   attempted and the user is sent to `/cms/login` with a "signed in elsewhere" notice.
 4. cms-panel-shell.AC4 — Given the section types returned by `section-engine.API02`, when the
    navigation renders, then it lists them in portfolio order followed by the fixed entries
    (Identity, Design, Assets, AI Studio, Publish); and given a type with no registered editor,
@@ -71,6 +75,12 @@ None of its own. Consumes `owner-auth.API01`–`API04`, `section-engine.API01`�
 14. cms-panel-shell.AC14 — Given keyboard-only use, when the user signs in, opens a section,
     edits a field and saves, then every step is reachable with a visible focus indicator, and
     automated accessibility checks report no serious or critical violation on each CMS screen.
+15. cms-panel-shell.AC15 — Given `/cms/forgot-password`, when an email is submitted, then the
+    screen moves to code entry holding the returned `reference` in component state only and
+    shows the same confirmation for any address; when a code and a new password are submitted,
+    then `OTP_INVALID` and `OTP_EXPIRED` each show their own inline message, `OTP_EXPIRED` and
+    a 429 offer Resend with the wait time, and success leads to `/cms/login` with a "password
+    updated" notice. Neither the code nor the reference is placed in a URL or in client logs.
 ## Edge Cases Covered
 - Network failure on save: the form stays dirty, an error with Retry is shown, nothing is lost.
 - The API is unreachable on load: a full-pane error with Retry, not a blank screen.
@@ -81,7 +91,7 @@ None of its own. Consumes `owner-auth.API01`–`API04`, `section-engine.API01`�
 - An open `next` parameter pointing off-site: ignored (AC1).
 ## Error Handling
 - Errors are mapped from `data.code`, never from message text.
-- 401 → refresh-then-login flow (AC3). 403 `ORIGIN_NOT_ALLOWED` → a configuration error screen.
+- 401 `UNAUTHENTICATED` → refresh-then-login flow; 401 `SESSION_EXPIRED` → straight to login (AC3). 403 `ORIGIN_NOT_ALLOWED` → a configuration error screen.
 - 429 → show the wait time from `retryAfterSec`. 5xx → generic failure with Retry.
 - Every async state has a loading, an empty and an error rendering.
 ## Unit Test Cases (spec-derived)
@@ -90,6 +100,7 @@ None of its own. Consumes `owner-auth.API01`–`API04`, `section-engine.API01`�
 | cms-panel-shell.UT01 | AC1 | `safeNext()` with `/cms/design`, `//evil.example`, `https://evil.example`, `/other` | First kept; others → `/cms` |
 | cms-panel-shell.UT02 | AC3 | API client: 401 then success after refresh | One refresh, one retry, resolves |
 | cms-panel-shell.UT03 | AC3 | API client: 401, refresh, 401 again | Rejects with a session-expired error; no third call |
+| cms-panel-shell.UT08 | AC3 | API client: 401 `SESSION_EXPIRED` | No refresh call; rejects with the signed-in-elsewhere error |
 | cms-panel-shell.UT04 | AC4 | Editor registry lookup for a registered and an unregistered type | Component / fallback |
 | cms-panel-shell.UT05 | AC6 | Map `errors[{path:"projects.1.title"}]` onto form state | Error set on that field |
 | cms-panel-shell.UT06 | AC9 | Preview model: saved draft + unsaved values for one section | Only that section's data replaced |
@@ -103,4 +114,5 @@ None of its own. Consumes `owner-auth.API01`–`API04`, `section-engine.API01`�
 ## Non-Functional Constraints (from constitution.md)
 - WCAG 2.1 AA on every CMS screen.
 - The preview renders with `packages/sections` — no CMS-only copy of a renderer.
-- Tokens stay in HttpOnly cookies; nothing auth-related in browser storage.
+- Tokens stay in HttpOnly cookies; the client keeps only the `user` object, never a token, and
+  nothing auth-related in browser storage (`owner-auth` → Session contract).

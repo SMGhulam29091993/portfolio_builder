@@ -1,5 +1,6 @@
 # ADR-0007: Tooling baseline
-**Status:** Accepted — owner, 2026-10-15 (accepted as proposed, no line changed)
+**Status:** Accepted — owner, 2026-10-15 (accepted as proposed, no line changed). Amended
+2026-10-17 by the owner: bcrypt, Redis and nodemailer rows added for `owner-auth`.
 
 ## Context
 `constitution.md` requires actual tooling choices to be recorded rather than assumed. The
@@ -14,11 +15,14 @@ reference design's footer names Tailwind and Motion. The rest is unspecified.
 | ODM | Mongoose | Listed in the owner's résumé stack |
 | Validation / contracts | zod, shared via `packages/contracts` | Proposed |
 | Password hashing | argon2id | Proposed |
+| One-time-code and reference hashing | bcrypt, cost 10 | Owner, 2026-10-17 (`owner-auth` → Password reset). Passwords stay on argon2id |
+| Session and reference store | Redis | Owner, 2026-10-17 — ADR-0008 |
+| Mail | nodemailer (Gmail SMTP) behind `IMailSender` | Owner, 2026-10-17 — ADR-0009 |
 | Unit + integration tests | Vitest, Supertest, `mongodb-memory-server` | Proposed |
 | E2E + visual tests | Playwright with axe | Proposed |
 | Styling / motion | Tailwind, Motion | Named in the reference design's footer |
 | CMS data + forms | TanStack Query, react-hook-form, Zustand for UI state | TanStack Query and Zustand are in the owner's résumé stack |
-| File storage | MongoDB GridFS behind `IFileStorage` | Keeps MongoDB the only datastore |
+| File storage | MongoDB GridFS behind `IFileStorage` | Keeps files in MongoDB, with no object store |
 | Coverage floor | 80% lines and branches on API services | Proposed |
 
 ## Pinned versions
@@ -56,6 +60,11 @@ appends the tools it installs to this table in the same change.
 | actions/setup-node | v7.1.0 (`949feb2`) | `monorepo-foundation.T09` | CI; Node 24.12.0 |
 | pnpm/action-setup | v6.1.0 (`ea17c68`) | `monorepo-foundation.T09` | CI; pnpm from `packageManager` |
 | mongo (Docker image) | 8.2.6 (`sha256:9690b26`) | `monorepo-foundation.T10` | `docker-compose.dev.yml`, local development only; pinned by image-index digest; tracks the `mongod` version `mongodb-memory-server` downloads |
+| @redis/client | 6.3.0 | `owner-auth.T01` | `apps/api`; the core of the official `redis` package without the module add-ons (JSON, search, bloom, time series), which nothing uses |
+| argon2 | 0.45.1 | `owner-auth.T03` | `apps/api`; native with bundled prebuilds (`allowBuilds` in `pnpm-workspace.yaml`); argon2id m=64 MiB, t=3, p=4 pinned in `Argon2PasswordHasher` |
+| bcryptjs | 3.0.3 | `owner-auth.T03` | `apps/api`; pure JavaScript, ships its own types; cost 10 for one-time codes and references |
+| jose | 6.2.12 | `owner-auth.T03` | `apps/api`; HS256 access tokens, algorithm pinned on verify |
+| redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
 typescript-eslint 8.71.2 declares `typescript: >=4.8.4 <6.1.0`. The type-aware lint rules and
@@ -64,6 +73,7 @@ moves to 7.x only when a typescript-eslint release supports it.
 
 ## Consequences
 - Versions are pinned exactly (table above); an upgrade is a deliberate change to that table.
-- GridFS keeps infrastructure to one datastore; moving to object storage later is a new adapter
+- GridFS keeps file storage in MongoDB (Redis, added by ADR-0008, holds auth sessions only);
+  moving to object storage later is a new adapter
   plus an ADR.
 - `mongodb-memory-server` runs a real `mongod`, satisfying the "no mocked data layer" rule.

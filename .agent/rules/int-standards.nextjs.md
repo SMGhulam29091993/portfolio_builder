@@ -58,7 +58,13 @@ The page composer, the section editor host and the section engine are not edited
 ## API access
 - The browser calls same-origin `/api/v1/**`, proxied to `apps/api` by a Next.js rewrite, so auth
   cookies stay first-party. Server-side fetches use `API_INTERNAL_URL`.
-- A 401 triggers one silent refresh and one retry; a second 401 redirects to `/cms/login`.
+- Auth tokens live only in the API's `HttpOnly` cookies (`owner-auth` → Session contract); the
+  client holds the signed-in `user` and never a token, in a store or in browser storage.
+- A 401 `UNAUTHENTICATED` triggers one silent refresh and one retry; a second 401 redirects to
+  `/cms/login`. Refreshes are serialised across tabs with the Web Locks API, because the API
+  rejects a second refresh sent with the same cookies. A 401 `SESSION_EXPIRED` never refreshes:
+  it clears client auth state and redirects to `/cms/login` with a "signed in elsewhere"
+  notice.
 - A 409 `REVISION_CONFLICT` never overwrites silently — the editor shows the conflict and offers
   reload or keep-editing.
 

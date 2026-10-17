@@ -20,7 +20,7 @@ same values and none of them is typed twice.
 ## API Contract
 ### site-identity.API01 — GET /api/v1/cms/identity
 **Success response (200):** `data: { "identity": { "revision": 1, "updatedAt": "ISO-8601", "data": Identity } }`
-**Exceptions:** 401 `UNAUTHENTICATED`.
+**Exceptions:** 401 `UNAUTHENTICATED` / `SESSION_EXPIRED` (the guard — `owner-auth` → Request authorization).
 ### site-identity.API02 — PUT /api/v1/cms/identity
 **Request payload:** `{ "expectedRevision": 1, "data": Identity }`
 **Identity** — canonical owner of this shape (`ownership_index.md`):
@@ -44,7 +44,7 @@ Limits: `socials` 0..6 with at most one entry per platform; `footer.builtWith` 0
 |---|---|---|
 | 400 | Schema failure; duplicate platform; a URL that is not `https:` | `VALIDATION_FAILED` |
 | 400 | `resume.assetId` does not exist or is not kind `resume`; `seo.ogImageAssetId` does not exist or is not kind `image` | `VALIDATION_FAILED` at that path |
-| 401 / 403 | No session / `Origin` not allowed | `UNAUTHENTICATED` / `ORIGIN_NOT_ALLOWED` |
+| 401 / 403 | No valid session, a superseded session / `Origin` not allowed | `UNAUTHENTICATED`, `SESSION_EXPIRED` / `ORIGIN_NOT_ALLOWED` |
 | 409 | Stale `expectedRevision` | `REVISION_CONFLICT`, `currentRevision` |
 ## Acceptance Criteria
 1. site-identity.AC1 — Given a seeded database, when API01 is called, then it returns the

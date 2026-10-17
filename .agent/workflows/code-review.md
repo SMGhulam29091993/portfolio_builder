@@ -32,7 +32,8 @@ unticked item means the task stays `inprogress`.
 - [ ] Responses use the standard envelope and the canonical error codes.
 - [ ] OpenAPI document updated in this change.
 - [ ] Each AC touched has a test named with its ID; test-first scope respected.
-- [ ] Integration tests hit real MongoDB, not a mocked model.
+- [ ] Integration tests hit real MongoDB, not a mocked model, and Redis-backed stores hit a real
+      Redis through `RedisTestHarness`, not a mocked client (ADR-0008).
 
 ## Frontend (when `apps/web` or `packages/sections` changed)
 - [ ] No hex or font literal in a component; strings come from props.

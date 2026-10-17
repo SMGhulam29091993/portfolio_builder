@@ -34,6 +34,14 @@ hold on paper while a service shipped with no tests.
 the constitution now says "per file". Verified by adding a temporary untested service under
 `src/modules/`: `pnpm test` failed on the floor.
 
+### 2026-10-17 — owner-auth.T01
+**Finding:** `RedisConnection` made `IDatabaseConnection` a two-implementation interface, but
+each class only had its own spec, so nothing proved the two behave the same through the port
+that `ApplicationLifecycle` relies on (fail-fast connect, idempotent disconnect).
+**Resulting rule/check added:** `core/db/database-connection.contract.spec.ts`, one
+`describe.each` suite run against both classes on real servers. A third datastore joins by
+adding one subject to its list.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

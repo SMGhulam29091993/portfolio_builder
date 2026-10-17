@@ -53,6 +53,17 @@ CI too, once a remote cache is used.
 **Regression test:** none automated — verified by `turbo run test --dry=json` reporting `MISS`
 for every `test` task after editing the doc (`monorepo-foundation.T10` DoD line).
 
+### 2026-10-17 — An upsert stored an `otps` document with a purpose outside the schema enum
+**Root cause:** On `findOneAndUpdate(..., { upsert: true, runValidators: true })`, Mongoose
+validates only the paths named in update operators. `purpose` was in the filter alone, so the
+inserted document took it from the filter, past the enum. `strict: 'throw'` does not catch it
+either: the path exists in the schema, only its value is wrong.
+**Fix:** `OtpRepository.upsert` repeats the filter keys in `$setOnInsert`, which makes them
+update paths and so validated. Any upsert whose filter keys carry a schema constraint does the
+same.
+**Regression test:** `owner-auth` — `otp.repository.spec.ts` → "rejects a purpose outside the
+allowed list" (failed before the fix).
+
 <!-- Template
 ### <date> — <symptom>
 **Root cause:** ...

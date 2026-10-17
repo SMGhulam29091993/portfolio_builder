@@ -3,10 +3,11 @@
  *
  * Runs the startup sequence from `constitution.md` → Infrastructure and fails fast on any step:
  *   1. load and validate the environment — exit 1, naming the bad variables (AC2)
- *   2. connect to MongoDB and confirm it answered — exit 1 without opening a port (AC3)
+ *   2. connect to MongoDB, then Redis (ADR-0008), confirming each answered — exit 1 without
+ *      opening a port, closing whatever did open (AC3, `owner-auth.IT13`)
  *   3. build the container and the Express app
  *   4. listen
- *   5. on SIGTERM / SIGINT, drain in-flight requests, close MongoDB, exit 0 (AC13)
+ *   5. on SIGTERM / SIGINT, drain in-flight requests, close Redis then MongoDB, exit 0 (AC13)
  *
  * Recovering interrupted AI work joins between steps 3 and 4 with `ai-design-studio`.
  */
@@ -14,12 +15,16 @@ import { createApp } from './app.js';
 import { EnvValidationError, loadEnv, type Env } from './config/env.js';
 import { buildContainer } from './container.js';
 import { MongoConnection } from './core/db/mongo-connection.js';
+import { RedisConnection } from './core/redis/redis-connection.js';
 import { ApplicationLifecycle, ExitCode } from './core/lifecycle/application-lifecycle.js';
 import { JsonLogger } from './core/logger/json-logger.js';
 import type { ILogger } from './core/logger/logger.interface.js';
 
 /** How long startup waits for MongoDB before giving up. */
 const SERVER_SELECTION_TIMEOUT_MS = 5_000;
+
+/** How long one Redis connection attempt may take; startup does not retry a failed one. */
+const REDIS_CONNECT_TIMEOUT_MS = 5_000;
 
 /** How long in-flight requests may run after a shutdown signal. */
 const SHUTDOWN_GRACE_MS = 10_000;
@@ -68,22 +73,34 @@ async function main(): Promise<void> {
     cacheAcrossReloads: env.NODE_ENV !== 'production',
   });
 
-  // Built only after MongoDB has answered (step 3 follows step 2).
+  const redis = RedisConnection.getInstance({
+    url: env.REDIS_URL,
+    connectTimeoutMs: REDIS_CONNECT_TIMEOUT_MS,
+    cacheAcrossReloads: env.NODE_ENV !== 'production',
+    logger,
+  });
+
+  // Built only after every datastore has answered (step 3 follows step 2).
   const createRequestListener = () =>
     createApp(buildContainer({ env, logger, mongo: database })).handler;
 
-  const lifecycle = new ApplicationLifecycle(database, createRequestListener, logger, {
-    port: env.PORT,
-    shutdownGraceMs: SHUTDOWN_GRACE_MS,
-  });
+  const lifecycle = new ApplicationLifecycle(
+    [
+      { name: 'mongodb', connection: database },
+      { name: 'redis', connection: redis },
+    ],
+    createRequestListener,
+    logger,
+    { port: env.PORT, shutdownGraceMs: SHUTDOWN_GRACE_MS },
+  );
 
   try {
+    // On failure the lifecycle has already closed whichever datastore did open.
     await lifecycle.start();
   } catch (error) {
-    // Driver errors name the host, not the credentials, and the URI itself is never logged —
-    // `main.spec.ts` asserts no part of the secret reaches the output.
+    // Driver errors name the host, not the credentials, and the URLs themselves are never
+    // logged — `main.spec.ts` asserts no part of either secret reaches the output.
     logger.error('startup failed', { error });
-    await database.disconnect();
     terminate(ExitCode.Failure);
     return;
   }
