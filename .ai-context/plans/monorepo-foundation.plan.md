@@ -11,6 +11,9 @@
   - `core/http/` — `respond.ts` helpers, `validate()` middleware, `notFound`, `errorHandler`,
     `requestId`, `RateLimiterFactory` (in-memory store).
   - `core/events/` — `IEventBus` + `InProcessEventBus` (used first by `publish-pipeline`).
+    _Built in T09, split by role into `IEventPublisher` / `IEventSubscriber`, with class-based
+    `IEventHandler`s; not created in `container.ts` until something publishes — semantics in
+    `architecture.md` → In-process events._
   - `core/logger/` — `ILogger` + JSON implementation.
 - **`main.ts`** startup: env → connect → `buildContainer(env, connection)` → `createApp(container)`
   → listen → register `SIGTERM`/`SIGINT` handlers.
@@ -51,5 +54,6 @@ No collections. The health probe issues a `ping` admin command only.
 6. Health module, container, OpenAPI + drift check
 7. Boundary lint + architecture test
 8. Web scaffold + proxy
-9. Test harness, coverage floor, CI
+9. Test harness, coverage floor, CI _(built in T09: `apps/api/src/testing/`, per-file floor in
+   `apps/api/vitest.config.ts`, `.github/workflows/ci.yml` + `scripts/check-turbo-cache.mjs`)_
 10. Local dev environment

@@ -6,5 +6,5 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "exclude": ["src/**/*.spec.ts", "src/openapi/**", "src/architecture/**"]
+  "exclude": ["src/**/*.spec.ts", "src/openapi/**", "src/architecture/**", "src/testing/**"]
 }

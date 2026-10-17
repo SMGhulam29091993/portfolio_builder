@@ -47,6 +47,21 @@
   not portfolio content, which arrives only from the published snapshot. Records: ADR-0007 pins,
   `architecture.md` tree and Environment (Turborepo strict env rule, web dev port), ownership
   index, three pitfalls; tracked build artifacts raised in `blockers.md`.
+- monorepo-foundation.T09 — 2026-10-17 — DoD self-check: 2026-10-17, pass, with one recorded
+  gap: `.github/workflows/ci.yml` exists but has not run yet — its first run is on this branch's
+  PR, and that run is also the CI confirmation owed by T01–T08. Checked locally:
+  `pnpm turbo run build typecheck lint test drift` — 20 tasks pass, 129 API tests;
+  `scripts/check-turbo-cache.mjs` reports all 20 cached on the second run (and fails before
+  it); `pnpm test:e2e` passes, also with no Playwright browsers present; the coverage floor
+  fails when an untested service is added; `pnpm install --frozen-lockfile` is clean.
+  OpenAPI item not applicable: no route changed. Judgement calls: the floor is per file
+  (`memory/review-findings.md`); `InProcessEventBus` is built and tested but not yet created in
+  `container.ts`, since nothing publishes or subscribes until `publish-pipeline`;
+  `mongo-connection.spec.ts` and `main.spec.ts` keep their direct `MongoMemoryServer` use (the
+  first tests the singleton itself, the second only needs a URI for child processes).
+  Records: architecture (tree, In-process events), constitution coverage wording, ADR-0007 pins,
+  ownership index, publish-pipeline plan (`IEventPublisher`, `IEventHandler`), test cases
+  UT10–UT13 and IT16, two workflow steps, review finding and pitfall.
 
 <!-- Implementation entries take this form:
 - <slug>.T<NN> — <date> — DoD self-check: <date>, pass

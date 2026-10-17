@@ -12,9 +12,10 @@ stop, raise it, and fix the spec.
   data layer hides responses that are not actually backed by stored data.
 - **Test file location:** colocated with the code under test (`<name>.spec.ts` next to
   `<name>.ts`). Playwright specs are the one exception: `apps/web/e2e/`.
-- **Coverage floor:** 80% lines and branches on `apps/api/src/modules/**/**.service.ts`, enforced
-  in CI (ADR-0007, accepted; wired into CI by `monorepo-foundation.T09`). No floor is claimed
-  for any other path until one is enforced.
+- **Coverage floor:** 80% lines and branches on `apps/api/src/modules/**/**.service.ts`, per
+  file, enforced by `pnpm test` and so in CI (ADR-0007; built by `monorepo-foundation.T09` in
+  `apps/api/vitest.config.ts`). A service no test imports counts as 0%. No floor is claimed for
+  any other path until one is enforced.
 - **Test-first scope (mandatory, no exceptions):**
   - Any new or changed API endpoint
   - Anything touching auth, sessions, uploads or PII

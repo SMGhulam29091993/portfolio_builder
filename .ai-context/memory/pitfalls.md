@@ -35,6 +35,14 @@ coding agent (`agentRules`, default `true`). This repository keeps agent context
 block it wrote.
 **Regression test:** none — framework behaviour, guarded by the config flag.
 
+### 2026-10-17 — Turborepo dry run reports tasks that can never run as cache misses
+**Root cause:** `turbo run <tasks> --dry=json` lists every package × task pair, including
+packages with no script for that task. Those entries have `command: "<NONEXISTENT>"` and
+`cache.status: "MISS"` even right after a fully cached run, so a naive "every task is a HIT"
+check always fails.
+**Fix:** `scripts/check-turbo-cache.mjs` ignores entries whose command is `<NONEXISTENT>`.
+**Regression test:** `monorepo-foundation.IT13` (the CI step running that script).
+
 <!-- Template
 ### <date> — <symptom>
 **Root cause:** ...
