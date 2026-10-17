@@ -103,7 +103,12 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Session contract (cookies, Redis session, `requireOwner`, Origin allow-list)
 **Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract · Request authorization · Refresh
-**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008
+**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008; code that restates its values: `apps/api/src/container.ts` (session, token and leeway lifetimes), `apps/api/src/modules/auth/session-cookie-writer.ts` (cookie names, paths, flags), `apps/api/openapi/openapi.yaml` (`sessionCookies` scheme)
+**Last updated:** 2026-10-17
+
+## Redis unreachable at runtime → 503, never fail open
+**Canonical definition:** `.ai-context/decisions/ADR-0008-redis-session-store.md` → Decision (startup and runtime behaviour)
+**Referenced by:** `owner-auth` spec → Edge Cases and plan → Architecture Approach, `owner-auth.test_cases.md` (IT13), `architecture.md` → Request lifecycle (the mechanism), `memory/pitfalls.md` (2026-10-17, queued commands); code: `apps/api/src/core/redis/redis-connection.ts` (`disableOfflineQueue`), `apps/api/src/core/redis/redis-availability.ts`
 **Last updated:** 2026-10-17
 
 ## Redis logical databases (0 development · 1–14 API test harness · 15 E2E)

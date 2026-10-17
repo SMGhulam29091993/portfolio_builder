@@ -166,7 +166,7 @@ it keeps them, because an expired access token is repaired by a refresh that nee
 Redis is unreachable, commands fail at once (the client's offline queue is off) and every
 Redis-backed store maps the failure to 503 `SERVICE_UNAVAILABLE` (`core/redis`
 `whileRedisAvailable`), so the guard and the auth routes answer 503 instead of waiting or
-allowing.
+allowing (rule: ADR-0008).
 
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
 parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. Every
