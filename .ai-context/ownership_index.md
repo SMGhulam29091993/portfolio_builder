@@ -16,7 +16,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
-**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
+**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
 **Last updated:** 2026-10-18
 
 ## Module router convention (`ApiRouter`, mounted route table)
@@ -41,8 +41,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
-**Last updated:** 2026-10-17
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
+**Last updated:** 2026-10-18
 
 ## Module list, dependency map, collection writers
 **Canonical definition:** `.ai-context/architecture.md` → API modules · Module dependency map · Data ownership
@@ -106,10 +106,15 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008; code that restates its values: `apps/api/src/container.ts` (session, token and leeway lifetimes), `apps/api/src/modules/auth/session-cookie-writer.ts` (cookie names, paths, flags), `apps/api/openapi/openapi.yaml` (`sessionCookies` scheme, `OriginNotAllowed`, `LoginRateLimited`), `apps/api/src/core/http/origin-allow-list.middleware.ts` and `container.ts` `ORIGIN_CHECKED_PATHS` (the allow-list), `container.ts` `LOGIN_RATE_LIMIT` (5 failed sign-ins per 15 min, `owner-auth.T06`)
 **Last updated:** 2026-10-18
 
+## One-time-code contract (code, identifier, reference, expiry, attempts, cooldown, send limit)
+**Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Password reset by one-time code
+**Referenced by:** ADR-0008 (the reference key and its TTL), `owner-auth` plan → Architecture Approach and Data Model, `architecture.md` → Request lifecycle (the shared send limiter), `cms-panel-shell` spec AC15 (what the screen shows for each outcome); code that restates its values: `apps/api/src/modules/auth/password-reset.service.ts` (code length, identifier bytes, 10-minute expiry, 24-hour purge, 60-second cooldown, 5 attempts), `apps/api/src/container.ts` (`CODE_SEND_RATE_LIMIT`, `OTP_REFERENCE_TTL_SEC`), `apps/api/src/modules/auth/otp.model.ts` (indexes), `apps/api/openapi/openapi.yaml` (API05–API07, `CodeSendRateLimited`, `OtpRejected`)
+**Last updated:** 2026-10-18
+
 ## Redis unreachable at runtime → 503, never fail open
 **Canonical definition:** `.ai-context/decisions/ADR-0008-redis-session-store.md` → Decision (startup and runtime behaviour)
-**Referenced by:** `owner-auth` spec → Edge Cases and plan → Architecture Approach, `owner-auth.test_cases.md` (IT13), `architecture.md` → Request lifecycle (the mechanism), `memory/pitfalls.md` (2026-10-17, queued commands); code: `apps/api/src/core/redis/redis-connection.ts` (`disableOfflineQueue`), `apps/api/src/core/redis/redis-availability.ts`
-**Last updated:** 2026-10-17
+**Referenced by:** `owner-auth` spec → Edge Cases and plan → Architecture Approach, `owner-auth.test_cases.md` (IT13), `architecture.md` → Request lifecycle (the mechanism), `memory/pitfalls.md` (2026-10-17, queued commands); code: `apps/api/src/core/redis/redis-connection.ts` (`disableOfflineQueue`), `apps/api/src/core/redis/redis-availability.ts`, its callers `modules/auth/session.store.ts` and `modules/auth/otp-reference.store.ts` (since `owner-auth.T08`)
+**Last updated:** 2026-10-18
 
 ## Redis logical databases (0 development · 1–14 API test harness · 15 E2E)
 **Canonical definition:** `README.md` → Local development (Redis, tests)
@@ -123,7 +128,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Mail port and strategy selection (`IMailSender`, `MailSenderFactory`)
 **Canonical definition:** `.ai-context/decisions/ADR-0009-mail-delivery.md` → Decision
-**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment; `.agent/workflows/generate-tests.md` step 5 (no real mail in tests), `README.md` → Local development; code: `mail-sender.factory.ts` (the decision), `container.ts` → `MAIL_STRATEGIES` (the priority order)
+**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment; `.agent/workflows/generate-tests.md` step 5 (no real mail in tests), `README.md` → Local development; code: `mail-sender.factory.ts` (the decision), `container.ts` → `MAIL_STRATEGIES` (the priority order), `password-reset.service.ts` (calls `ensureAvailable` before any work)
 **Last updated:** 2026-10-18
 
 ## `PublishedContent` snapshot shape, `IDraftContributor`, publish rules

@@ -14,6 +14,7 @@ export type {
   IOtpHasher,
   IOtpReferenceStore,
   IOtpRepository,
+  IPasswordResetService,
   ISessionStore,
   IUserCreator,
   IUserPasswordWriter,

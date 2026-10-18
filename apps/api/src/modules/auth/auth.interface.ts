@@ -6,8 +6,8 @@
  *
  * `owner-auth.T02` defined the persistence ports, `T03` the hashing, token, randomness and
  * clock ports, `T04` the session-authorizer and auth-service ports, `T05` the two HTTP-layer
- * ports at the end of this file, and `T07` the mail port. The password-reset service port
- * follows with `T08`.
+ * ports at the end of this file, `T07` the mail port and `T08` the password-reset service
+ * port.
  *
  * Only the HTTP-layer ports mention Express types; no service imports them.
  */
@@ -18,11 +18,15 @@ import type {
   AuthorizedSession,
   AuthSession,
   AuthUser,
+  ForgotPasswordRequest,
   LoginRequest,
   MailMessage,
   NewUser,
   OtpIssue,
+  OtpIssuedResponse,
   OtpRecord,
+  ResendOtpRequest,
+  ResetPasswordRequest,
   SessionCookies,
   SessionCredentials,
   SessionTokens,
@@ -189,6 +193,15 @@ export interface IClock {
  */
 export interface IMailSender {
   /**
+   * Resolves when a send could be attempted; contacts no provider. The password reset calls it
+   * before any other work, so with mail disabled API05 and API06 answer 503 for every address
+   * and write nothing (`owner-auth.AC22`) — a decoy for an unknown address, which never sends,
+   * would otherwise still answer 200.
+   *
+   * @throws {ServiceUnavailableError} No mail strategy is configured outside production (503).
+   */
+  ensureAvailable(): Promise<void>;
+  /**
    * Hands the message to the provider; resolves once the provider has accepted it.
    *
    * @throws {UpstreamError} The provider refused or could not be reached (`provider: "mail"`,
@@ -250,6 +263,41 @@ export interface IAuthService {
    * @throws {UnauthenticatedError} The user no longer exists.
    */
   me(userId: string): Promise<AuthUser>;
+}
+
+/**
+ * Password reset by one-time code (`owner-auth.API05`–`API07`; spec → Password reset by
+ * one-time code). Business rules only: the controller passes validated bodies in and turns the
+ * results into the envelope.
+ */
+export interface IPasswordResetService {
+  /**
+   * Issues a code for the owner and emails it. For any other address, returns a decoy
+   * reference made the same way and writes and sends nothing, so the answer is the same
+   * (`owner-auth.AC16`, `AC17`).
+   *
+   * @throws {UpstreamError} The mail provider refused the send (502).
+   * @throws {ServiceUnavailableError} Mail is disabled outside production, or Redis is down.
+   */
+  requestCode(request: ForgotPasswordRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Replaces the code a reference names with a fresh code, identifier and reference, and
+   * emails it (`owner-auth.AC21`). The old reference and the old code stop working.
+   *
+   * @throws {OtpInvalidError} The reference resolves to no document.
+   * @throws {RateLimitedError} Less than 60 seconds since the code was sent.
+   * @throws {UpstreamError} The mail provider refused the send (502).
+   * @throws {ServiceUnavailableError} Mail is disabled outside production, or Redis is down.
+   */
+  resend(request: ResendOtpRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Checks the code and sets the new password; then deletes the code, its reference and the
+   * owner's session, so every browser must sign in again (`owner-auth.AC18`).
+   *
+   * @throws {OtpInvalidError} Unknown reference, no document, attempts used up or wrong code.
+   * @throws {OtpExpiredError} The code's `expiresAt` has passed (`owner-auth.AC20`).
+   */
+  reset(request: ResetPasswordRequest): Promise<void>;
 }
 
 /**

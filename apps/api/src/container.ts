@@ -22,6 +22,7 @@ import {
 import type { ILogger } from './core/logger/logger.interface.js';
 import type { IRedisClientProvider } from './core/redis/redis-client-provider.interface.js';
 import { Argon2PasswordHasher } from './modules/auth/adapters/argon2-password-hasher.js';
+import { BcryptOtpHasher } from './modules/auth/adapters/bcrypt-otp-hasher.js';
 import { CryptoSecureRandom } from './modules/auth/adapters/crypto-secure-random.js';
 import { DisabledMailSender } from './modules/auth/adapters/disabled-mail-sender.js';
 import { GmailMailSender } from './modules/auth/adapters/gmail-mail-sender.js';
@@ -34,7 +35,10 @@ import { SystemClock } from './modules/auth/adapters/system-clock.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthRouter, loginAttemptKey } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
-import type { IAuthGuard, IClock } from './modules/auth/index.js';
+import type { IAuthGuard, IClock, IMailSender } from './modules/auth/index.js';
+import { RedisOtpReferenceStore } from './modules/auth/otp-reference.store.js';
+import { OtpRepository } from './modules/auth/otp.repository.js';
+import { PasswordResetService } from './modules/auth/password-reset.service.js';
 import { RequireOwnerMiddleware } from './modules/auth/require-owner.middleware.js';
 import { SessionAuthorizer } from './modules/auth/session-authorizer.service.js';
 import { SessionCookieWriter } from './modules/auth/session-cookie-writer.js';
@@ -85,6 +89,20 @@ const LOGIN_RATE_LIMIT: RateLimitPolicy = {
 };
 
 /**
+ * Code sends allowed per client IP on API05 and API06 together: 5 per hour (spec → Password
+ * reset: send limit). Every admitted request counts, whatever its outcome, so a decoy answer
+ * for an unknown address costs the same as a real send and malformed bodies cannot be used to
+ * probe for free.
+ */
+const CODE_SEND_RATE_LIMIT: RateLimitPolicy = { windowMs: 60 * 60 * 1_000, max: 5 };
+
+/**
+ * Lifetime of a one-time-code reference in Redis: 24 hours, so an expired code can still be
+ * resent by its reference (`owner-auth` spec → Password reset, Edge Cases).
+ */
+const OTP_REFERENCE_TTL_SEC = 24 * 60 * 60;
+
+/**
  * Mounts whose non-GET requests must come from `WEB_ORIGIN` (`owner-auth.AC12`): the sign-in
  * flow and everything the CMS writes. `/health` and `/public` stay open to any caller.
  */
@@ -119,6 +137,12 @@ export interface ContainerDependencies {
    * reach a 15-minute expiry without waiting (`owner-auth.IT08`); production omits it.
    */
   readonly clock?: IClock;
+  /**
+   * Replaces the configured mail strategy. Tests pass a `RecordingMailSender` so a one-time
+   * code can be read back without a provider (ADR-0009: no test sends real mail); production
+   * omits it, and the factory then decides — failing startup when nothing is configured.
+   */
+  readonly mailSender?: IMailSender;
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -153,6 +177,7 @@ export function buildContainer({
   mongo,
   redis,
   clock = new SystemClock(),
+  mailSender,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -176,15 +201,37 @@ export function buildContainer({
     },
     clock,
   );
+  const users = new UserRepository(mongo);
+  const passwordHasher = new Argon2PasswordHasher();
+  const secureRandom = new CryptoSecureRandom();
   const sessionStore = new RedisSessionStore(redis, { ttlSec: SESSION_TTL_SEC });
   const sessionAuthorizer = new SessionAuthorizer(tokenIssuer, sessionStore);
   const authService = new AuthService(
-    new UserRepository(mongo),
+    users,
     sessionStore,
     sessionAuthorizer,
-    new Argon2PasswordHasher(),
+    passwordHasher,
     tokenIssuer,
-    new CryptoSecureRandom(),
+    secureRandom,
+    clock,
+  );
+
+  // Mail (ADR-0009). The factory runs while the container is built, so production without a
+  // mail strategy refuses to start (`owner-auth.AC22`); only a test's override skips it.
+  const mail =
+    mailSender ?? new MailSenderFactory(MAIL_STRATEGIES, new DisabledMailSender()).create(env);
+
+  // Password reset by one-time code (`owner-auth.T08`).
+  const passwordResetService = new PasswordResetService(
+    users,
+    users,
+    new OtpRepository(mongo),
+    new RedisOtpReferenceStore(redis, { ttlSec: OTP_REFERENCE_TTL_SEC }),
+    new BcryptOtpHasher(),
+    passwordHasher,
+    sessionStore,
+    mail,
+    secureRandom,
     clock,
   );
   const sessionCookies = new SessionCookieWriter(env, {
@@ -194,15 +241,13 @@ export function buildContainer({
   });
   const authGuard = new RequireOwnerMiddleware(sessionAuthorizer, sessionCookies).handle;
   const authRouter = createAuthRouter(
-    new AuthController(authService, sessionCookies),
+    new AuthController(authService, sessionCookies, passwordResetService),
     authGuard,
-    rateLimiters.create(LOGIN_RATE_LIMIT),
+    {
+      login: rateLimiters.create(LOGIN_RATE_LIMIT),
+      codeSend: rateLimiters.create(CODE_SEND_RATE_LIMIT),
+    },
   );
-
-  // Mail (ADR-0009). Chosen here although the password reset (`owner-auth.T08`) is its first
-  // consumer, so production without a mail strategy already refuses to start
-  // (`owner-auth.AC22`): the factory throws while the container is built.
-  new MailSenderFactory(MAIL_STRATEGIES, new DisabledMailSender()).create(env);
 
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,

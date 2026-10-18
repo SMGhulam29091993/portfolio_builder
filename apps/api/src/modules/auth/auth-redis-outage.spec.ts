@@ -1,7 +1,9 @@
 /**
  * `owner-auth.IT13`, second half: Redis lost while the API runs → 503 `SERVICE_UNAVAILABLE`
  * from the guard and every auth route, at once, with nothing falling back to "allow"
- * (`owner-auth` spec → Edge Cases; ADR-0008). The startup half is in `main.spec.ts`.
+ * (`owner-auth` spec → Edge Cases; ADR-0008). The startup half is in `main.spec.ts`. The
+ * password-reset routes (API05–API07) joined in `owner-auth.T08`; mail goes to a
+ * `RecordingMailSender`, so their 503 can only come from Redis.
  *
  * The compose Redis is shared by every spec file, so it cannot be stopped here. Instead the
  * API's `RedisConnection` reaches it through a TCP proxy this file owns: cutting the proxy is,
@@ -15,7 +17,12 @@ import { createApp, type ApiApplication } from '../../app.js';
 import { loadEnv } from '../../config/env.js';
 import { buildContainer } from '../../container.js';
 import { RedisConnection } from '../../core/redis/redis-connection.js';
-import { MongoTestHarness, RecordingLogger, RedisTestHarness } from '../../testing/index.js';
+import {
+  MongoTestHarness,
+  RecordingLogger,
+  RecordingMailSender,
+  RedisTestHarness,
+} from '../../testing/index.js';
 import { Argon2PasswordHasher } from './adapters/argon2-password-hasher.js';
 import { UserRepository } from './user.repository.js';
 
@@ -100,7 +107,15 @@ beforeAll(async () => {
     JWT_ACCESS_SECRET: JWT_SECRET,
     WEB_ORIGIN,
   });
-  api = createApp(buildContainer({ env, logger, mongo: mongo.connection, redis: connection }));
+  api = createApp(
+    buildContainer({
+      env,
+      logger,
+      mongo: mongo.connection,
+      redis: connection,
+      mailSender: new RecordingMailSender(),
+    }),
+  );
 
   await new UserRepository(mongo.connection).create({
     email: OWNER_EMAIL,
@@ -165,6 +180,26 @@ describe('auth with Redis lost after startup', () => {
         .post('/api/v1/auth/logout')
         .set('Origin', WEB_ORIGIN)
         .set('Cookie', cookie),
+    );
+    // Password reset: storing (API05) or resolving (API06, API07) a reference needs Redis.
+    // The owner's address, since an unknown one gets a decoy that never touches Redis.
+    await expectUnavailable(() =>
+      request(api.handler)
+        .post('/api/v1/auth/password/forgot')
+        .set('Origin', WEB_ORIGIN)
+        .send({ email: OWNER_EMAIL }),
+    );
+    await expectUnavailable(() =>
+      request(api.handler)
+        .post('/api/v1/auth/password/resend')
+        .set('Origin', WEB_ORIGIN)
+        .send({ reference: 'any-reference' }),
+    );
+    await expectUnavailable(() =>
+      request(api.handler)
+        .post('/api/v1/auth/password/reset')
+        .set('Origin', WEB_ORIGIN)
+        .send({ reference: 'any-reference', otp: '123456', newPassword: 'a long new password' }),
     );
 
     // The 503s are logged as failures, with the driver error kept as the logged cause.

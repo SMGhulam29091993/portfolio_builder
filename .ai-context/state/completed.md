@@ -120,6 +120,18 @@
   ACs covered by named tests: AC1, AC4–AC8, AC11, AC15, plus IT02, IT09, IT10, IT23 and the
   IT13 runtime half (503 with Redis cut, proven to fail without the offline-queue fix). API01's
   403 / 429 responses are T06's scope and not yet documented. CI not yet run on this branch.
+- owner-auth.T08 — 2026-10-18 — DoD self-check: 2026-10-18, pass. Checked locally with the
+  compose Redis running: uncached `pnpm turbo run build typecheck lint test drift` (20 tasks,
+  with `API_INTERNAL_URL` set as CI sets it; API 47 spec files / 475 tests;
+  `PasswordResetService` at 100% lines and 91% branches, every service above the 80% floor),
+  `pnpm drift` (8 routes match OpenAPI 0.4.0) and `pnpm test:e2e` passed. ACs covered by named
+  tests: AC16–AC21 (UT12–UT17, IT16–IT21, IT24), AC15 (IT15 across the new route spec and the
+  outage spec), AC22 development half (IT22), the IT13 runtime half for API05–API07; contract
+  suites CT11 (new) and CT10 / CT06 extended. Mutation-checked: the attempt claim, the
+  `ensureAvailable` call and the reference store's 503 wrap each make their test fail when
+  removed. Deviations: `IMailSender` gains `ensureAvailable()` (ADR-0009 amended), so with mail
+  disabled API05 is 503 for every address as the spec says; reset claims an attempt before
+  comparing (`memory/review-findings.md`, 2026-10-18). CI not yet run on this branch.
 - owner-auth.T07 — 2026-10-18 — DoD self-check: 2026-10-18, pass. Checked locally with the
   compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks, with
   `API_INTERNAL_URL` set as CI sets it; API 44 spec files / 422 tests; services at 100% lines and

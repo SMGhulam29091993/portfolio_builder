@@ -92,6 +92,9 @@ describe('app with MongoDB reachable', () => {
       { method: 'post', path: '/api/v1/auth/refresh' },
       { method: 'post', path: '/api/v1/auth/logout' },
       { method: 'get', path: '/api/v1/auth/me' },
+      { method: 'post', path: '/api/v1/auth/password/forgot' },
+      { method: 'post', path: '/api/v1/auth/password/resend' },
+      { method: 'post', path: '/api/v1/auth/password/reset' },
     ]);
   });
 

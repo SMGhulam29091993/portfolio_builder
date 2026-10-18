@@ -1,18 +1,24 @@
 /**
- * In-memory fake of `UserRepository`'s read and create ports, for service tests
+ * In-memory fake of `UserRepository`'s read, create and password-write ports, for service tests
  * (`constitution.md` → Per-layer convention: services get constructor-injected fakes).
  *
  * It passes the same contract suite as the MongoDB repository
  * (`modules/auth/user-repository.contract.spec.ts`, `owner-auth.CT10`), so a service test that
- * uses it proves what the real repository would do. `IUserPasswordWriter` is added with the
+ * uses it proves what the real repository would do. `IUserPasswordWriter` joined with the
  * password reset (`owner-auth.T08`), the first service that writes a password.
  */
 import { Types } from 'mongoose';
 
 import { ConflictError } from '../../core/errors/index.js';
-import type { IUserCreator, IUserReader, NewUser, User } from '../../modules/auth/index.js';
+import type {
+  IUserCreator,
+  IUserPasswordWriter,
+  IUserReader,
+  NewUser,
+  User,
+} from '../../modules/auth/index.js';
 
-export class InMemoryUserRepository implements IUserReader, IUserCreator {
+export class InMemoryUserRepository implements IUserReader, IUserCreator, IUserPasswordWriter {
   /** Users by id. */
   private readonly users = new Map<string, User>();
 
@@ -47,5 +53,18 @@ export class InMemoryUserRepository implements IUserReader, IUserCreator {
     };
     this.users.set(created.id, created);
     return created;
+  }
+
+  updatePassword(id: string, passwordHash: string, changedAt: Date): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return Promise.resolve(false);
+    // `updatedAt` moves as Mongoose timestamps move it on an update.
+    this.users.set(id, {
+      ...user,
+      passwordHash,
+      passwordChangedAt: changedAt,
+      updatedAt: this.now(),
+    });
+    return Promise.resolve(true);
   }
 }

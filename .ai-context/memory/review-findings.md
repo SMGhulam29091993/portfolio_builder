@@ -84,6 +84,23 @@ written, since the key is still IP + email.
 **Resulting rule/check added:** none yet; queued in `state/next.md` for the deployment-target
 work, which must set `trust proxy` to the real hop count before the limiter means per-client.
 
+### 2026-10-18 — owner-auth.T08
+**Finding:** A reset that reads `attempts`, compares the code and only then increments lets
+guesses sent in parallel all read `attempts < 5` before any of them fails, so one burst gets
+far more than five compares against a 6-digit code.
+**Resulting rule/check added:** `PasswordResetService.reset` claims the attempt with the atomic
+`incrementAttempts` before comparing and refuses once the returned count passes 5.
+`password-reset.service.spec.ts` → "guesses sent in parallel cannot get more than five
+compares" fires 20 guesses at once (fails with the claim removed).
+
+### 2026-10-18 — owner-auth.T08
+**Finding:** With mail disabled outside production, an unknown address took the decoy path,
+which sends nothing, so API05 answered 200 where the spec and ADR-0009 say 503 — and the
+owner's 503 came only after a code document and reference had been written.
+**Resulting rule/check added:** `IMailSender.ensureAvailable()` (ADR-0009, amended 2026-10-18),
+called first by `requestCode` and `resend`. `owner-auth.IT22` now sends both addresses and
+asserts nothing is written; it fails with the call removed.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

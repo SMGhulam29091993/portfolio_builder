@@ -5,7 +5,8 @@
  * Each passes the same contract suite as the real adapter (`modules/auth/adapters/*.contract.spec.ts`),
  * so a service test that uses one proves what production would do — without argon2's tens of
  * milliseconds per call or real randomness. The hashers also count calls, which is how
- * `owner-auth.UT02` proves verification work happens for an unknown email.
+ * `owner-auth.UT02` proves verification work happens for an unknown email and `UT13` that a
+ * decoy reference costs what a real one does.
  */
 import type {
   IClock,
@@ -60,10 +61,16 @@ export class FakePasswordHasher implements IPasswordHasher {
 /** Fake of `BcryptOtpHasher`. */
 export class FakeOtpHasher implements IOtpHasher {
   private readonly fake = new SaltedFake('fake-bcrypt');
+  /**
+   * Number of `hash` calls so far. Lets `owner-auth.UT13` prove a decoy reference costs the
+   * same hashing work as a real one.
+   */
+  hashCalls = 0;
   /** Number of `compare` calls so far. */
   compareCalls = 0;
 
   hash(value: string): Promise<string> {
+    this.hashCalls += 1;
     return Promise.resolve(this.fake.hash(value));
   }
 

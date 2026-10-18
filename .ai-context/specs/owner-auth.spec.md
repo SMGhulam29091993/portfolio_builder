@@ -91,7 +91,7 @@ Lookup on verify: reference → Redis → identifier → `otps` by identifier �
 otpHash)`. A successful reset deletes the `otps` document and the Redis reference, sets the new
 password and deletes the auth session, so every browser must sign in again.
 ## Mail delivery
-Canonical rules are in ADR-0009. `auth` depends on `IMailSender` (`send({ to, subject, text })`).
+Canonical rules are in ADR-0009. `auth` depends on `IMailSender` (`send({ to, subject, text })` and `ensureAvailable()`).
 `MailSenderFactory` picks the first configured strategy in priority order; today the only one is
 `GmailMailSender` (nodemailer over Gmail SMTP with `GMAIL_USER` / `GMAIL_APP_PASSWORD`). A later
 provider such as Brevo is one new class and one factory registration, ahead of Gmail in the

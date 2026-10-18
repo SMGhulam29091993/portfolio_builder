@@ -1,6 +1,7 @@
 # ADR-0009: Mail goes through one port; the sender is a strategy chosen by configuration
 **Status:** Accepted — owner, 2026-10-17 (strategy pattern, Gmail through nodemailer as the
-default, a provider such as Brevo taking over once it is set up)
+default, a provider such as Brevo taking over once it is set up). Amended 2026-10-18
+(`owner-auth.T08`): the port gains `ensureAvailable()`; see Decision, first bullet.
 
 ## Context
 The owner-auth password reset emails a one-time code. The constitution allows no external
@@ -9,9 +10,12 @@ provider: one port, one adapter per provider, a factory, and a dev-bypass that n
 in production (ADR-0003).
 
 ## Decision
-- `auth` owns the port `IMailSender` with one method, `send({ to, subject, text })`. Adapters
-  rethrow provider failures as `UpstreamError` (`provider: "mail"`); no provider type crosses
-  the port.
+- `auth` owns the port `IMailSender`: `send({ to, subject, text })`, and — since the
+  2026-10-18 amendment — `ensureAvailable()`, which contacts no provider and rejects with 503
+  only from `DisabledMailSender`. The password reset calls it before any other work, so "the
+  routes that need mail answer 503" holds for every request, including an unknown address
+  whose decoy answer never sends (`owner-auth.AC17`, `AC22`). Adapters rethrow provider
+  failures as `UpstreamError` (`provider: "mail"`); no provider type crosses the port.
 - Each provider is a strategy class: `GmailMailSender` (nodemailer over Gmail SMTP, using
   `GMAIL_USER` and `GMAIL_APP_PASSWORD`) is built now. `MailSenderFactory` holds the strategies
   in priority order and returns the first whose variables are all set. A provider added later,

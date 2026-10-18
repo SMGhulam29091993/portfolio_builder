@@ -102,6 +102,9 @@ describe('readDocumentedOperations', () => {
       { method: 'post', path: '/api/v1/auth/refresh', specId: 'owner-auth.API02' },
       { method: 'post', path: '/api/v1/auth/logout', specId: 'owner-auth.API03' },
       { method: 'get', path: '/api/v1/auth/me', specId: 'owner-auth.API04' },
+      { method: 'post', path: '/api/v1/auth/password/forgot', specId: 'owner-auth.API05' },
+      { method: 'post', path: '/api/v1/auth/password/resend', specId: 'owner-auth.API06' },
+      { method: 'post', path: '/api/v1/auth/password/reset', specId: 'owner-auth.API07' },
     ]);
   });
 });
