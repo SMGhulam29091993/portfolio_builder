@@ -158,7 +158,8 @@ is real — no interface with a single trivial implementation and no second impl
   `public-site-rendering` produces a first measured baseline.
 - **Accessibility:** WCAG 2.1 AA on the public site and the CMS. Text/background contrast of at
   least 4.5:1 is checked by code at design save and at publish, not by eye.
-- **Availability target:** not yet defined (single-owner personal product).
+- **Availability target:** not yet defined. Set before other users' portfolios are served — the
+  product is multi-tenant since ADR-0010, so an outage is no longer the owner's alone.
 - **RPO / RTO:** not yet defined — depends on the MongoDB hosting chosen at deploy time.
 
 ## Versioning Rules

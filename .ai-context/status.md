@@ -12,8 +12,8 @@ owner moves a spec to `Ready`.
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
-| 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | — |
-| 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006 |
+| 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | Revise for ADR-0010 (serves bytes to the asset's own user, not "the owner") |
+| 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006; revise for ADR-0010 (one design per user's portfolio) |
 | 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
 | 9 | `about-section` | Bio, currently, stats, process | Draft | BRD-001 | — |
 | 10 | `work-showcase` | Featured project and project cards | Draft | BRD-001 | — (OQ1 Second Brain copy blocks the first publish, not `Ready`) |

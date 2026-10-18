@@ -58,9 +58,10 @@ answered with a different product (2026-10-18):
   `credits-billing` and `custom-domains` (after `public-site-rendering`). None is written yet.
 - Specs already written for one owner and one portfolio need revising when they are picked up:
   `section-engine` (portfolio per user, ownership check on `/cms`), `cms-panel-shell`
-  (registration and verification screens), `site-identity`, `publish-pipeline`,
-  `public-site-rendering` (which portfolio a request host serves) and `ai-design-studio`
-  (per-user limits).
+  (registration and verification screens), `site-identity`, `media-assets` (bytes served to
+  the asset's own user), `design-theme`, `publish-pipeline` (snapshot volume is no longer one
+  owner's, which ADR-0004 → Consequences relied on for "no pruning"), `public-site-rendering`
+  (which portfolio a request host serves) and `ai-design-studio` (per-user limits).
 - `agent-role.md` → Route audiences and `constitution.md` → Security Posture are amended to the
   decided facts above. The mechanics stay out of the rule files until they are accepted.
 - Open, recorded in `state/blockers.md`: what the owner role may do that a member may not; the

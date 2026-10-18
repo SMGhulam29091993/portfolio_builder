@@ -19,7 +19,7 @@ Draft
 ## Linked BRD
 .ai-context/BRD.md#BRD-002
 ## Intent
-Let the single owner sign in to the CMS with email and password, stay signed in through three
+Let a registered user sign in to the CMS with email and password, stay signed in through three
 `HttpOnly` cookies (a 15-minute JWT access token, a 7-day refresh token and the session's `jti`)
 backed by exactly one session record in Redis, and give every `/api/v1/cms/**` route one guard
 that rejects everyone else and tells a superseded browser that its session has ended. When the
@@ -314,9 +314,11 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
   a real reference can reach it.
 - Hashing, signing, Redis or mail failures → 500 `INTERNAL_ERROR`, 503 or 502 as listed; nothing
   about the cause is returned.
-- Creating a user whose email already exists → `ConflictError` with code `USER_EXISTS`. Only the
-  owner seeder creates users and it checks first, so this surfaces only when two seeder runs
-  race; no HTTP route can reach it.
+- Creating a user whose email already exists → `ConflictError` with code `USER_EXISTS`. In this
+  spec only the development seeder creates users, and it checks first, so here this surfaces
+  only when two seeder runs race and no HTTP route reaches it. Registration
+  (`account-registration`) will create users over HTTP and must map it without revealing that
+  the email is taken (ADR-0010).
 - Login and send rate-limit counters are in process memory (`RateLimiterFactory`); a restart
   resets them. The resend cooldown is enforced from `sentAt` in MongoDB and survives restarts.
 ## Unit Test Cases (spec-derived)
@@ -339,8 +341,8 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 | owner-auth.UT15 | AC19 | `reset` with a wrong code, then after 5 attempts with the right one | `OTP_INVALID` and `attempts` +1; then `OTP_INVALID` without a compare |
 | owner-auth.UT16 | AC20 | `reset` after `expiresAt` | `OTP_EXPIRED`; nothing deleted |
 | owner-auth.UT17 | AC21 | `resend` at 59 s and at 61 s | Throws rate-limited; then new code, identifier and reference, old reference deleted |
-| owner-auth.UT19 | AC23 | Seeder with `NODE_ENV=production` and valid owner variables | Throws; reader, hasher and creator never called |
 | owner-auth.UT18 | AC22 | `MailSenderFactory` with Gmail configured; with nothing in production; with nothing outside production | Gmail sender; throws; disabled sender |
+| owner-auth.UT19 | AC23 | Seeder with `NODE_ENV=production` and valid owner variables | Throws; reader, hasher and creator never called |
 ## Open Questions
 1. owner-auth.OQ1 — The development seeder must give the account a `displayName` (required on
    `users` and returned by API04), and no source is specified. Proposed: a third
@@ -360,7 +362,8 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
   isolation).
 - The login and password-reset screens themselves — `cms-panel-shell`.
 ## Non-Functional Constraints (from constitution.md)
-- `users` is the only authentication source; no AI provider or mail provider is an identity path.
+- `users` is the only authentication source; no AI provider or mail provider is an identity path,
+  and Google sign-in (`google-sign-in`) only ever resolves to a `users` record (ADR-0011).
 - Test-first: every endpoint, the guard and the password-reset flow.
 - Redis-backed stores are tested against a real Redis server, as MongoDB repositories are
   against a real `mongod` (ADR-0008).
