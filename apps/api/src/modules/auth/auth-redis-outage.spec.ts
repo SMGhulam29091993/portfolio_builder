@@ -22,6 +22,8 @@ import { UserRepository } from './user.repository.js';
 const REDIS_HOST = '127.0.0.1';
 const REDIS_PORT = 6379;
 const JWT_SECRET = 'redis-outage-spec-placeholder-secret-000';
+/** The web app's origin for this run; every non-GET below sends it, as the browser does. */
+const WEB_ORIGIN = 'http://127.0.0.1:3100';
 const OWNER_EMAIL = 'outage-owner@example.test';
 const OWNER_PASSWORD = 'outage spec password value';
 /** Far below any client or socket timeout: an answer this fast was not left waiting. */
@@ -96,6 +98,7 @@ beforeAll(async () => {
     MONGODB_URI: mongo.uri,
     REDIS_URL: redis.url,
     JWT_ACCESS_SECRET: JWT_SECRET,
+    WEB_ORIGIN,
   });
   api = createApp(buildContainer({ env, logger, mongo: mongo.connection, redis: connection }));
 
@@ -121,6 +124,7 @@ afterAll(async () => {
 function login(): request.Test {
   return request(api.handler)
     .post('/api/v1/auth/login')
+    .set('Origin', WEB_ORIGIN)
     .send({ email: OWNER_EMAIL, password: OWNER_PASSWORD });
 }
 
@@ -150,11 +154,17 @@ describe('auth with Redis lost after startup', () => {
     await expectUnavailable(login);
     // A refresh that could not reach Redis keeps the cookies, so the client can retry.
     const refreshed = await expectUnavailable(() =>
-      request(api.handler).post('/api/v1/auth/refresh').set('Cookie', cookie),
+      request(api.handler)
+        .post('/api/v1/auth/refresh')
+        .set('Origin', WEB_ORIGIN)
+        .set('Cookie', cookie),
     );
     expect(refreshed.headers['set-cookie']).toBeUndefined();
     await expectUnavailable(() =>
-      request(api.handler).post('/api/v1/auth/logout').set('Cookie', cookie),
+      request(api.handler)
+        .post('/api/v1/auth/logout')
+        .set('Origin', WEB_ORIGIN)
+        .set('Cookie', cookie),
     );
 
     // The 503s are logged as failures, with the driver error kept as the logged cause.

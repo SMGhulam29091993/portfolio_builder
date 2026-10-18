@@ -9,9 +9,16 @@ const VALID_SOURCE = {
   MONGODB_URI: 'mongodb://svc-user:not-a-real-secret@db.internal:27017/portfolio',
   REDIS_URL: 'redis://svc-user:not-a-real-secret@cache.internal:6379/0',
   JWT_ACCESS_SECRET: 'not-a-real-secret-but-32-chars-long-0000',
+  WEB_ORIGIN: 'https://portfolio.example',
 } as const;
 
-const REQUIRED_VARIABLES = ['PORT', 'MONGODB_URI', 'REDIS_URL', 'JWT_ACCESS_SECRET'] as const;
+const REQUIRED_VARIABLES = [
+  'PORT',
+  'MONGODB_URI',
+  'REDIS_URL',
+  'JWT_ACCESS_SECRET',
+  'WEB_ORIGIN',
+] as const;
 
 /** Runs `loadEnv` and returns the `EnvValidationError` it throws, failing the test otherwise. */
 function captureEnvError(source: Record<string, string | undefined>): EnvValidationError {
@@ -43,6 +50,7 @@ describe('loadEnv', () => {
       MONGODB_URI: VALID_SOURCE.MONGODB_URI,
       REDIS_URL: VALID_SOURCE.REDIS_URL,
       JWT_ACCESS_SECRET: VALID_SOURCE.JWT_ACCESS_SECRET,
+      WEB_ORIGIN: VALID_SOURCE.WEB_ORIGIN,
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -79,8 +87,30 @@ describe('loadEnv', () => {
       'MONGODB_URI',
       'REDIS_URL',
       'JWT_ACCESS_SECRET',
+      'WEB_ORIGIN',
     ]);
   });
+
+  it.each([
+    ['a path', 'https://portfolio.example/cms'],
+    ['a trailing slash', 'https://portfolio.example/'],
+    ['a query', 'https://portfolio.example?x=1'],
+    ['a non-http scheme', 'ftp://portfolio.example'],
+    ['no scheme', 'portfolio.example'],
+    ['upper case (browsers send it lower-cased)', 'https://Portfolio.example'],
+    ['a default port spelled out (browsers omit it)', 'https://portfolio.example:443'],
+  ])('owner-auth.T06 — rejects a WEB_ORIGIN with %s (data variation)', (_case, value) => {
+    const error = captureEnvError({ ...VALID_SOURCE, WEB_ORIGIN: value });
+
+    expect(error.variables).toEqual(['WEB_ORIGIN']);
+  });
+
+  it.each(['http://localhost:3000', 'http://127.0.0.1:3100', 'https://portfolio.example'])(
+    'owner-auth.T06 — accepts the bare origin %s',
+    (value) => {
+      expect(loadEnv({ ...VALID_SOURCE, WEB_ORIGIN: value }).WEB_ORIGIN).toBe(value);
+    },
+  );
 
   it('owner-auth.T05 — rejects a JWT_ACCESS_SECRET shorter than 32 characters without echoing it', () => {
     const error = captureEnvError({ ...VALID_SOURCE, JWT_ACCESS_SECRET: 'short-secret-value' });

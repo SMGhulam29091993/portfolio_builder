@@ -58,6 +58,9 @@ The page composer, the section editor host and the section engine are not edited
 ## API access
 - The browser calls same-origin `/api/v1/**`, proxied to `apps/api` by a Next.js rewrite, so auth
   cookies stay first-party. Server-side fetches use `API_INTERNAL_URL`.
+- The web app must be served at exactly the API's `WEB_ORIGIN`: the API refuses any non-GET
+  under `/api/v1/auth` and `/api/v1/cms` whose `Origin` differs, with 403 `ORIGIN_NOT_ALLOWED`
+  (`owner-auth.AC12`). A server-side fetch that writes must send that `Origin` itself.
 - Auth tokens live only in the API's `HttpOnly` cookies (`owner-auth` → Session contract); the
   client holds the signed-in `user` and never a token, in a store or in browser storage.
 - A 401 `UNAUTHENTICATED` triggers one silent refresh and one retry; a second 401 redirects to

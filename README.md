@@ -38,7 +38,10 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
   safe to lose (ADR-0008). `pnpm dev` uses logical database 0. An existing `apps/api/.env` needs
   the `REDIS_URL` line from `.env.example` added, or the API refuses to start — and since
   `owner-auth.T05` the `JWT_ACCESS_SECRET` line too (at least 32 characters; replace the
-  development placeholder with `openssl rand -base64 48`).
+  development placeholder with `openssl rand -base64 48`), and since `owner-auth.T06` the
+  `WEB_ORIGIN` line (`http://localhost:3000`). Every non-GET to `/api/v1/auth` or `/api/v1/cms`
+  must carry exactly that `Origin`, so open the web app on the same host spelling — a
+  `127.0.0.1:3000` tab gets 403 `ORIGIN_NOT_ALLOWED` — and send `-H 'Origin: …'` with `curl`.
 - **Tests need the compose Redis running.** They start their own throwaway `mongod`, but Redis
   has no in-memory server: each API spec file claims its own logical database (1-14) on the
   compose Redis, and the E2E harness uses database 15, so tests never touch development data.

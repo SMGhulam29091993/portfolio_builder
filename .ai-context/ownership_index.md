@@ -16,8 +16,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
-**Referenced by:** every spec's API Contract (exception tables name a code, not a shape)
-**Last updated:** 2026-10-17
+**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
+**Last updated:** 2026-10-18
 
 ## Module router convention (`ApiRouter`, mounted route table)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
@@ -63,8 +63,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Environment variables
 **Canonical definition:** `.ai-context/architecture.md` → Environment
-**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `.agent/workflows/generate-plan.md` step 9; `.agent/workflows/code-review.md` (Security); `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development
-**Last updated:** 2026-10-17
+**Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `.agent/workflows/generate-plan.md` step 9; `.agent/workflows/code-review.md` (Security); `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development, `apps/web/e2e/start-api.ts` (the API's environment for E2E; `WEB_ORIGIN` from `playwright.config.ts`)
+**Last updated:** 2026-10-18
 
 ## Reference content, visual tokens, design unknowns
 **Canonical definition:** `.ai-context/design_reference.md`
@@ -103,8 +103,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Session contract (cookies, Redis session, `requireOwner`, Origin allow-list)
 **Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Session contract · Request authorization · Refresh
-**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008; code that restates its values: `apps/api/src/container.ts` (session, token and leeway lifetimes), `apps/api/src/modules/auth/session-cookie-writer.ts` (cookie names, paths, flags), `apps/api/openapi/openapi.yaml` (`sessionCookies` scheme)
-**Last updated:** 2026-10-17
+**Referenced by:** every spec with a `/api/v1/cms/**` endpoint (their 401 rows name `UNAUTHENTICATED` / `SESSION_EXPIRED` from the guard), `cms-panel-shell` spec, plan and test cases, `int-standards.nextjs.md` → API access, `architecture.md` → Request lifecycle, ADR-0008; code that restates its values: `apps/api/src/container.ts` (session, token and leeway lifetimes), `apps/api/src/modules/auth/session-cookie-writer.ts` (cookie names, paths, flags), `apps/api/openapi/openapi.yaml` (`sessionCookies` scheme, `OriginNotAllowed`, `LoginRateLimited`), `apps/api/src/core/http/origin-allow-list.middleware.ts` and `container.ts` `ORIGIN_CHECKED_PATHS` (the allow-list), `container.ts` `LOGIN_RATE_LIMIT` (5 failed sign-ins per 15 min, `owner-auth.T06`)
+**Last updated:** 2026-10-18
 
 ## Redis unreachable at runtime → 503, never fail open
 **Canonical definition:** `.ai-context/decisions/ADR-0008-redis-session-store.md` → Decision (startup and runtime behaviour)

@@ -56,6 +56,34 @@ test carried the AC's ID and a failure there would not have been reported agains
 **Resulting rule/check added:** It is the file's last named test (`owner-auth.AC15 / IT15`) and
 asserts it saw tokens, so it cannot pass vacuously.
 
+### 2026-10-18 — owner-auth.T06
+**Finding:** `architecture.md` → Request lifecycle placed the module rate limiter *before* the
+Origin allow-list. Built that way, a refused cross-origin request would reach the login limiter,
+and the allow-list would have to be repeated inside every `/auth` and `/cms` router, missing any
+`/cms` path no router serves yet. AC12 only requires the 403 before authentication.
+**Resulting rule/check added:** the app factory mounts `OriginAllowListMiddleware` on the
+`/api/v1/auth` and `/api/v1/cms` prefixes ahead of every router; the lifecycle line now reads
+Origin allow-list → rate limiter. `auth.routes.spec.ts` proves a refused body is never counted
+and that a POST to an unserved `/cms` path is 403.
+
+### 2026-10-18 — owner-auth.T06
+**Finding:** `RateLimiterFactory` counted every request on arrival, so it could not express
+"5 *failed* sign-ins" (AC3), and counting on response alone would let parallel attempts all
+pass before the first one failed.
+**Resulting rule/check added:** the policy's optional `counts(status)` gives a slot back once
+the response is known not to count; the slot is held while the request is in flight.
+`rate-limiter-factory.spec.ts` parks two requests on a gate and asserts the third is 429.
+
+### 2026-10-18 — owner-auth.T06 (open, not fixed here)
+**Finding:** Express's `trust proxy` is still unset, and in development and production the
+browser reaches the API through the web app's `/api/v1` rewrite. `req.ip` is then the web
+server's address for every client, so the login limiter's "IP + email" key is effectively
+"email" alone: anyone can lock the owner out of sign-in for 15 minutes with 5 wrong passwords
+(`Origin` is a browser guard, not an authenticator; a script can send it). AC3 holds as
+written, since the key is still IP + email.
+**Resulting rule/check added:** none yet; queued in `state/next.md` for the deployment-target
+work, which must set `trust proxy` to the real hop count before the limiter means per-client.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

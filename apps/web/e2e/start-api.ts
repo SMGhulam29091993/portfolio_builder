@@ -10,7 +10,8 @@
  * the same way `apps/api/src/main.spec.ts` isolates its child process. On SIGTERM / SIGINT the
  * API gets its own graceful shutdown first, then MongoDB is stopped.
  *
- * Usage: `node e2e/start-api.ts <port>`
+ * Usage: `node e2e/start-api.ts <port> <web-origin>` — the web origin is the one Playwright opens,
+ * the only `Origin` the API accepts on a non-GET under `/auth` and `/cms` (`owner-auth.AC12`).
  */
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -25,8 +26,8 @@ const E2E_REDIS_URL = 'redis://127.0.0.1:6379/15';
 /** Signs this throwaway API's access tokens; a fresh value per run, never a real secret. */
 const E2E_JWT_ACCESS_SECRET = randomBytes(48).toString('base64url');
 
-const port = process.argv[2];
-if (!port) throw new Error('usage: node e2e/start-api.ts <port>');
+const [port, webOrigin] = process.argv.slice(2);
+if (!port || !webOrigin) throw new Error('usage: node e2e/start-api.ts <port> <web-origin>');
 
 const mongo = await MongoMemoryServer.create();
 
@@ -38,6 +39,7 @@ const api = spawn(process.execPath, ['dist/main.js'], {
     MONGODB_URI: mongo.getUri(),
     REDIS_URL: E2E_REDIS_URL,
     JWT_ACCESS_SECRET: E2E_JWT_ACCESS_SECRET,
+    WEB_ORIGIN: webOrigin,
   },
   stdio: 'inherit',
 });

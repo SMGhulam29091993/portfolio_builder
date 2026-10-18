@@ -2,8 +2,8 @@
  * Express app factory: global middleware, module routers under `/api/v1`, then the 404 and
  * error handlers. Order follows `architecture.md` → Request lifecycle:
  *
- *   helmet → request id → JSON body → [per-route: rate limiter → validate] → controller
- *   → notFound → error middleware
+ *   helmet → request id → JSON body → [`/auth`, `/cms`: Origin allow-list]
+ *   → [per-route: rate limiter → validate] → controller → notFound → error middleware
  *
  * Rate limiters are per mount, so they run inside each module's router, after the JSON body is
  * parsed; the 100 KiB body limit bounds the cost of parsing before a limiter can reject.
@@ -49,6 +49,11 @@ export function createApp(container: Container): ApiApplication {
   app.use(createSecurityHeaders());
   app.use(createRequestId());
   app.use(createJsonBodyParser());
+
+  // Ahead of the routers, so a refused origin never reaches a limiter or the guard
+  // (`owner-auth.AC12`). It also covers paths no router serves yet: any non-GET under `/cms`.
+  const { paths, handler } = container.originAllowList;
+  app.use([...paths], handler);
 
   for (const apiRouter of container.apiRouters) app.use(API_PREFIX, apiRouter.router);
 

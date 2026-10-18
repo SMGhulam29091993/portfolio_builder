@@ -33,7 +33,14 @@ follows ADR-0009.
   refresh and logout, so the rule cannot diverge between them.
 - The SHA-256 of a refresh token is a pure helper in `core/crypto` (no state, no I/O).
 - `ISecureRandom` and `IClock` are injected so code generation, expiry, cooldown and rate-limit
-  tests are deterministic.
+  tests are deterministic. The container's `RateLimiterFactory` runs on the same `IClock`
+  (`owner-auth.T06`).
+- Login limit (`owner-auth.T06`): `LOGIN_RATE_LIMIT` in `container.ts` — key `loginAttemptKey`
+  (client IP + lower-cased email, read before validation), 5 per 15 minutes, counting 401s only
+  through the factory's `counts` option; a slot is held while its request is in flight.
+- Origin allow-list (`owner-auth.T06`): mounted by `app.ts` on the `/auth` and `/cms` prefixes
+  ahead of every router, so it runs before the limiter and the guard and covers future `/cms`
+  modules without any code in them (`architecture.md` → Request lifecycle).
 - The Redis client is created in `core/` (ADR-0008); `RedisSessionStore.compareAndSet` is a Lua
   script that replaces the session only while the stored `jti` equals the presented one. The
   client's offline queue is off, so a command fails at once while Redis is down and the store

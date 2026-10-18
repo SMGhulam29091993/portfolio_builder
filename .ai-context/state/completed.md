@@ -120,3 +120,13 @@
   ACs covered by named tests: AC1, AC4–AC8, AC11, AC15, plus IT02, IT09, IT10, IT23 and the
   IT13 runtime half (503 with Redis cut, proven to fail without the offline-queue fix). API01's
   403 / 429 responses are T06's scope and not yet documented. CI not yet run on this branch.
+- owner-auth.T06 — 2026-10-18 — DoD self-check: 2026-10-18, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks, with
+  `API_INTERNAL_URL` set as CI sets it; API 42 spec files / 393 tests; services at 100% lines and
+  branches), `pnpm drift` (5 routes match OpenAPI 0.3.0) and `pnpm test:e2e` passed. ACs
+  covered by named tests: AC3 (IT03, plus the `counts` cases in `rate-limiter-factory.spec.ts`)
+  and AC12 (IT12, `origin-allow-list.middleware.spec.ts`). Deviation: the Origin allow-list runs
+  before the rate limiter, the reverse of the old `architecture.md` lifecycle line, which was
+  corrected (`memory/review-findings.md`, 2026-10-18). Open finding, not in T06 scope: without
+  `trust proxy` the login key is effectively email-only behind the web rewrite. CI not yet run
+  on this branch.

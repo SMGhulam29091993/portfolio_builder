@@ -25,6 +25,7 @@ async function startStack(): Promise<{
     MONGODB_URI: mongo.uri,
     REDIS_URL: redis.url,
     JWT_ACCESS_SECRET: 'app-spec-placeholder-jwt-secret-0000000',
+    WEB_ORIGIN: 'http://127.0.0.1:3100',
   });
   const api = createApp(
     buildContainer({

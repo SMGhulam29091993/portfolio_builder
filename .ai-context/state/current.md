@@ -1,9 +1,13 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T05 are completed; T06 (login
-  rate limiter, Origin allow-list) is next.
-- T05 was built on its own branch, `feat/owner-auth-t05-routes-guard`, cut from `master` after
-  the PR #11 merge (T04); check `git log` / `git branch -a` for whether it has been merged.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T06 are completed; T07 (mail
+  port, Gmail strategy, factory) is next.
+- T06 was built on its own branch, `feat/owner-auth-t06-rate-limit-origin`, cut from `master`
+  after the PR #12 merge (T05); check `git log` / `git branch -a` for whether it has been merged.
+- Since T06 the API also needs `WEB_ORIGIN` (a bare origin, `http://localhost:3000` for
+  `pnpm dev`) in `apps/api/.env`, or it refuses to start; every non-GET to `/auth` and `/cms`
+  must send exactly that `Origin`.
+- T05 reached `master` through PR #12 from `feat/owner-auth-t05-routes-guard`.
 - Since T05 the API also needs `JWT_ACCESS_SECRET` (32+ characters) in `apps/api/.env`, or it
   refuses to start.
 - T00–T03 (the spec revision, T01, T02, T03 and the records audit) reached `master` through

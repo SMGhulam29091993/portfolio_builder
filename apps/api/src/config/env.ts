@@ -23,6 +23,18 @@ const REDIS_URL_PATTERN = /^rediss?:\/\//;
  */
 const MIN_JWT_SECRET_LENGTH = 32;
 
+/**
+ * True when `value` is a bare `http(s)` origin in the exact form a browser sends in its `Origin`
+ * header — `https://example.com`, `http://127.0.0.1:3000` — with no path, query or trailing
+ * slash. `OriginAllowListMiddleware` compares strings, so a value with any of those would never
+ * match and every write would be refused; rejecting it at startup names the mistake instead.
+ */
+function isBareOrigin(value: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  return (url.protocol === 'http:' || url.protocol === 'https:') && url.origin === value;
+}
+
 const envSchema = z.object({
   /** Runtime mode. `production` switches off development-only behaviour (connection caching). */
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -40,6 +52,11 @@ const envSchema = z.object({
    * never logged. Rotating it signs every browser out at its next request.
    */
   JWT_ACCESS_SECRET: z.string().min(MIN_JWT_SECRET_LENGTH),
+  /**
+   * The web app's origin: the only `Origin` allowed to send a non-GET request to `/api/v1/auth`
+   * or `/api/v1/cms` (`owner-auth` spec → Session contract, Origin allow-list).
+   */
+  WEB_ORIGIN: z.string().refine(isBareOrigin),
 });
 
 /** The validated, read-only configuration object. */

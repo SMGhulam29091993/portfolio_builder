@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.2.0
+  version: 0.3.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -84,7 +84,10 @@ paths:
         Starts the owner's one session, replacing any previous one (which ends it in every other
         browser), and sets the three session cookies. The email is compared case-insensitively.
         An unknown email and a wrong password get the same 401 body, and password verification
-        runs in both cases.
+        runs in both cases. After 5 failed sign-ins (401) for one client IP and email within 15
+        minutes, further attempts are refused with 429 until the window ends — even with the
+        right password; successes and malformed bodies do not count. Requires the web app's
+        Origin.
       security: []
       requestBody:
         required: true
@@ -111,6 +114,10 @@ paths:
           $ref: '#/components/responses/ValidationFailed'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/LoginRateLimited'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
@@ -126,7 +133,8 @@ paths:
         refresh token's SHA-256 must equal the stored hash. On success the jti, access token and
         refresh token are all replaced in one atomic compare-and-set, and the session's 7-day
         lifetime restarts. Of two refreshes sent with the same cookies exactly one succeeds; the
-        other receives SESSION_EXPIRED. Every 401 clears the three cookies.
+        other receives SESSION_EXPIRED. Every 401 clears the three cookies. Requires the web
+        app's Origin.
       security:
         - sessionCookies: []
       responses:
@@ -165,6 +173,8 @@ paths:
                         required: [code]
                         properties:
                           code: { enum: [UNAUTHENTICATED, SESSION_EXPIRED] }
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
@@ -178,6 +188,7 @@ paths:
         If the access cookie's signature is valid (expiry ignored) and its jti still matches the
         stored session, deletes that session; a superseded browser cannot end the newer one.
         Always clears the three cookies. Idempotent — 200 with no or malformed cookies too.
+        Requires the web app's Origin; a refused request changes nothing.
       security: []
       responses:
         '200':
@@ -192,6 +203,8 @@ paths:
               example:
                 success: true
                 message: Signed out
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
@@ -387,6 +400,52 @@ components:
             success: false
             message: Service unavailable
             data: { code: SERVICE_UNAVAILABLE }
+    OriginNotAllowed:
+      description: >-
+        The request's Origin header is missing or is not the web app's origin (WEB_ORIGIN).
+        Every non-GET request under /api/v1/auth and /api/v1/cms is checked before rate
+        limiting, validation or authentication, so a refused request has no other effect.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: ORIGIN_NOT_ALLOWED }
+          example:
+            success: false
+            message: Request origin is not allowed
+            data: { code: ORIGIN_NOT_ALLOWED }
+    LoginRateLimited:
+      description: >-
+        5 failed sign-ins for this client IP and email in the current 15-minute window. Sent
+        whatever the password, until the window ends.
+      headers:
+        Retry-After:
+          description: Seconds until the current window resets.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, retryAfterSec]
+                    properties:
+                      code: { const: RATE_LIMITED }
+                      retryAfterSec: { type: integer, minimum: 1, maximum: 900 }
+          example:
+            success: false
+            message: Too many requests
+            data: { code: RATE_LIMITED, retryAfterSec: 840 }
     RateLimited:
       description: The client exceeded the rate limit for this route.
       headers:
