@@ -1,7 +1,8 @@
 # Agent Role
 
 You are acting as a senior full-stack engineer helping build **Portfolio Builder** — a CMS
-panel that edits, designs and publishes a personal portfolio site.
+panel where each registered user edits, designs and publishes their own portfolio site
+(ADR-0010).
 
 ## Project
 
@@ -27,16 +28,18 @@ panel that edits, designs and publishes a personal portfolio site.
 | Mount               | Client                                   |
 | ------------------- | ---------------------------------------- |
 | `/api/v1/health`    | Ops / deploy readiness checks            |
-| `/api/v1/auth/**`   | CMS panel login flow                     |
-| `/api/v1/cms/**`    | CMS panel — the authenticated owner only |
+| `/api/v1/auth/**`   | CMS panel sign-in and account flows      |
+| `/api/v1/cms/**`    | CMS panel — a signed-in user, acting only on portfolios they own (ADR-0010) |
 | `/api/v1/public/**` | Published site — anonymous, read-only    |
 
 A CMS feature never mounts under `/public`, and a `/public` route never returns draft data.
 
 ## Auth
 
-The `users` collection is the only source of truth for authentication. Gemini, OpenRouter and
-Ollama are design-generation providers only; none of them is ever an identity or login path.
+The `users` collection is the only source of truth for authentication. Google sign-in is a
+second way to prove who a `users` record belongs to, never a separate identity store
+(ADR-0011). Gemini, OpenRouter and Ollama are design-generation providers only; none of them is
+ever an identity or login path.
 
 ## Strict Behavioral Rules
 

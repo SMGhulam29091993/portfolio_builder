@@ -63,5 +63,6 @@ the next session flags it before doing anything else.
 The lifecycle is in use: `monorepo-foundation` moved `Draft → Ready → In Progress` on
 2026-10-15 and `In Progress → Implemented` on 2026-10-17, and every completed task carries a DoD
 self-check line in `state/completed.md`. `owner-auth` moved `Draft → Ready → In Progress` on
-2026-10-17. The other specs are `Draft`. Restoring review gates later means superseding ADR-0001 and re-adding
+2026-10-17, and back to `Draft` on 2026-10-18 under a `⚠️ REVISED` marker (multi-tenancy,
+ADR-0010) with T01–T08 completed. The other specs are `Draft`. Restoring review gates later means superseding ADR-0001 and re-adding
 the reviewer roles here — nothing else needs to move.

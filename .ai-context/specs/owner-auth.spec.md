@@ -2,7 +2,15 @@
 ## Spec ID
 owner-auth
 ## Status
-In Progress
+Draft
+- ⚠️ REVISED 2026-10-18 (the product became multi-tenant — ADR-0010, ADR-0011, BRD-009 to
+  BRD-011). Raised while starting `owner-auth.T09`, when the spec did not say where the seeded
+  owner's `displayName` comes from. What changed: accounts are now created by registration
+  (`account-registration`) or Google sign-in (`google-sign-in`), not by this spec; "the owner"
+  in this spec now reads as "the user signing in" — T01–T08 already work per user and stand
+  unchanged; T09 becomes a development-only seeder (AC13 and AC14 reworded, AC23 added, OQ1
+  opened). Status set back from `In Progress` to `Draft`; the Definition of Ready is to be
+  re-run and the owner moves it to `Ready` again.
 - DoR self-check: 2026-10-17, pass. Moved `Draft → Ready` by the owner on 2026-10-17 ("start"),
   then `Ready → In Progress` with `owner-auth.T01` started the same day.
 - Revised 2026-10-17 to the owner's session and password-reset design, before the spec was ever
@@ -16,7 +24,11 @@ Let the single owner sign in to the CMS with email and password, stay signed in 
 backed by exactly one session record in Redis, and give every `/api/v1/cms/**` route one guard
 that rejects everyone else and tells a superseded browser that its session has ended. When the
 password is forgotten, the owner resets it with a 6-digit one-time code sent by email. There is
-no sign-up: the owner account is created by a seeder from environment variables.
+no sign-up in this spec: accounts are created by `account-registration` (email and password,
+verified email, the one-time owner claim) and `google-sign-in` (ADR-0010, ADR-0011), and this
+spec signs an existing `users` record in. For local development and tests only, a seeder
+creates one account from environment variables. (Revised 2026-10-18; until then the seeder
+was the only way an account came to exist.)
 ## Context
 - Builds on: .ai-context/architecture.md (API modules → `auth`, Request lifecycle),
   .ai-context/decisions/ADR-0008-redis-session-store.md,
@@ -234,11 +246,13 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 12. owner-auth.AC12 — Given a non-GET request under `/api/v1/auth` or `/api/v1/cms` whose `Origin`
     header is missing or differs from `WEB_ORIGIN`, when it is received, then the response is 403
     `ORIGIN_NOT_ALLOWED` before authentication is evaluated.
-13. owner-auth.AC13 — Given an empty `users` collection and `OWNER_EMAIL` / `OWNER_PASSWORD` set,
-    when the owner seeder runs, then exactly one user exists with an argon2id hash; when it runs
-    again, then nothing changes and the stored hash is untouched.
-14. owner-auth.AC14 — Given `OWNER_PASSWORD` shorter than 12 characters, when the owner seeder
-    runs, then it fails with a message that does not echo the password, and creates no user.
+13. owner-auth.AC13 — Given a non-production environment, an empty `users` collection and
+    `OWNER_EMAIL` / `OWNER_PASSWORD` set, when the development seeder runs, then exactly one
+    user exists with an argon2id hash; when it runs again, then nothing changes and the stored
+    hash is untouched.
+14. owner-auth.AC14 — Given a non-production environment and `OWNER_PASSWORD` unset or shorter
+    than 12 characters, when the development seeder runs, then it fails with a message that
+    names the variable and does not echo the password, and creates no user.
 15. owner-auth.AC15 — Given any auth request, when it is logged, then the log line contains no
     password, cookie value, token, `jti`, one-time code, identifier, reference or email address.
 16. owner-auth.AC16 — Given the owner's email, when API05 is called, then the response is 200 with
@@ -266,6 +280,10 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 22. owner-auth.AC22 — Given `NODE_ENV=production` and no mail strategy configured, when the API
     starts, then startup fails naming the missing variables; given a non-production environment
     and no strategy, then API05 returns 503 `SERVICE_UNAVAILABLE` and API01 still works.
+23. owner-auth.AC23 — Given `NODE_ENV=production`, when the development seeder runs, then it
+    refuses with a non-zero exit before reading any `users` document or hashing anything, and
+    creates no user — accounts in production come only from registration or Google sign-in
+    (ADR-0010).
 ## Edge Cases Covered
 - Email compared case-insensitively; stored lower-cased (login and forgot).
 - An expired or missing Redis session → 401 `UNAUTHENTICATED`; the 7-day TTL removes idle
@@ -314,22 +332,32 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 | owner-auth.UT08 | AC10 | `refresh` when compare-and-set reports the `jti` changed | Throws session-expired; nothing deleted |
 | owner-auth.UT09 | AC11 | `logout` with the current session, a superseded one, and no cookies | Deleted / untouched / no error |
 | owner-auth.UT10 | AC5 | `requireOwner` with expired, tampered and wrong-secret tokens | 401 each; `next` not called |
-| owner-auth.UT11 | AC14 | Seeder with an 11-character password | Throws; message has no password; repo `create` not called |
+| owner-auth.UT11 | AC14 | Seeder with an 11-character password, and with none | Throws each, naming `OWNER_PASSWORD`; message has no password; repo `create` not called |
 | owner-auth.UT12 | AC16 | `PasswordResetService.requestCode` for the owner (fakes, fixed random source) | Upsert with bcrypt code hash, raw identifier, expiry +10 min; Redis ref → identifier; one mail with the code |
 | owner-auth.UT13 | AC17 | `requestCode` for an unknown email | Same result shape; no upsert, no Redis write, no mail |
 | owner-auth.UT14 | AC18 | `reset` with the right code in time | Password hash set; document, reference and session deleted |
 | owner-auth.UT15 | AC19 | `reset` with a wrong code, then after 5 attempts with the right one | `OTP_INVALID` and `attempts` +1; then `OTP_INVALID` without a compare |
 | owner-auth.UT16 | AC20 | `reset` after `expiresAt` | `OTP_EXPIRED`; nothing deleted |
 | owner-auth.UT17 | AC21 | `resend` at 59 s and at 61 s | Throws rate-limited; then new code, identifier and reference, old reference deleted |
+| owner-auth.UT19 | AC23 | Seeder with `NODE_ENV=production` and valid owner variables | Throws; reader, hasher and creator never called |
 | owner-auth.UT18 | AC22 | `MailSenderFactory` with Gmail configured; with nothing in production; with nothing outside production | Gmail sender; throws; disabled sender |
+## Open Questions
+1. owner-auth.OQ1 — The development seeder must give the account a `displayName` (required on
+   `users` and returned by API04), and no source is specified. Proposed: a third
+   development-only variable, `OWNER_DISPLAY_NAME`, read with `OWNER_EMAIL` and
+   `OWNER_PASSWORD`. Open — owner to confirm or choose another source.
 ## Explicitly Out of Scope
-- Sign-up, invitations, multiple users, roles.
+- Registration, email verification, roles and the one-time owner claim — `account-registration`
+  (ADR-0010). Invitations.
 - More than one concurrent session; a list of devices; "sign out everywhere" as its own endpoint
   (a password reset does it).
 - Changing the password while signed in.
 - Two-factor authentication at sign-in (BRD-002, open).
 - Mail strategies other than Gmail; Brevo is anticipated by the factory but not built here.
-- OAuth / social login.
+- Google sign-in — `google-sign-in` (ADR-0011). Any other OAuth or social login.
+- Scoping `/cms` requests to the signed-in user's own portfolio — the guard sets `req.auth`;
+  the ownership check belongs to the module that owns portfolios (`constitution.md` → Tenant
+  isolation).
 - The login and password-reset screens themselves — `cms-panel-shell`.
 ## Non-Functional Constraints (from constitution.md)
 - `users` is the only authentication source; no AI provider or mail provider is an identity path.

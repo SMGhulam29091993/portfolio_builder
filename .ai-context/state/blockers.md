@@ -30,3 +30,18 @@
   although `.gitignore` excludes them. Any install that changes a peer set rewrites the tracked
   symlinks (it happened in `monorepo-foundation.T08`). Untracking them (`git rm -r --cached`,
   files stay on disk) needs the owner's go-ahead. Blocks nothing; noise in every diff until done.
+
+## Raised 2026-10-18 (multi-tenancy — ADR-0010, ADR-0011)
+- **`owner-auth.OQ1` — seeded `displayName`** — the development seeder needs a value and no
+  source is specified. Proposed: `OWNER_DISPLAY_NAME`. Blocks `owner-auth.T09`.
+- **What the owner role may do** that a member may not (an admin area? free credits?). Blocks
+  the `account-registration` spec.
+- **Owner claim through Google** — allowed, or only through the registration form? Blocks the
+  `google-sign-in` spec.
+- **Payment provider and what credits buy** — the provider is an external service and needs an
+  ADR; price and what credits pay for (a domain only, or also AI generations) are unset. Blocks
+  `credits-billing`.
+- **A free portfolio's address** — a sub-domain of the platform domain or a path under it, and
+  the platform domain itself. Blocks `custom-domains` and revises `public-site-rendering`.
+- **The reference design as a template** — does every new user start from the reference
+  portfolio's design (and none of its content)? Revises `section-engine` and `design-theme`.

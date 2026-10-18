@@ -53,6 +53,9 @@ stop, raise it, and fix the spec.
   `AI_PROVIDER` is missing, is `ollama` or `stub`, or its credential is absent. Every new
   integration follows the same shape; this is a self-review checklist item.
 - **Auth boundary:** `users` is the only authentication source. See `agent-role.md` → Auth.
+- **Tenant isolation:** every `/api/v1/cms/**` read and write is scoped to portfolios the
+  signed-in user owns (ADR-0010). A request for another user's portfolio answers as if it did
+  not exist.
 - **Draft isolation:** `/api/v1/public/**` reads published snapshots only. No code path under
   that mount may import a draft repository interface.
 - **Plain text only:** every free-text field is stored and rendered as text. HTML is stripped on
@@ -141,8 +144,9 @@ is real — no interface with a single trivial implementation and no second impl
 - **Approved datastores and integrations:** MongoDB (including GridFS for files). Redis, for the
   `auth` module's sessions and one-time-code references only (ADR-0008). Gemini, OpenRouter and
   Ollama for design generation. Gmail SMTP through nodemailer for mail, behind `IMailSender`
-  (ADR-0009). No other datastore, queue, cache or external service without an ADR — that
-  includes any other use of Redis, and S3.
+  (ADR-0009). Google OpenID Connect for sign-in only (ADR-0011). No other datastore, queue,
+  cache or external service without an ADR — that includes any other use of Redis, S3 and any
+  payment provider (BRD-011).
 
 ## Non-Functional Baselines
 - **Status:** any target still unset reads "not yet defined" rather than a soft adjective.

@@ -8,10 +8,10 @@ owner moves a spec to `Ready`.
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
-| 2 | `owner-auth` | Owner sign-in, the single Redis session, password reset by one-time code | In Progress | BRD-002 | — |
-| 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005 |
-| 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | — |
-| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text |
+| 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Draft (⚠️ REVISED 2026-10-18; T01–T08 completed) | BRD-002 | OQ1 seeder `displayName`; owner re-approval |
+| 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
+| 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
+| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
 | 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | — |
 | 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006 |
 | 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
@@ -20,14 +20,31 @@ owner moves a spec to `Ready`.
 | 11 | `experience-timeline` | Role timeline | Draft | BRD-001 | — |
 | 12 | `stack-credentials` | Skills, education, certifications | Draft | BRD-001 | — |
 | 13 | `contact-section` | Contact card | Draft | BRD-001 | — |
-| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Draft | BRD-005 | ADR-0004 |
-| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Draft | BRD-003 | OQ1 mobile nav, OQ2 motion |
-| 16 | `ai-design-studio` | AI design proposals | Draft | BRD-004 | ADR-0006, ADR-0003 mechanics |
+| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Draft | BRD-005 | ADR-0004; revise for ADR-0010 |
+| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Draft | BRD-003 | OQ1 mobile nav, OQ2 motion; revise for ADR-0010 (portfolio per request host) |
+| 16 | `ai-design-studio` | AI design proposals | Draft | BRD-004 | ADR-0006, ADR-0003 mechanics; revise for ADR-0010 (per-user limits) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
+## Planned slugs — no spec written yet (ADR-0010, ADR-0011)
+| Slug | Title | BRD | Place in the build order |
+|---|---|---|---|
+| `account-registration` | Registration, email verification, roles, the one-time owner claim | BRD-009 | After `owner-auth` |
+| `google-sign-in` | Google OpenID Connect sign-in into a `users` record | BRD-010 | After `account-registration` |
+| `credits-billing` | Buying credits; payment provider | BRD-011 | After `public-site-rendering`; needs a payment-provider ADR |
+| `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
+
 ## Daily Execution Log
 ### 2026-10-18
+- The product became multi-tenant (owner, while `owner-auth.T09` was being started): anyone
+  registers, email verification is required, Google sign-in is offered, the platform owner is
+  claimed once with a secret key, every user builds their own portfolio, credits buy a custom
+  domain. ADR-0010 and ADR-0011 accepted for the decision (mechanics proposed); BRD-001 and
+  BRD-002 revised, BRD-009 to BRD-011 added; `agent-role.md`, `constitution.md` (Tenant
+  isolation, Google as an approved integration), `int-standards.express.md` and the self-review
+  checklist amended. `owner-auth` ⚠️ REVISED and set back to `Draft`: T01–T08 stand, T09 is now
+  a development-only seeder (AC13, AC14 reworded, AC23 and OQ1 added). Four planned slugs added.
+  On branch `feat/owner-auth-t09-registration-revision`; no code changed.
 - `owner-auth.T08` completed on `feat/owner-auth-t08-password-reset`: `PasswordResetService`
   (request with a decoy for unknown addresses, resend with the 60 s cooldown, reset with
   attempts claimed atomically before the compare), routes API05–API07 with a shared code-send
