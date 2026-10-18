@@ -10,4 +10,4 @@
 - [x] owner-auth.T06 — Login rate limiter (IP + email, 5 per 15 min) and `OriginAllowListMiddleware` on `/auth` and `/cms` — Acceptance: AC3, AC12
 - [x] owner-auth.T07 — `IMailSender`, `GmailMailSender` (nodemailer), `DisabledMailSender`, `MailSenderFactory`; `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM` in `env.ts`; production fail-fast; contract suite and `RecordingMailSender` — Acceptance: AC22
 - [x] owner-auth.T08 — `PasswordResetService` (request, resend, reset), routes API05–API07, send limiter (5 per hour per IP), `OTP_INVALID` / `OTP_EXPIRED` in the error mapping, OpenAPI — Acceptance: AC15–AC21
-- [ ] owner-auth.T09 — `OwnerSeeder` (idempotent, 12-character minimum) and the `seed:owner` script — Acceptance: AC13, AC14
+- [ ] owner-auth.T09 — Development-only `OwnerSeeder` (idempotent, 12-character minimum, refuses in production) and the `seed:owner` script; `displayName` source per OQ1 — Acceptance: AC13, AC14, AC23 (revised 2026-10-18, ADR-0010; blocked until the owner moves the revised spec back to `Ready`)

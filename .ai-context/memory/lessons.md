@@ -21,6 +21,16 @@ lint`). Objects Prettier had already split stay split on a second run with the r
 `--single-quote --print-width 100 --trailing-comma all` and only on new files, then check
 `git diff` for reformatting noise before committing.
 
+### 2026-10-18 — A task that creates a record needs a stated source for every required field
+**What we assumed:** `owner-auth.T09` was fully specified by AC13 and AC14: a seeder from
+`OWNER_EMAIL` / `OWNER_PASSWORD`.
+**What was actually true:** `users.displayName` is required (model, `NewUser`, API04), and no
+document said where the seeded value comes from. Asking instead of picking a default surfaced a
+product change: open registration, a one-time owner claim, Google sign-in and per-user
+portfolios (ADR-0010, ADR-0011). The seeder became development-only.
+**Carry forward:** before starting a task that writes a new record, list the record's required
+fields against the spec; any field without a source is an Open Question, raised before code.
+
 <!-- Template
 ### <date> — <one-line summary>
 **What we assumed:** ...

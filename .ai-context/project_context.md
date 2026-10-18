@@ -1,17 +1,21 @@
 # Portfolio Builder — Project Context Index
 
 ## Summary
-Portfolio Builder is a single-owner CMS panel that edits, designs and publishes a personal
-portfolio site. The site to publish is the reference design in `docs/design-reference/`
+Portfolio Builder is a CMS panel where each registered user edits, designs and publishes their
+own portfolio site (multi-tenant since 2026-10-18, ADR-0010); one account, the platform owner,
+is claimed once with a secret key. A free portfolio lives on the platform domain; credits buy a
+custom domain (BRD-011). The first site to publish is the reference design in `docs/design-reference/`
 (hero, about, selected work, experience, stack, contact). Turborepo monorepo: `apps/api`
 (Express, TypeScript, MongoDB) and `apps/web` (Next.js — public site and CMS). AI design
 generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: `monorepo-foundation`
-implemented 2026-10-17; `owner-auth` (revised 2026-10-17: Redis session, OTP password reset) is
-in progress.**
+implemented 2026-10-17; `owner-auth` (revised 2026-10-17: Redis session, OTP password reset;
+⚠️ revised again 2026-10-18 for multi-tenancy) is back in `Draft` with T01–T08 completed.**
 
 ## Current sprint
 Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
-`In Progress` (T01–T05 completed 2026-10-17, T06–T08 2026-10-18); the other 14 specs are `Draft`. Live picture: `state/current.md`,
+`Draft` again after the 2026-10-18 revision (T01–T05 completed 2026-10-17, T06–T08 2026-10-18;
+T09 waits for the owner to move it back to `Ready`); the other 14 specs are `Draft`. Four more
+slugs are planned with no spec yet (`status.md` → Planned slugs). Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 
 ## Architecture, in one paragraph
@@ -55,10 +59,12 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
 - `specs/`, `plans/`, `tasks/`, `test_cases/` — one set per feature slug; board in `status.md`
 
 ### Feature slugs (build order)
-`monorepo-foundation` → `owner-auth` → `section-engine` → `cms-panel-shell` → `site-identity`
-→ `media-assets` → `design-theme` → `hero-section` · `about-section` · `work-showcase` ·
-`experience-timeline` · `stack-credentials` · `contact-section` → `publish-pipeline` →
-`public-site-rendering` → `ai-design-studio`
+`monorepo-foundation` → `owner-auth` → `account-registration` → `google-sign-in` →
+`section-engine` → `cms-panel-shell` → `site-identity` → `media-assets` → `design-theme` →
+`hero-section` · `about-section` · `work-showcase` · `experience-timeline` ·
+`stack-credentials` · `contact-section` → `publish-pipeline` → `public-site-rendering` →
+`ai-design-studio` → `credits-billing` → `custom-domains` (the four added 2026-10-18 have no
+spec yet)
 
 ### State (`state/`)
 - `current.md` · `completed.md` · `next.md` · `blockers.md` · `prompt_history.md`
@@ -68,7 +74,9 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
   ADR-0003 AI provider port (Accepted / mechanics Proposed) · ADR-0004 snapshot publishing
   (Proposed) · ADR-0005 section registry (Proposed) · ADR-0006 AI output is constrained data
   (Proposed) · ADR-0007 tooling baseline (Accepted, amended 2026-10-17) · ADR-0008 Redis
-  session store (Accepted) · ADR-0009 mail delivery (Accepted, amended 2026-10-18)
+  session store (Accepted) · ADR-0009 mail delivery (Accepted, amended 2026-10-18) · ADR-0010 multi-tenant accounts and
+  the owner claim (Accepted / mechanics Proposed) · ADR-0011 Google sign-in (Accepted /
+  mechanics Proposed)
 
 ### Memory (`memory/`)
 - `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;

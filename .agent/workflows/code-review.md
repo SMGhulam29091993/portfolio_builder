@@ -27,6 +27,8 @@ unticked item means the task stays `inprogress`.
       that app's `.env.example` with no real secret, and declared in `turbo.json`.
 - [ ] Any new integration has the dev-bypass guard and a test in both directions.
 - [ ] Nothing under `/api/v1/public` can reach draft data.
+- [ ] Every `/api/v1/cms` read and write is scoped to a portfolio the signed-in user owns
+      (`constitution.md` → Tenant isolation, ADR-0010).
 
 ## Contract and tests
 - [ ] Responses use the standard envelope and the canonical error codes.

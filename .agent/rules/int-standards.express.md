@@ -103,8 +103,9 @@ repository performs a single conditional update (`{ _id, revision: expected }` â
 
 ## Persistence conventions
 - Repositories return plain domain objects (`lean()` + mapper), never Mongoose documents.
-- Every content document carries `portfolioId`; every query filters by it. There is one portfolio
-  today â€” the field exists so a second owner is a data change, not a schema migration.
+- Every content document carries `portfolioId`; every query filters by it. It is the tenant
+  boundary: each user owns their own portfolio (ADR-0010), so a `/cms` query that does not
+  filter by a portfolio the signed-in user owns is a security defect, not a style issue.
 - Indexes are declared in the model file and listed in the owning plan's Data Model section.
 - IDs exposed over HTTP are strings; embedded list items carry their own stable `id` (nanoid).
 

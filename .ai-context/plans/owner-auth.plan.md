@@ -70,7 +70,7 @@ follows ADR-0009.
   all from the approved list.
 - argon2id cost, measured 2026-10-17 (`owner-auth.T03`): m=64 MiB, t=3, p=4 takes ~33 ms per
   hash and per verify on the development machine — above the OWASP minimum (19 MiB, t=2) and
-  cheap for one owner's sign-ins. Pinned in `Argon2PasswordHasher`, not left to library defaults.
+  cheap at sign-in volume, which is per user since ADR-0010. Pinned in `Argon2PasswordHasher`, not left to library defaults.
 ## Data Model
 **`users`** (MongoDB) — `_id`, `email` (unique, lower-case), `passwordHash`, `displayName`,
 `passwordChangedAt`, `createdAt`, `updatedAt`.
@@ -79,7 +79,10 @@ follows ADR-0009.
 `createdAt`, `updatedAt`. Unique compound index `{ userId, purpose }` — the upsert key.
 **Redis** — `auth:session:<userId>` → a hash with the fields `jti`, `refreshTokenHash` and `issuedAt` (epoch ms; a hash so the Lua scripts read the `jti` with `HGET`, `owner-auth.T02`), TTL 7 days;
 `auth:otp-ref:<reference>` → identifier, TTL 24 hours.
-Seed: one user from `OWNER_EMAIL` / `OWNER_PASSWORD`; no literal credentials anywhere.
+Seed (development and tests only, ADR-0010): one user from `OWNER_EMAIL` / `OWNER_PASSWORD`
+(and the `displayName` source OQ1 settles); refuses when `NODE_ENV=production`; no literal
+credentials anywhere. Production accounts come from `account-registration` and
+`google-sign-in`, which add `role`, `emailVerifiedAt` and `googleSub` to `users`.
 ## Constitution Check
 - [x] No new datastore introduced without ADR — Redis by ADR-0008 (accepted 2026-10-17)
 - [x] No new external service without ADR — mail by ADR-0009 (accepted 2026-10-17)
@@ -90,6 +93,8 @@ Seed: one user from `OWNER_EMAIL` / `OWNER_PASSWORD`; no literal credentials any
 - [x] Dev-bypass shape for mail: disabled outside production only; production fails fast
 - [x] argon2id for passwords and bcrypt for one-time codes — ADR-0007, amended 2026-10-17
 ## Explicitly Deferred
+- Registration, email verification, roles, the owner claim — `account-registration`; Google
+  sign-in — `google-sign-in` (ADR-0010, ADR-0011).
 - Changing the password while signed in.
 - 2FA at sign-in — open at BRD stage.
 - Brevo or any other mail strategy — the factory leaves its place; no class is written.
@@ -104,4 +109,4 @@ Seed: one user from `OWNER_EMAIL` / `OWNER_PASSWORD`; no literal credentials any
 6. Login rate limit and Origin allow-list
 7. Mail port, Gmail strategy, factory
 8. `PasswordResetService`, routes API05–API07, send limit, OpenAPI
-9. Owner seeder
+9. Development-only owner seeder (revised 2026-10-18)

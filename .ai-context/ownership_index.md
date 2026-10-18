@@ -140,3 +140,13 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/specs/ai-design-studio.spec.md` → Provider contract (the *why* is `.ai-context/decisions/ADR-0003-ai-provider-port.md`)
 **Referenced by:** `constitution.md` (dev-bypass guard), `architecture.md` (AI design flow)
 **Last updated:** 2026-10-11
+
+## Accounts, roles, the one-time owner claim and tenant isolation
+**Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision (the `account-registration` spec takes over the mechanics once written)
+**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`
+**Last updated:** 2026-10-18
+
+## Google sign-in boundary
+**Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the `google-sign-in` spec takes over the mechanics once written)
+**Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan
+**Last updated:** 2026-10-18

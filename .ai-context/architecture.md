@@ -12,16 +12,20 @@ Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), 
 `SessionAuthorizer` and `AuthService` (T04), sign-in, refresh, sign-out, `me` and the
 `requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
 (T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
-code (T08) exist; only the owner seeder (T09) remains. Every other feature module is ⬜
+code (T08) exist; only the development-only seeder (T09) remains, and it waits on the spec
+revision of 2026-10-18 (ADR-0010). Every other feature module is ⬜
 planned.
 
 ## System overview
-The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
-AI-generates the visual design, previews at 1440 and 390, and publishes. Publishing freezes the
+Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
+edit its content section by section, adjust or AI-generate the visual design, preview at 1440
+and 390, and publish. A free portfolio is served on the platform's domain; a user with credits
+can attach their own domain (BRD-011). One account, the platform owner, is claimed once with a
+secret key at registration. Publishing freezes the
 draft into an immutable snapshot; the public site renders only the current snapshot.
 
 ```
- Browser (owner) ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
+ Browser (user)  ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
                                                       │  └──► Redis (auth sessions, ADR-0008)
                                                       └─────► Gmail SMTP (one-time codes, ADR-0009)
  Browser (visitor) ─► apps/web (site) ─server fetch────► apps/api /public ─► snapshots
@@ -76,7 +80,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Owner login, the single Redis session, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
+| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -131,10 +135,10 @@ use and that may use no module.
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
 | Collection | Writer | Purpose |
 |---|---|---|
-| `users` | `auth` | The owner account; password hash |
+| `users` | `auth` | User accounts; password hash (roles, verification and the Google link arrive with `account-registration` and `google-sign-in`, ADR-0010, ADR-0011) |
 | `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
 | Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
-| `portfolios` | `portfolio` | One per owner: slug, `sectionOrder`, `revision`, published pointer |
+| `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |
 | `designs` | `design` | One per portfolio: `theme`, `layout`, `revision` |
@@ -142,7 +146,8 @@ One writing module per collection. Field-level schemas live in the owning plan's
 | `snapshots` | `publishing` | Immutable published content, versioned per portfolio |
 | `assets`, `asset_files.files`, `asset_files.chunks` | `assets` | File metadata + GridFS bytes |
 
-Every content document carries `portfolioId`. A single owner and a single portfolio exist today.
+Every content document carries `portfolioId`, the tenant boundary (`constitution.md` → Tenant
+isolation).
 
 ## Section type catalogue
 | Type | Orderable | Hideable | In nav | Payload + behaviour owned by |
@@ -246,8 +251,8 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
 | `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
-| `OWNER_EMAIL`, `OWNER_PASSWORD` | api (seed only) | Creates the owner account |
-| `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves |
+| `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | Creates one local account for development and tests; the seeder refuses in production (ADR-0010) |
+| `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves — to be revised by `public-site-rendering`, which now resolves a portfolio per request host (ADR-0010) |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |

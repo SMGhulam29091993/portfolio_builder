@@ -152,3 +152,9 @@
   corrected (`memory/review-findings.md`, 2026-10-18). Open finding, not in T06 scope: without
   `trust proxy` the login key is effectively email-only behind the web rewrite. CI not yet run
   on this branch.
+- owner-auth spec revision (multi-tenancy) — 2026-10-18 — raised while starting T09: accounts
+  by registration and Google sign-in, the one-time owner claim, a portfolio per user, credits
+  for a custom domain; ADR-0010 and ADR-0011 accepted for the decision (mechanics proposed);
+  BRD-001/002 revised, BRD-009–011 added; T09 is now a development-only seeder. Not an
+  implementation task, so no DoD self-check line applies; the spec is back in `Draft` and its
+  DoR self-check is re-run once OQ1 is answered.
