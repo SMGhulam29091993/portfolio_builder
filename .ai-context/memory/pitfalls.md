@@ -75,6 +75,19 @@ stores wrap every command in `whileRedisAvailable` (`core/redis`), which maps an
 **Regression test:** `owner-auth.IT13` — `modules/auth/auth-redis-outage.spec.ts` (cuts a TCP
 proxy in front of Redis; fails at 5 s against the queueing client).
 
+### 2026-10-18 — A container that fails to build leaves MongoDB and Redis open
+**Root cause:** `ApplicationLifecycle.start` closed the datastores only when a *connect* failed.
+Its doc comment already promised the same for a request handler that cannot be built, but the
+handler was built outside the `try`, and nothing tested it — no container had ever thrown. The
+first one that does is production without a mail strategy (`owner-auth.AC22`): the process
+logged `startup failed` and lingered with both connections open until `main.ts`'s forced-exit
+timer fired.
+**Fix:** the handler is built inside the same `try`, so any failure closes every datastore,
+newest first, before rethrowing.
+**Regression test:** `owner-auth.AC22` — `core/lifecycle/application-lifecycle.spec.ts` →
+"closes every datastore, newest first, and opens no port when the handler cannot be built"
+(failed before the fix); end to end, `owner-auth.IT22` in `main.spec.ts`.
+
 <!-- Template
 ### <date> — <symptom>
 **Root cause:** ...

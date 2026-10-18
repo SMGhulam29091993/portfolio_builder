@@ -35,6 +35,15 @@ function isBareOrigin(value: string): boolean {
   return (url.protocol === 'http:' || url.protocol === 'https:') && url.origin === value;
 }
 
+/**
+ * An optional variable: absent and blank both mean unset. `.env.example` ships optional
+ * variables as `NAME=` lines, so a straight copy must parse as "not configured", not as an
+ * empty value that fails its schema.
+ */
+function optional<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
+}
+
 const envSchema = z.object({
   /** Runtime mode. `production` switches off development-only behaviour (connection caching). */
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -57,6 +66,16 @@ const envSchema = z.object({
    * or `/api/v1/cms` (`owner-auth` spec → Session contract, Origin allow-list).
    */
   WEB_ORIGIN: z.string().refine(isBareOrigin),
+  /**
+   * The Gmail account the Gmail mail strategy signs in as (ADR-0009). With
+   * `GMAIL_APP_PASSWORD`, it selects that strategy; `MailSenderFactory` decides what happens
+   * when either is unset.
+   */
+  GMAIL_USER: optional(z.email()),
+  /** A Gmail app password for `GMAIL_USER` — never the account password. A secret. */
+  GMAIL_APP_PASSWORD: optional(z.string()),
+  /** The sender address on outgoing mail; the Gmail strategy falls back to `GMAIL_USER`. */
+  MAIL_FROM: optional(z.email()),
 });
 
 /** The validated, read-only configuration object. */

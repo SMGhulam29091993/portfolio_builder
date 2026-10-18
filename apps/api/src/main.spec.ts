@@ -172,6 +172,37 @@ describe('main', () => {
     expect(api.output()).not.toContain(FAKE_SECRET);
   });
 
+  it('owner-auth.IT22 — refuses to start in production without a mail strategy, naming the variables', async () => {
+    const port = await findFreePort();
+    const api = startApi({
+      NODE_ENV: 'production',
+      PORT: String(port),
+      MONGODB_URI: mongo.getUri(),
+      REDIS_URL: redis.url,
+      JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
+    });
+
+    await expect(api.exited).resolves.toBe(1);
+    expect(api.lines.map((line) => line.msg)).not.toContain('http server listening');
+    const failure = api.lines.find((line) => line.msg === 'startup failed');
+    expect(failure).toEqual(
+      expect.objectContaining({
+        level: 'error',
+        error: expect.objectContaining({
+          name: 'MailNotConfiguredError',
+          message: expect.stringContaining('GMAIL_USER, GMAIL_APP_PASSWORD') as unknown,
+        }) as unknown,
+      }),
+    );
+    // Both datastores had opened before the container was built; both are closed again.
+    const closed = api.lines
+      .filter((line) => line.msg === 'database disconnected')
+      .map((line) => line.datastore);
+    expect(closed).toEqual(['redis', 'mongodb']);
+    expect(api.output()).not.toContain(JWT_ACCESS_SECRET);
+  });
+
   it('monorepo-foundation.AC4 / AC13 — serves /api/v1/health, then on SIGTERM closes Redis and MongoDB and exits 0', async () => {
     const port = await findFreePort();
     const api = startApi({

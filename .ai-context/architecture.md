@@ -35,7 +35,7 @@ portfolio-builder/
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy) closes both datastores again
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
@@ -239,8 +239,8 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `WEB_ORIGIN` | api | The web app's origin: the only `Origin` accepted on a non-GET under `/api/v1/auth` and `/api/v1/cms` (Origin allow-list) |
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
-| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); unset outside production → mail disabled |
-| `MAIL_FROM` | api | Sender address; defaults to `GMAIL_USER` |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
+| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (seed only) | Creates the owner account |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |

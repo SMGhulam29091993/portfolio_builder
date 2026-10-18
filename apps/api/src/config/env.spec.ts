@@ -135,6 +135,48 @@ describe('loadEnv', () => {
     expect(env.REDIS_URL).toBe('rediss://cache.internal:6380');
   });
 
+  it('owner-auth.T07 — leaves the mail variables unset when they are absent or blank', () => {
+    // Blank is how the example file ships them, so a straight copy runs with mail disabled.
+    for (const blank of [undefined, '']) {
+      const env = loadEnv({
+        ...VALID_SOURCE,
+        GMAIL_USER: blank,
+        GMAIL_APP_PASSWORD: blank,
+        MAIL_FROM: blank,
+      });
+
+      expect(env.GMAIL_USER).toBeUndefined();
+      expect(env.GMAIL_APP_PASSWORD).toBeUndefined();
+      expect(env.MAIL_FROM).toBeUndefined();
+    }
+  });
+
+  it('owner-auth.T07 — reads the Gmail strategy variables and the sender address', () => {
+    const env = loadEnv({
+      ...VALID_SOURCE,
+      GMAIL_USER: 'sender@portfolio.example',
+      GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop',
+      MAIL_FROM: 'no-reply@portfolio.example',
+    });
+
+    expect(env).toMatchObject({
+      GMAIL_USER: 'sender@portfolio.example',
+      // Kept exactly as given: Google shows app passwords in groups of four.
+      GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop',
+      MAIL_FROM: 'no-reply@portfolio.example',
+    });
+  });
+
+  it.each(['GMAIL_USER', 'MAIL_FROM'])(
+    'owner-auth.T07 — rejects a %s that is not an email address, without echoing it',
+    (name) => {
+      const error = captureEnvError({ ...VALID_SOURCE, [name]: 'not-an-address' });
+
+      expect(error.variables).toEqual([name]);
+      expect(error.message).not.toContain('not-an-address');
+    },
+  );
+
   it('defaults NODE_ENV to development when it is unset', () => {
     const env = loadEnv({ ...VALID_SOURCE, NODE_ENV: undefined });
 

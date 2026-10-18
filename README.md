@@ -42,6 +42,11 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
   `WEB_ORIGIN` line (`http://localhost:3000`). Every non-GET to `/api/v1/auth` or `/api/v1/cms`
   must carry exactly that `Origin`, so open the web app on the same host spelling — a
   `127.0.0.1:3000` tab gets 403 `ORIGIN_NOT_ALLOWED` — and send `-H 'Origin: …'` with `curl`.
+- **Mail is optional locally.** Since `owner-auth.T07` the API reads `GMAIL_USER`,
+  `GMAIL_APP_PASSWORD` and `MAIL_FROM` (ADR-0009). Left blank, mail is disabled and only
+  password reset is affected (it answers 503). To send real reset codes, set a Gmail address
+  and a Gmail app password — never the account password. With `NODE_ENV=production` the API
+  refuses to start until both are set.
 - **Tests need the compose Redis running.** They start their own throwaway `mongod`, but Redis
   has no in-memory server: each API spec file claims its own logical database (1-14) on the
   compose Redis, and the E2E harness uses database 15, so tests never touch development data.

@@ -123,7 +123,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Mail port and strategy selection (`IMailSender`, `MailSenderFactory`)
 **Canonical definition:** `.ai-context/decisions/ADR-0009-mail-delivery.md` → Decision
-**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment
+**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment; code: `mail-sender.factory.ts` (the decision), `container.ts` → `MAIL_STRATEGIES` (the priority order)
 **Last updated:** 2026-10-17
 
 ## `PublishedContent` snapshot shape, `IDraftContributor`, publish rules

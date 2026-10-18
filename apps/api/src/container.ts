@@ -23,7 +23,13 @@ import type { ILogger } from './core/logger/logger.interface.js';
 import type { IRedisClientProvider } from './core/redis/redis-client-provider.interface.js';
 import { Argon2PasswordHasher } from './modules/auth/adapters/argon2-password-hasher.js';
 import { CryptoSecureRandom } from './modules/auth/adapters/crypto-secure-random.js';
+import { DisabledMailSender } from './modules/auth/adapters/disabled-mail-sender.js';
+import { GmailMailSender } from './modules/auth/adapters/gmail-mail-sender.js';
 import { JwtTokenIssuer } from './modules/auth/adapters/jwt-token-issuer.js';
+import {
+  MailSenderFactory,
+  type MailStrategy,
+} from './modules/auth/adapters/mail-sender.factory.js';
 import { SystemClock } from './modules/auth/adapters/system-clock.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthRouter, loginAttemptKey } from './modules/auth/auth.routes.js';
@@ -83,6 +89,22 @@ const LOGIN_RATE_LIMIT: RateLimitPolicy = {
  * flow and everything the CMS writes. `/health` and `/public` stay open to any caller.
  */
 const ORIGIN_CHECKED_PATHS = [AUTH_PATH, `${API_PREFIX}/cms`] as const;
+
+/**
+ * Mail strategies in priority order (ADR-0009): the first whose variables are all set sends
+ * every email. A new provider (Brevo) is one adapter class plus one entry placed ahead of Gmail.
+ */
+const MAIL_STRATEGIES: readonly MailStrategy[] = [
+  MailSenderFactory.strategy(
+    ['GMAIL_USER', 'GMAIL_APP_PASSWORD'],
+    ({ GMAIL_USER, GMAIL_APP_PASSWORD }, { MAIL_FROM }) =>
+      new GmailMailSender({
+        user: GMAIL_USER,
+        appPassword: GMAIL_APP_PASSWORD,
+        from: MAIL_FROM ?? GMAIL_USER,
+      }),
+  ),
+];
 
 /** What the container needs from the startup sequence. */
 export interface ContainerDependencies {
@@ -176,6 +198,11 @@ export function buildContainer({
     authGuard,
     rateLimiters.create(LOGIN_RATE_LIMIT),
   );
+
+  // Mail (ADR-0009). Chosen here although the password reset (`owner-auth.T08`) is its first
+  // consumer, so production without a mail strategy already refuses to start
+  // (`owner-auth.AC22`): the factory throws while the container is built.
+  new MailSenderFactory(MAIL_STRATEGIES, new DisabledMailSender()).create(env);
 
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,

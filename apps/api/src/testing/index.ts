@@ -9,6 +9,7 @@ export { RedisTestHarness, type RedisTestHarnessOptions } from './redis-test-har
 export { AuthSessionFactory, NewUserFactory, OtpIssueFactory } from './auth/auth-fixtures.js';
 export { InMemoryOtpReferenceStore, InMemorySessionStore, type Clock } from './auth/in-memory-stores.js';
 export { InMemoryUserRepository } from './auth/in-memory-user-repository.js';
+export { RecordingMailSender } from './auth/recording-mail-sender.js';
 export {
   FakeOtpHasher,
   FakePasswordHasher,
