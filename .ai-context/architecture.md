@@ -9,8 +9,10 @@ the workspace, the API core (including the event bus), the `health` module, the 
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
 harness, CI and the local development environment exist. `owner-auth` is in progress: the
 Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), its
-`SessionAuthorizer` and `AuthService` (T04), and sign-in, refresh, sign-out, `me` and the
-`requireOwner` guard wired and routed (T05) exist; every other feature module is ⬜ planned.
+`SessionAuthorizer` and `AuthService` (T04), sign-in, refresh, sign-out, `me` and the
+`requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
+(T06), and the mail port with its Gmail strategy and factory (T07) exist; every other feature
+module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -42,9 +44,9 @@ portfolio-builder/
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`

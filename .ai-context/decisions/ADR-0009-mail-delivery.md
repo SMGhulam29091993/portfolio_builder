@@ -30,6 +30,7 @@ in production (ADR-0003).
 - A real email in local development needs a Gmail app password in `apps/api/.env`; without one,
   everything except password reset works.
 - Gmail sending limits and deliverability apply until another provider is configured.
-- nodemailer is pinned in ADR-0007 by the task that installs it.
+- nodemailer is pinned in ADR-0007 (10.1.2, installed by `owner-auth.T07`), with `smtp-server` as
+  the dev-only local server the contract suite sends to.
 - `constitution.md` → Approved LLD patterns lists `IMailSender` under Adapter + Factory, and
   Infrastructure lists the mail provider as an approved integration.
