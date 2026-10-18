@@ -11,7 +11,7 @@ in progress.**
 
 ## Current sprint
 Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
-`In Progress` (T01–T05 completed 2026-10-17, T06 2026-10-18); the other 14 specs are `Draft`. Live picture: `state/current.md`,
+`In Progress` (T01–T05 completed 2026-10-17, T06–T07 2026-10-18); the other 14 specs are `Draft`. Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 
 ## Architecture, in one paragraph

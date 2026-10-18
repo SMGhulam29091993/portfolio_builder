@@ -1,9 +1,12 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T06 are completed; T07 (mail
-  port, Gmail strategy, factory) is next.
-- T06 was built on its own branch, `feat/owner-auth-t06-rate-limit-origin`, cut from `master`
-  after the PR #12 merge (T05); check `git log` / `git branch -a` for whether it has been merged.
+- Nothing is `inprogress`. `owner-auth` is `In Progress`: T01–T07 are completed; T08
+  (`PasswordResetService`, API05–API07) is next.
+- T07 was built on its own branch, `feat/owner-auth-t07-mail-port`, cut from `master` after the
+  PR #13 merge (T06); check `git log` / `git branch -a` for whether it has been merged.
+- Since T07, `NODE_ENV=production` refuses to start without `GMAIL_USER` and
+  `GMAIL_APP_PASSWORD`. Locally they may stay blank: mail is then disabled and only password
+  reset (T08) is affected.
 - Since T06 the API also needs `WEB_ORIGIN` (a bare origin, `http://localhost:3000` for
   `pnpm dev`) in `apps/api/.env`, or it refuses to start; every non-GET to `/auth` and `/cms`
   must send exactly that `Origin`.

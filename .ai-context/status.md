@@ -28,6 +28,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-18
+- `owner-auth.T07` completed on `feat/owner-auth-t07-mail-port`: the `IMailSender` port,
+  `GmailMailSender` (nodemailer 10.1.2, plain text, log-safe failure cause), `DisabledMailSender`
+  (503) and `MailSenderFactory` (strategies registered in `container.ts`; production without one
+  fails startup naming the variables); `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM` read by
+  `env.ts`; contract suite CT06 and `RecordingMailSender`; startup closes the datastores when
+  the container cannot be built.
 - `owner-auth.T06` completed on `feat/owner-auth-t06-rate-limit-origin`: the login rate limiter
   (5 failed sign-ins per IP + email in 15 min; `RateLimiterFactory` gains `counts`, slots held
   while in flight; limiters on the container clock) and `OriginAllowListMiddleware` on every
