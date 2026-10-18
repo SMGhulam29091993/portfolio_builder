@@ -16,7 +16,11 @@
    (`memory/review-findings.md`, 2026-10-18).
 3. `section-engine.T01` — blocked on: ADR-0005 accepted; `owner-auth` implemented.
 4. `cms-panel-shell` picks up the revised session handling (AC3, `SESSION_EXPIRED`, cross-tab
-   refresh lock) and the forgot-password screen (AC15) when it is built.
+   refresh lock) and the forgot-password screen (AC15) when it is built. Its E2E15 needs "the
+   recorded code", but `apps/web/e2e/start-api.ts` boots the API through `main.ts`, and only
+   `buildContainer` accepts a `mailSender` (`owner-auth.T08`). That task decides how the E2E
+   API gets a recording sender (for example a local `smtp-server` behind the Gmail strategy)
+   without opening a test hook in production code.
 5. Owner decisions still open in `blockers.md` — blocked on: the owner. Raised 2026-10-17: the
    two cycles allowed by the module dependency map (blocks `publish-pipeline.T02`), and
    whether to untrack the build output and symlinks still committed (blocks nothing).
