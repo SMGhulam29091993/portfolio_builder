@@ -11,7 +11,7 @@ in progress.**
 
 ## Current sprint
 Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
-`In Progress` (T01–T05 completed 2026-10-17, T06–T07 2026-10-18); the other 14 specs are `Draft`. Live picture: `state/current.md`,
+`In Progress` (T01–T05 completed 2026-10-17, T06–T08 2026-10-18); the other 14 specs are `Draft`. Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 
 ## Architecture, in one paragraph
@@ -68,7 +68,7 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
   ADR-0003 AI provider port (Accepted / mechanics Proposed) · ADR-0004 snapshot publishing
   (Proposed) · ADR-0005 section registry (Proposed) · ADR-0006 AI output is constrained data
   (Proposed) · ADR-0007 tooling baseline (Accepted, amended 2026-10-17) · ADR-0008 Redis
-  session store (Accepted) · ADR-0009 mail delivery (Accepted)
+  session store (Accepted) · ADR-0009 mail delivery (Accepted, amended 2026-10-18)
 
 ### Memory (`memory/`)
 - `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;

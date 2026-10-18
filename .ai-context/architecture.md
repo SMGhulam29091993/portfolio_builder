@@ -11,8 +11,9 @@ harness, CI and the local development environment exist. `owner-auth` is in prog
 Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), its
 `SessionAuthorizer` and `AuthService` (T04), sign-in, refresh, sign-out, `me` and the
 `requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
-(T06), and the mail port with its Gmail strategy and factory (T07) exist; every other feature
-module is ⬜ planned.
+(T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
+code (T08) exist; only the owner seeder (T09) remains. Every other feature module is ⬜
+planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -44,7 +45,7 @@ portfolio-builder/
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`, `PasswordResetService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API07), `RequireOwnerMiddleware`, `SessionCookieWriter`)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
 │   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
@@ -179,8 +180,10 @@ checked.
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
 parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. A policy
 may count only some outcomes (`counts`): the login limiter counts 401s only, holding each slot
-while the request is in flight so parallel attempts cannot overshoot (`owner-auth.AC3`). All
-limiters run on the container's injected clock. Every
+while the request is in flight so parallel attempts cannot overshoot (`owner-auth.AC3`). The
+code-send limiter is one instance on both password-reset send routes (API05, API06), so they
+share a count of 5 per hour per IP (`owner-auth.T08`). All limiters run on the container's
+injected clock. Every
 module router is an `ApiRouter`, so the app knows its mounted route table for the OpenAPI drift
 check (`apps/api/src/app.ts`).
 

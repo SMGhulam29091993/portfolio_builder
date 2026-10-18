@@ -67,7 +67,7 @@ stop, raise it, and fix the spec.
   provider URLs are configuration, never literals in code.
 - **Security hardening backlog** (kept current, not aspirational):
   - `helmet()` — ✅ built `monorepo-foundation.T05` (`createSecurityHeaders`), mounted `monorepo-foundation.T06` (`app.ts`)
-  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; login limiter ✅ `owner-auth.T06` (5 failed sign-ins per IP + email in 15 min); code-send limiter ⬜ `owner-auth.T08`; AI and public limiters ⬜ their own specs. Per-client keys need Express `trust proxy` set for the deployment target ⬜ (`memory/review-findings.md`, 2026-10-18)
+  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; login limiter ✅ `owner-auth.T06` (5 failed sign-ins per IP + email in 15 min); code-send limiter ✅ `owner-auth.T08` (5 per hour per IP, API05 and API06 together); AI and public limiters ⬜ their own specs. Per-client keys need Express `trust proxy` set for the deployment target ⬜ (`memory/review-findings.md`, 2026-10-18)
   - Origin allow-list on state-changing requests — ✅ `owner-auth.T06` (`OriginAllowListMiddleware`, every non-GET under `/api/v1/auth` and `/api/v1/cms`)
   - Input sanitisation for free-text fields — ⬜ `section-engine.T03`
   - File upload MIME / size validation before storage — ⬜ `media-assets.T03`

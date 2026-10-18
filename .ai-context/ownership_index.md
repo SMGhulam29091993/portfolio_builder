@@ -41,7 +41,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
 **Last updated:** 2026-10-17
 
 ## Module list, dependency map, collection writers
@@ -123,7 +123,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Mail port and strategy selection (`IMailSender`, `MailSenderFactory`)
 **Canonical definition:** `.ai-context/decisions/ADR-0009-mail-delivery.md` → Decision
-**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment; `.agent/workflows/generate-tests.md` step 5 (no real mail in tests), `README.md` → Local development; code: `mail-sender.factory.ts` (the decision), `container.ts` → `MAIL_STRATEGIES` (the priority order)
+**Referenced by:** `owner-auth` spec (Mail delivery) and plan, `constitution.md` (Approved LLD patterns, Infrastructure), `architecture.md` → Environment; `.agent/workflows/generate-tests.md` step 5 (no real mail in tests), `README.md` → Local development; code: `mail-sender.factory.ts` (the decision), `container.ts` → `MAIL_STRATEGIES` (the priority order), `password-reset.service.ts` (calls `ensureAvailable` before any work)
 **Last updated:** 2026-10-18
 
 ## `PublishedContent` snapshot shape, `IDraftContributor`, publish rules

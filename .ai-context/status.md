@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-17_
+_Last updated: 2026-10-18_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -28,6 +28,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-18
+- `owner-auth.T08` completed on `feat/owner-auth-t08-password-reset`: `PasswordResetService`
+  (request with a decoy for unknown addresses, resend with the 60 s cooldown, reset with
+  attempts claimed atomically before the compare), routes API05–API07 with a shared code-send
+  limiter (5 per hour per IP), `OtpInvalidError` / `OtpExpiredError`, the reference store on
+  `whileRedisAvailable`, `IMailSender.ensureAvailable` (503 for every address with mail
+  disabled); contract suite CT11 and `InMemoryOtpRepository`; OpenAPI 0.4.0.
 - `owner-auth.T07` completed on `feat/owner-auth-t07-mail-port`: the `IMailSender` port,
   `GmailMailSender` (nodemailer 10.1.2, plain text, log-safe failure cause), `DisabledMailSender`
   (503) and `MailSenderFactory` (strategies registered in `container.ts`; production without one

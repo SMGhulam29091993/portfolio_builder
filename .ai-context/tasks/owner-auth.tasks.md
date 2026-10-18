@@ -9,5 +9,5 @@
 - [x] owner-auth.T05 — `AuthController`, `SessionCookieWriter` (three cookies), `auth.routes.ts` for API01–API04, `RequireOwnerMiddleware`; wire in `container.ts`; `SESSION_EXPIRED` over HTTP (`SessionExpiredError` exists since T04 and the generic `AppError` mapping already covers it — prove it end to end); document API01–API04 in OpenAPI — Acceptance: AC1, AC4–AC8, AC11, AC15
 - [x] owner-auth.T06 — Login rate limiter (IP + email, 5 per 15 min) and `OriginAllowListMiddleware` on `/auth` and `/cms` — Acceptance: AC3, AC12
 - [x] owner-auth.T07 — `IMailSender`, `GmailMailSender` (nodemailer), `DisabledMailSender`, `MailSenderFactory`; `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM` in `env.ts`; production fail-fast; contract suite and `RecordingMailSender` — Acceptance: AC22
-- [ ] owner-auth.T08 — `PasswordResetService` (request, resend, reset), routes API05–API07, send limiter (5 per hour per IP), `OTP_INVALID` / `OTP_EXPIRED` in the error mapping, OpenAPI — Acceptance: AC15–AC21
+- [x] owner-auth.T08 — `PasswordResetService` (request, resend, reset), routes API05–API07, send limiter (5 per hour per IP), `OTP_INVALID` / `OTP_EXPIRED` in the error mapping, OpenAPI — Acceptance: AC15–AC21
 - [ ] owner-auth.T09 — `OwnerSeeder` (idempotent, 12-character minimum) and the `seed:owner` script — Acceptance: AC13, AC14

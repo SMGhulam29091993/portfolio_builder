@@ -6,7 +6,7 @@ Module `apps/api/src/modules/auth/` in the module file pattern. Redis use follow
 follows ADR-0009.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
-| `AuthController` | Controller | — | `IAuthService`, `ISessionCookieWriter` (`owner-auth.T05`), `IPasswordResetService` (joins in `owner-auth.T08`) |
+| `AuthController` | Controller | — | `IAuthService`, `ISessionCookieWriter` (`owner-auth.T05`), `IPasswordResetService` (`owner-auth.T08`) |
 | `AuthService` | Service | `IAuthService` (login, refresh, logout, me) | `IUserReader`, `ISessionStore`, `ISessionAuthorizer`, `IPasswordHasher`, `ITokenIssuer`, `ISecureRandom`, `IClock` (the session's `issuedAt`; added in `owner-auth.T04`) |
 | `SessionAuthorizer` | Service | `ISessionAuthorizer` (guard steps 1–3, with an "ignore expiry" mode for refresh and logout) | `ITokenIssuer`, `ISessionStore` |
 | `PasswordResetService` | Service | `IPasswordResetService` (requestCode, resend, reset) | `IUserReader`, `IUserPasswordWriter`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `ISessionStore`, `IMailSender`, `ISecureRandom`, `IClock` |
@@ -48,6 +48,20 @@ follows ADR-0009.
   datastores again. `GmailMailSender` logs nodemailer's error code and SMTP status only, never
   its message, which can quote the recipient back. SMTP bounds: 10 s connect, 10 s greeting,
   20 s socket.
+- Password reset (`owner-auth.T08`): `PasswordResetService` mints the code, the 64-hex
+  identifier and the reference (`bcrypt(identifier)`) together, so an unknown address costs the
+  same two bcrypt hashes and gets a decoy reference of the same shape, with nothing written or
+  sent. `reset` refuses a used-up code before comparing, answers `OTP_EXPIRED` before spending
+  an attempt, then **claims the attempt with the atomic `incrementAttempts` before comparing**,
+  so guesses sent in parallel get at most five compares between them
+  (`memory/review-findings.md`, 2026-10-18). `IMailSender.ensureAvailable()` runs first in
+  `requestCode` and `resend`, so with mail disabled API05 and API06 answer 503 for every address
+  and write nothing (AC22). `CODE_SEND_RATE_LIMIT` in `container.ts`: one limiter instance on
+  API05 and API06, keyed by IP, 5 per hour, counting every admitted request and running before
+  validation; API07 has no limiter of its own — guessing is bounded by five attempts per code
+  and the send limit on new codes. Tests swap the mail strategy through the container's optional
+  `mailSender` (a `RecordingMailSender`); production never passes it, so the factory always
+  decides there.
 - The Redis client is created in `core/` (ADR-0008); `RedisSessionStore.compareAndSet` is a Lua
   script that replaces the session only while the stored `jti` equals the presented one. The
   client's offline queue is off, so a command fails at once while Redis is down and the store
