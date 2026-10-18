@@ -27,6 +27,13 @@ owner moves a spec to `Ready`.
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
 ## Daily Execution Log
+### 2026-10-18
+- `owner-auth.T06` completed on `feat/owner-auth-t06-rate-limit-origin`: the login rate limiter
+  (5 failed sign-ins per IP + email in 15 min; `RateLimiterFactory` gains `counts`, slots held
+  while in flight; limiters on the container clock) and `OriginAllowListMiddleware` on every
+  non-GET under `/auth` and `/cms`, mounted ahead of the routers; `WEB_ORIGIN` read by
+  `env.ts`; OpenAPI 0.3.0 adds 403 to API01–API03 and 429 to API01.
+
 ### 2026-10-17
 - `owner-auth.T05` completed on `feat/owner-auth-t05-routes-guard`: `AuthController`,
   `auth.routes.ts` (API01–API04, OpenAPI 0.2.0), `RequireOwnerMiddleware` (clears cookies on
