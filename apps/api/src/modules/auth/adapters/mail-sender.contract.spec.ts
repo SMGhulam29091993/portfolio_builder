@@ -204,7 +204,31 @@ describe.each(everySender)('owner-auth.CT06 — IMailSender contract — $name',
   });
 });
 
+describe.each(everySender)('owner-auth.CT06 — IMailSender availability — $name', ({ create }) => {
+  it('ensureAvailable() settles with nothing or an AppError, never a provider type', async () => {
+    const outcome = await create()
+      .ensureAvailable()
+      .then(
+        (value) => ({ value }),
+        (error: unknown) => ({ error }),
+      );
+
+    if ('error' in outcome) {
+      expect(outcome.error).toBeInstanceOf(AppError);
+    } else {
+      expect(outcome.value).toBeUndefined();
+    }
+  });
+});
+
 describe.each(deliveringSenders)('owner-auth.CT06 — delivering IMailSender — $name', ({ create }) => {
+  it('owner-auth.AC22 — ensureAvailable() resolves and delivers nothing', async () => {
+    const { sender, delivered } = create();
+
+    await expect(sender.ensureAvailable()).resolves.toBeUndefined();
+    expect(delivered()).toEqual([]);
+  });
+
   it('owner-auth.AC16 — delivers the recipient, subject and plain-text body unchanged', async () => {
     const { sender, delivered } = create();
 
@@ -228,6 +252,13 @@ describe.each(deliveringSenders)('owner-auth.CT06 — delivering IMailSender —
 describe('owner-auth.CT06 — DisabledMailSender', () => {
   // Through the port, as the password reset will hold it.
   const disabled: IMailSender = new DisabledMailSender();
+
+  it('owner-auth.AC22 — ensureAvailable() rejects with SERVICE_UNAVAILABLE (503)', async () => {
+    const error: unknown = await disabled.ensureAvailable().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ServiceUnavailableError);
+    expect(error).toMatchObject({ status: 503, code: 'SERVICE_UNAVAILABLE' });
+  });
 
   it('owner-auth.AC22 — refuses every send with SERVICE_UNAVAILABLE (503)', async () => {
     const error: unknown = await disabled.send(MESSAGE).catch((caught: unknown) => caught);
@@ -264,6 +295,15 @@ describe('GmailMailSender against the local SMTP server', () => {
 
     expect(error).toBeInstanceOf(UpstreamError);
     expect(smtp.received).toEqual([]);
+  });
+
+  it('ensureAvailable() opens no connection: it resolves even when the server is unreachable', async () => {
+    const sender = new GmailMailSender(
+      { user: SMTP_USER, appPassword: SMTP_APP_PASSWORD, from: MAIL_FROM },
+      { host: '127.0.0.1', port: 1, secure: false, ignoreTLS: true },
+    );
+
+    await expect(sender.ensureAvailable()).resolves.toBeUndefined();
   });
 
   it('turns an unreachable server into an UpstreamError', async () => {

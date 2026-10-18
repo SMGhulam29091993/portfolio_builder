@@ -16,6 +16,14 @@ export class RecordingMailSender implements IMailSender {
 
   private refusing = false;
 
+  /**
+   * Always resolves, even while refusing: a refusal stands for the provider failing a send
+   * (502), not for mail being unconfigured (503).
+   */
+  ensureAvailable(): Promise<void> {
+    return Promise.resolve();
+  }
+
   send(message: MailMessage): Promise<void> {
     if (this.refusing) return Promise.reject(new UpstreamError('mail'));
     // A copy, so a caller reusing its message object cannot rewrite what was "sent".

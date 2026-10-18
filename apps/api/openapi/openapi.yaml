@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.3.0
+  version: 0.4.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -20,9 +20,11 @@ tags:
     description: Ops and deploy readiness checks.
   - name: auth
     description: >-
-      CMS sign-in and the single owner session (owner-auth). Tokens travel only in the three
-      HttpOnly session cookies, never in a body. The login rate limit and the Origin allow-list
-      (403 ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06.
+      CMS sign-in, the single owner session and password reset by one-time code (owner-auth).
+      Tokens travel only in the three HttpOnly session cookies, never in a body; a one-time code
+      travels only by email. The login rate limit and the Origin allow-list (403
+      ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06, the password-reset
+      routes and their send limit by owner-auth.T08.
 
 paths:
   /api/v1/health:
@@ -234,6 +236,133 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /api/v1/auth/password/forgot:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API05
+      x-spec-id: owner-auth.API05
+      summary: Request a password-reset code
+      description: >-
+        For the owner's address, issues a 6-digit code valid for 10 minutes (replacing any
+        earlier one), stores it hashed and emails it; the response carries only a reference to
+        send back with the code. For any other address, answers with the same status, message
+        and shape — a decoy reference — and writes and sends nothing. Shares a send limit with
+        API06 of 5 requests per hour per client IP; every request counts. Requires the web app's
+        Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: The reference and the code's lifetime. The same for every address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+              example:
+                success: true
+                message: If the address is registered, a code has been sent
+                data:
+                  reference: $2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+                  expiresInSec: 600
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/password/resend:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API06
+      x-spec-id: owner-auth.API06
+      summary: Resend a password-reset code
+      description: >-
+        Replaces the code the reference names with a new code, identifier and reference, resets
+        the attempt count and emails the new code; the old reference and the old code stop
+        working. Allowed once 60 seconds have passed since the last send — an expired code can
+        still be resent while its reference lives (24 hours). Shares the API05 send limit.
+        Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOtpRequest'
+      responses:
+        '200':
+          description: The new reference and the new code's lifetime.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+              example:
+                success: true
+                message: A new code has been sent
+                data:
+                  reference: $2b$10$zyxwvutsrqponmlkjihgfeZYXWVUTSRQPONMLKJIHGFEDCBA98765
+                  expiresInSec: 600
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/password/reset:
+    post:
+      tags: [auth]
+      operationId: owner-auth.API07
+      x-spec-id: owner-auth.API07
+      summary: Set a new password with a one-time code
+      description: >-
+        Checks the code against the reference: an unknown reference, a replaced code, five
+        wrong codes already used or a wrong code all get one OTP_INVALID body; each wrong code
+        uses one of five attempts. A code past its 10 minutes gets OTP_EXPIRED and is kept, so
+        it can be resent. On success sets the new password, deletes the code and its reference,
+        ends the owner's session in every browser and clears this browser's cookies. Requires
+        the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password updated; every session has ended.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+              example:
+                success: true
+                message: Password updated
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
 components:
   securitySchemes:
     sessionCookies:
@@ -306,6 +435,40 @@ components:
       properties:
         email: { type: string, format: email, maxLength: 254 }
         password: { type: string, minLength: 1, maxLength: 200 }
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+    ResendOtpRequest:
+      type: object
+      required: [reference]
+      properties:
+        reference: { type: string, minLength: 1, maxLength: 100 }
+    ResetPasswordRequest:
+      type: object
+      required: [reference, otp, newPassword]
+      properties:
+        reference: { type: string, minLength: 1, maxLength: 100 }
+        otp:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Exactly six digits; leading zeros count.
+        newPassword: { type: string, minLength: 12, maxLength: 200 }
+    OtpIssuedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [reference, expiresInSec]
+              properties:
+                reference:
+                  type: string
+                  description: Opaque; sent back with the code. The code itself is only emailed.
+                expiresInSec: { type: integer, const: 600 }
     HealthReport:
       type: object
       required: [status, db, version, uptimeSec]
@@ -383,7 +546,7 @@ components:
             message: Your session has ended. Please sign in again
             data: { code: SESSION_EXPIRED }
     ServiceUnavailable:
-      description: The session store (Redis) is unreachable. Nothing falls back to allowing the request.
+      description: Redis (the session and one-time-code store) is unreachable. Nothing falls back to allowing the request.
       content:
         application/json:
           schema:
@@ -469,3 +632,88 @@ components:
             success: false
             message: Too many requests
             data: { code: RATE_LIMITED, retryAfterSec: 30 }
+    CodeSendRateLimited:
+      description: >-
+        5 code requests (API05 and API06 together) from this client IP in the current hour, or —
+        on API06 only — less than 60 seconds since the code was last sent.
+      headers:
+        Retry-After:
+          description: Seconds until a send is allowed again.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, retryAfterSec]
+                    properties:
+                      code: { const: RATE_LIMITED }
+                      retryAfterSec: { type: integer, minimum: 1, maximum: 3600 }
+          example:
+            success: false
+            message: Too many requests
+            data: { code: RATE_LIMITED, retryAfterSec: 45 }
+    OtpRejected:
+      description: >-
+        VALIDATION_FAILED — the body failed its schema. OTP_INVALID — the reference resolves to
+        nothing or to a replaced code, or (API07) the attempts are used up or the code is wrong;
+        one body for all of them. OTP_EXPIRED (API07 only) — the code is past its 10 minutes.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [VALIDATION_FAILED, OTP_INVALID, OTP_EXPIRED] }
+          example:
+            success: false
+            message: The code is invalid
+            data: { code: OTP_INVALID }
+    MailUpstreamFailed:
+      description: The mail provider refused or could not be reached. Nothing about the cause is returned.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, provider]
+                    properties:
+                      code: { const: UPSTREAM_FAILED }
+                      provider: { const: mail }
+          example:
+            success: false
+            message: Upstream provider failed
+            data: { code: UPSTREAM_FAILED, provider: mail }
+    PasswordResetUnavailable:
+      description: >-
+        No mail strategy is configured (outside production only; production refuses to start
+        without one), or the code store (Redis) is unreachable.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: SERVICE_UNAVAILABLE }
+          example:
+            success: false
+            message: Mail delivery is not configured
+            data: { code: SERVICE_UNAVAILABLE }

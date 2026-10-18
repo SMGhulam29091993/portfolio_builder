@@ -18,3 +18,30 @@ export class SessionExpiredError extends AppError {
     super('SESSION_EXPIRED', message);
   }
 }
+
+/**
+ * 400 `OTP_INVALID` — one body for every way a one-time code can fail to verify: a reference
+ * that resolves to nothing, no `otps` document behind it, the 5 attempts used up, or a wrong
+ * code (`owner-auth` spec → Error Handling; `owner-auth.AC18`, `AC19`, `AC21`). One body, so a
+ * caller learns nothing about which of the four it hit.
+ */
+export class OtpInvalidError extends AppError {
+  readonly status = 400;
+
+  constructor(message = 'The code is invalid') {
+    super('OTP_INVALID', message);
+  }
+}
+
+/**
+ * 400 `OTP_EXPIRED` — the code's `expiresAt` has passed (`owner-auth.AC20`). Distinct from
+ * `OTP_INVALID` so the reset screen can offer a resend; only a caller holding a real reference
+ * can reach it, so it reveals nothing to anyone else.
+ */
+export class OtpExpiredError extends AppError {
+  readonly status = 400;
+
+  constructor(message = 'The code has expired. Request a new one') {
+    super('OTP_EXPIRED', message);
+  }
+}

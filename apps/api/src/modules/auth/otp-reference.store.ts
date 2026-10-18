@@ -5,7 +5,12 @@
  * `auth:otp-ref:<reference>` → identifier, with a TTL of 24 hours, so an expired code can still
  * be resent by its reference (spec → Edge Cases). The reference is a bcrypt string; its `$`,
  * `.` and `/` characters are ordinary bytes in a Redis key.
+ *
+ * Every command runs through `whileRedisAvailable`, so an unreachable server surfaces as 503
+ * `SERVICE_UNAVAILABLE` from API05–API07 and never as a driver error (`owner-auth.T08`, IT13),
+ * as the session store has since `owner-auth.T05`.
  */
+import { whileRedisAvailable } from '../../core/redis/redis-availability.js';
 import type { IRedisClientProvider } from '../../core/redis/redis-client-provider.interface.js';
 import type { IOtpReferenceStore } from './auth.interface.js';
 
@@ -24,17 +29,19 @@ export class RedisOtpReferenceStore implements IOtpReferenceStore {
   ) {}
 
   async put(reference: string, identifier: string): Promise<void> {
-    await this.redis.getClient().set(referenceKey(reference), identifier, {
-      expiration: { type: 'EX', value: this.options.ttlSec },
-    });
+    await whileRedisAvailable(() =>
+      this.redis.getClient().set(referenceKey(reference), identifier, {
+        expiration: { type: 'EX', value: this.options.ttlSec },
+      }),
+    );
   }
 
-  async resolve(reference: string): Promise<string | null> {
-    return this.redis.getClient().get(referenceKey(reference));
+  resolve(reference: string): Promise<string | null> {
+    return whileRedisAvailable(() => this.redis.getClient().get(referenceKey(reference)));
   }
 
   async delete(reference: string): Promise<void> {
-    await this.redis.getClient().del(referenceKey(reference));
+    await whileRedisAvailable(() => this.redis.getClient().del(referenceKey(reference)));
   }
 }
 

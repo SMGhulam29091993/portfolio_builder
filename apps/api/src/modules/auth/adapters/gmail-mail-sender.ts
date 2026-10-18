@@ -70,6 +70,14 @@ export class GmailMailSender implements IMailSender {
     this.from = options.from;
   }
 
+  /**
+   * Always available: the factory only builds this sender when its variables are set. Opens no
+   * connection — whether Gmail accepts is learned from `send`, as 502.
+   */
+  ensureAvailable(): Promise<void> {
+    return Promise.resolve();
+  }
+
   async send({ to, subject, text }: MailMessage): Promise<void> {
     try {
       await this.transport.sendMail({
