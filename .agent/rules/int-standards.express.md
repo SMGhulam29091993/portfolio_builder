@@ -13,7 +13,9 @@ boundaries, approved patterns) are in `constitution.md` and are not repeated her
    ...handlers)`, never `router.get()` directly, so the OpenAPI drift check sees it
 6. Wire into `src/container.ts`, then mount the router in `src/app.ts`. A **new module** also
    gets its row in `architecture.md` → Module dependency map and in
-   `src/architecture/module-dependency-map.ts`, or the architecture test fails
+   `src/architecture/module-dependency-map.ts`, or the architecture test fails. A `/cms` router
+   adds no Origin check of its own: the app factory's allow-list already covers its non-GET
+   routes (`owner-auth.T06`), and each of them documents the 403 `OriginNotAllowed` response
 7. **Update the OpenAPI document — same PR, mandatory**
 See `.agent/workflows/generate-plan.md` for the full checklist.
 

@@ -236,7 +236,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 |---|---|---|
 | `NODE_ENV`, `PORT` | api | Runtime |
 | `MONGODB_URI` | api | Datastore |
-| `WEB_ORIGIN` | api | Origin allow-list for CMS writes |
+| `WEB_ORIGIN` | api | The web app's origin: the only `Origin` accepted on a non-GET under `/api/v1/auth` and `/api/v1/cms` (Origin allow-list) |
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); unset outside production → mail disabled |

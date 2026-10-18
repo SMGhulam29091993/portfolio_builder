@@ -4,8 +4,8 @@
  * asks the factory for a limiter with its own policy and its own counters.
  *
  * Counting is a fixed window held in process memory: counters reset on restart and are
- * per-instance (`monorepo-foundation` → Edge Cases). A shared store would need Redis, which is
- * not an approved datastore without an ADR, so none is abstracted here.
+ * per-instance (`monorepo-foundation` → Edge Cases). ADR-0008 admits Redis for auth sessions
+ * only and keeps these counters in memory, so no shared store is abstracted here.
  *
  * Over the limit, the middleware forwards `RateLimitedError`; the error middleware turns it into
  * 429 `RATE_LIMITED` with `Retry-After` (`monorepo-foundation.AC11`).
