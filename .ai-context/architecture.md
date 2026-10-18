@@ -39,7 +39,7 @@ portfolio-builder/
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
 │   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
@@ -156,8 +156,8 @@ A section type is four registrations and no engine edits: a contract schema, an 
 derived at render time from the visible order; they are never stored.
 
 ## Request lifecycle (CMS write)
-`helmet` → request id → JSON body → [module router: rate limiter] → Origin allow-list (non-GET) →
-`requireOwner` (auth: verifies the access cookie, matches its `jti` against the `jti` cookie and
+`helmet` → request id → JSON body → Origin allow-list (non-GET under `/auth` and `/cms`) →
+[module router: rate limiter] → `requireOwner` (auth: verifies the access cookie, matches its `jti` against the `jti` cookie and
 the Redis session, attaches `userId`) → `resolvePortfolio`
 (portfolio: attaches `portfolioId`) → `validate(schema)` → controller → service → repository → envelope → error middleware.
 
@@ -168,8 +168,17 @@ Redis-backed store maps the failure to 503 `SERVICE_UNAVAILABLE` (`core/redis`
 `whileRedisAvailable`), so the guard and the auth routes answer 503 instead of waiting or
 allowing (rule: ADR-0008).
 
+The Origin allow-list (`core/http` `OriginAllowListMiddleware`) is mounted by the app factory on
+the `/api/v1/auth` and `/api/v1/cms` prefixes ahead of every module router, so it also covers
+`/cms` paths no router serves yet, and a refused request (403 `ORIGIN_NOT_ALLOWED`) never reaches
+a limiter, validation or the guard (`owner-auth.AC12`, `owner-auth.T06`). GET and HEAD are not
+checked.
+
 Rate limiters are per mount, so they run inside each module's router, after the global JSON body
-parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. Every
+parser; the 100 KiB body limit bounds the cost of parsing before a limiter can reject. A policy
+may count only some outcomes (`counts`): the login limiter counts 401s only, holding each slot
+while the request is in flight so parallel attempts cannot overshoot (`owner-auth.AC3`). All
+limiters run on the container's injected clock. Every
 module router is an `ApiRouter`, so the app knows its mounted route table for the OpenAPI drift
 check (`apps/api/src/app.ts`).
 

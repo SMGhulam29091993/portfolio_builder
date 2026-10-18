@@ -2,8 +2,9 @@
  * Concrete `AppError` subclasses for the generic rows of the canonical error-code table
  * (`int-standards.express.md` → Error codes).
  *
- * Codes owned by a single feature — `ORIGIN_NOT_ALLOWED` (`owner-auth`), `PUBLISH_BLOCKED`
- * (`publish-pipeline`) — are added by that feature next to its own code, not here.
+ * Codes owned by a single feature are added by that feature next to its own code, not here:
+ * `ORIGIN_NOT_ALLOWED` (`owner-auth`) is `OriginNotAllowedError` in
+ * `core/http/origin-allow-list.middleware.ts`; `PUBLISH_BLOCKED` arrives with `publish-pipeline`.
  */
 import { AppError } from './app-error.js';
 

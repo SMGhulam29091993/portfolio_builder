@@ -26,6 +26,7 @@ const ROUTE_TABLE_ENV = {
   REDIS_URL: 'redis://127.0.0.1:1/0',
   // Satisfies the length check only; nothing is signed while reading the route table.
   JWT_ACCESS_SECRET: 'openapi-drift-check-placeholder-secret',
+  WEB_ORIGIN: 'http://127.0.0.1:1',
 };
 
 const logger = new JsonLogger(process.stdout);

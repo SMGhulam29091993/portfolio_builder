@@ -29,7 +29,7 @@ export default defineConfig({
   use: { baseURL: webOrigin },
   webServer: [
     {
-      command: `node e2e/start-api.ts ${String(E2E_API_PORT)}`,
+      command: `node e2e/start-api.ts ${String(E2E_API_PORT)} ${webOrigin}`,
       url: `${apiOrigin}/api/v1/health`,
       reuseExistingServer: false,
       timeout: SERVER_START_TIMEOUT_MS,

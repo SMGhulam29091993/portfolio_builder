@@ -18,6 +18,9 @@ const FAKE_SECRET = 'not-a-real-secret';
 /** Satisfies `JWT_ACCESS_SECRET` validation; like every secret, it must never be logged. */
 const JWT_ACCESS_SECRET = 'main-spec-placeholder-jwt-secret-000000';
 
+/** Satisfies `WEB_ORIGIN` validation; no request in this file sends an `Origin`. */
+const WEB_ORIGIN = 'http://127.0.0.1:3100';
+
 interface LogLine {
   readonly level: string;
   readonly msg: string;
@@ -105,7 +108,7 @@ describe('main', () => {
       expect.objectContaining({
         level: 'error',
         msg: 'invalid environment configuration',
-        variables: ['MONGODB_URI', 'REDIS_URL', 'JWT_ACCESS_SECRET'],
+        variables: ['MONGODB_URI', 'REDIS_URL', 'JWT_ACCESS_SECRET', 'WEB_ORIGIN'],
       }),
     );
     expect(api.output()).not.toContain('4999');
@@ -118,6 +121,7 @@ describe('main', () => {
       MONGODB_URI: `postgres://svc:${FAKE_SECRET}@db.internal/portfolio`,
       REDIS_URL: redis.url,
       JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -133,6 +137,7 @@ describe('main', () => {
       MONGODB_URI: `mongodb://svc:${FAKE_SECRET}@127.0.0.1:1/portfolio`,
       REDIS_URL: redis.url,
       JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -151,6 +156,7 @@ describe('main', () => {
       MONGODB_URI: mongo.getUri(),
       REDIS_URL: `redis://default:${FAKE_SECRET}@127.0.0.1:1/0`,
       JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
     });
 
     await expect(api.exited).resolves.toBe(1);
@@ -174,6 +180,7 @@ describe('main', () => {
       MONGODB_URI: mongo.getUri(),
       REDIS_URL: redis.url,
       JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
     });
 
     const listening = await waitForLog(api, 'http server listening');

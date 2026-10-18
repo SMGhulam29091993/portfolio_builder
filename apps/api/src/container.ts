@@ -6,13 +6,19 @@
  * Called by `main.ts` once MongoDB has answered, and by the OpenAPI drift check (which builds the
  * route table without connecting).
  */
+import type { RequestHandler } from 'express';
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 import { API_PREFIX } from './app.js';
 import type { Env } from './config/env.js';
 import type { IMongoConnectionProvider } from './core/db/database-connection.interface.js';
-import { RateLimiterFactory, type ApiRouter, type RateLimitPolicy } from './core/http/index.js';
+import {
+  OriginAllowListMiddleware,
+  RateLimiterFactory,
+  type ApiRouter,
+  type RateLimitPolicy,
+} from './core/http/index.js';
 import type { ILogger } from './core/logger/logger.interface.js';
 import type { IRedisClientProvider } from './core/redis/redis-client-provider.interface.js';
 import { Argon2PasswordHasher } from './modules/auth/adapters/argon2-password-hasher.js';
@@ -20,7 +26,7 @@ import { CryptoSecureRandom } from './modules/auth/adapters/crypto-secure-random
 import { JwtTokenIssuer } from './modules/auth/adapters/jwt-token-issuer.js';
 import { SystemClock } from './modules/auth/adapters/system-clock.js';
 import { AuthController } from './modules/auth/auth.controller.js';
-import { createAuthRouter } from './modules/auth/auth.routes.js';
+import { createAuthRouter, loginAttemptKey } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import type { IAuthGuard, IClock } from './modules/auth/index.js';
 import { RequireOwnerMiddleware } from './modules/auth/require-owner.middleware.js';
@@ -60,6 +66,24 @@ const ACCESS_TOKEN_LEEWAY_SEC = 30;
 /** Where the refresh-token cookie is sent: the auth routes only (spec → Session contract). */
 const AUTH_PATH = `${API_PREFIX}/auth`;
 
+/**
+ * Failed sign-ins allowed per client IP + email: 5 in 15 minutes; the sixth attempt is refused
+ * even with the right password (`owner-auth.AC3`). Only a 401 counts as a failure, so a
+ * successful sign-in, a malformed body (400) or a Redis outage (503) uses up nothing.
+ */
+const LOGIN_RATE_LIMIT: RateLimitPolicy = {
+  windowMs: 15 * 60 * 1_000,
+  max: 5,
+  keyOf: loginAttemptKey,
+  counts: (status) => status === 401,
+};
+
+/**
+ * Mounts whose non-GET requests must come from `WEB_ORIGIN` (`owner-auth.AC12`): the sign-in
+ * flow and everything the CMS writes. `/health` and `/public` stay open to any caller.
+ */
+const ORIGIN_CHECKED_PATHS = [AUTH_PATH, `${API_PREFIX}/cms`] as const;
+
 /** What the container needs from the startup sequence. */
 export interface ContainerDependencies {
   /** Validated configuration; consumed by later modules (auth, AI, publishing). */
@@ -69,15 +93,27 @@ export interface ContainerDependencies {
   /** The Redis client for the `auth` session store (ADR-0008); used per command, not here. */
   readonly redis: IRedisClientProvider;
   /**
-   * Replaces the system clock for tokens, sessions and expiry. Tests pass a `ManualClock` to
+   * Replaces the system clock for tokens, sessions, expiry and rate-limit windows. Tests pass a `ManualClock` to
    * reach a 15-minute expiry without waiting (`owner-auth.IT08`); production omits it.
    */
   readonly clock?: IClock;
 }
 
+/** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
+export interface MountedMiddleware {
+  /** Full path prefixes, e.g. `/api/v1/auth`; Express matches each on segment boundaries. */
+  readonly paths: readonly string[];
+  readonly handler: RequestHandler;
+}
+
 /** What the app factory needs from the container. */
 export interface Container {
   readonly logger: ILogger;
+  /**
+   * The Origin allow-list and the prefixes it guards (`owner-auth.AC12`). Mounted before the
+   * routers so it answers 403 ahead of any limiter, validation or authentication.
+   */
+  readonly originAllowList: MountedMiddleware;
   /** Module routers, each mounted under `/api/v1` in this order. */
   readonly apiRouters: readonly ApiRouter[];
   /**
@@ -96,7 +132,8 @@ export function buildContainer({
   redis,
   clock = new SystemClock(),
 }: ContainerDependencies): Container {
-  const rateLimiters = new RateLimiterFactory();
+  // On the same clock as tokens and sessions, so a test moves every window together.
+  const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
 
   const healthService = new HealthService(new HealthRepository(mongo), {
     version: readApiVersion(),
@@ -134,9 +171,18 @@ export function buildContainer({
     maxAgeSec: SESSION_TTL_SEC,
   });
   const authGuard = new RequireOwnerMiddleware(sessionAuthorizer, sessionCookies).handle;
-  const authRouter = createAuthRouter(new AuthController(authService, sessionCookies), authGuard);
+  const authRouter = createAuthRouter(
+    new AuthController(authService, sessionCookies),
+    authGuard,
+    rateLimiters.create(LOGIN_RATE_LIMIT),
+  );
 
-  return { logger, apiRouters: [healthRouter, authRouter], authGuard };
+  const originAllowList: MountedMiddleware = {
+    paths: ORIGIN_CHECKED_PATHS,
+    handler: new OriginAllowListMiddleware(env).handle,
+  };
+
+  return { logger, originAllowList, apiRouters: [healthRouter, authRouter], authGuard };
 }
 
 /**

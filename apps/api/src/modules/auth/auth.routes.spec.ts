@@ -1,7 +1,11 @@
 /**
  * `owner-auth.API01`–`API04` and `requireOwner` end to end: the real container and app over
  * real HTTP, a real `mongod` and a real Redis (`owner-auth.T05`; IT01–IT11, IT23; AC1, AC2,
- * AC4–AC11, AC15).
+ * AC4–AC11, AC15), plus the login rate limit and the Origin allow-list (`owner-auth.T06`; IT03,
+ * IT12; AC3, AC12).
+ *
+ * Every non-GET request sends `Origin: WEB_ORIGIN`, as the browser does through the web app;
+ * IT12 leaves it out or changes it on purpose.
  *
  * The container gets a `ManualClock`, so an access token expires by moving time (IT08) while
  * Redis TTLs still run on real time. No `/cms` module exists yet, so a probe route behind the
@@ -32,6 +36,8 @@ import { UserRepository } from './user.repository.js';
 const JWT_SECRET = 'auth-routes-spec-placeholder-secret-00000';
 const OWNER_EMAIL = 'owner@example.test';
 const OWNER_PASSWORD = 'correct horse battery staple';
+/** The web app's origin for this run: the only one allowed to send a non-GET. */
+const WEB_ORIGIN = 'http://127.0.0.1:3100';
 const SESSION_TTL_SEC = 7 * 24 * 60 * 60;
 /** Past the 15-minute token lifetime and its 30-second leeway. */
 const PAST_TOKEN_EXPIRY_MS = (15 * 60 + 31) * 1_000;
@@ -48,18 +54,19 @@ let ownerId: string;
 /** Every secret value the run produced, for the log check at the end (AC15). */
 const secrets = new Set<string>([OWNER_EMAIL, OWNER_PASSWORD]);
 
-beforeAll(async () => {
-  mongo = await MongoTestHarness.start();
-  redis = await RedisTestHarness.start();
-  clock = new ManualClock(new Date());
-  logger = new RecordingLogger();
-
+/**
+ * A fresh container and app over the shared datastores, with the probe route behind the guard.
+ * Each call has its own rate-limit counters, so a test that exhausts the login limit (IT03) can
+ * do it without locking every other test out.
+ */
+function buildApi(): ApiApplication {
   const env = loadEnv({
     NODE_ENV: 'test',
     PORT: '4100',
     MONGODB_URI: mongo.uri,
     REDIS_URL: redis.url,
     JWT_ACCESS_SECRET: JWT_SECRET,
+    WEB_ORIGIN,
   });
   const container = buildContainer({
     env,
@@ -71,7 +78,15 @@ beforeAll(async () => {
   const probe = new ApiRouter().route('get', '/cms/probe', container.authGuard, (req, res) => {
     ok(res, 'probe', { userId: req.auth?.userId });
   });
-  api = createApp({ ...container, apiRouters: [...container.apiRouters, probe] });
+  return createApp({ ...container, apiRouters: [...container.apiRouters, probe] });
+}
+
+beforeAll(async () => {
+  mongo = await MongoTestHarness.start();
+  redis = await RedisTestHarness.start();
+  clock = new ManualClock(new Date());
+  logger = new RecordingLogger();
+  api = buildApi();
 
   // The owner seeder is `owner-auth.T09`; until then the test writes the user directly.
   const owner = await new UserRepository(mongo.connection).create({
@@ -128,8 +143,11 @@ function cmsCookies(jar: Pick<CookieJar, 'access-token' | 'jti'>): string {
   return `access-token=${jar['access-token']}; jti=${jar.jti}`;
 }
 
-function login(email = OWNER_EMAIL, password = OWNER_PASSWORD): request.Test {
-  return request(api.handler).post('/api/v1/auth/login').send({ email, password });
+function login(email = OWNER_EMAIL, password = OWNER_PASSWORD, app = api): request.Test {
+  return request(app.handler)
+    .post('/api/v1/auth/login')
+    .set('Origin', WEB_ORIGIN)
+    .send({ email, password });
 }
 
 /** Signs in and returns the cookies, failing the test if sign-in did not succeed. */
@@ -145,12 +163,12 @@ function probe(cookie?: string): request.Test {
 }
 
 function refresh(cookie?: string): request.Test {
-  const call = request(api.handler).post('/api/v1/auth/refresh');
+  const call = request(api.handler).post('/api/v1/auth/refresh').set('Origin', WEB_ORIGIN);
   return cookie === undefined ? call : call.set('Cookie', cookie);
 }
 
 function logout(cookie?: string): request.Test {
-  const call = request(api.handler).post('/api/v1/auth/logout');
+  const call = request(api.handler).post('/api/v1/auth/logout').set('Origin', WEB_ORIGIN);
   return cookie === undefined ? call : call.set('Cookie', cookie);
 }
 
@@ -226,9 +244,85 @@ describe('POST /api/v1/auth/login (owner-auth.API01)', () => {
   it('400 VALIDATION_FAILED for a body that fails the schema, before any credential check', async () => {
     const response = await request(api.handler)
       .post('/api/v1/auth/login')
+      .set('Origin', WEB_ORIGIN)
       .send({ email: 'not-an-email', password: '' });
 
     expectError(response, 400, 'VALIDATION_FAILED');
+  });
+
+  it('owner-auth.IT03 / AC3 — after 5 failed sign-ins for one IP + email the sixth is 429 even with the right password; another email is not limited', async () => {
+    const limitedApi = buildApi();
+
+    // A success before the failures does not count towards them.
+    expect((await login(OWNER_EMAIL, OWNER_PASSWORD, limitedApi)).status).toBe(200);
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      // Case differences are one email, as for the lookup.
+      const email = attempt % 2 === 0 ? OWNER_EMAIL.toUpperCase() : OWNER_EMAIL;
+      expectError(await login(email, 'not the password', limitedApi), 401, 'UNAUTHENTICATED');
+    }
+
+    const sixth = await login(OWNER_EMAIL, OWNER_PASSWORD, limitedApi);
+    expectError(sixth, 429, 'RATE_LIMITED');
+    expect(sixth.headers['retry-after']).toBe(String(15 * 60));
+    expect(sixth.headers['set-cookie']).toBeUndefined();
+
+    // Same IP, different email: its own count.
+    expectError(await login('nobody@example.test', OWNER_PASSWORD, limitedApi), 401, 'UNAUTHENTICATED');
+
+    // The window is 15 minutes from the first attempt; after it the owner signs in again.
+    clock.advance(15 * 60 * 1_000);
+    expect((await login(OWNER_EMAIL, OWNER_PASSWORD, limitedApi)).status).toBe(200);
+  });
+});
+
+describe('Origin allow-list on /api/v1/auth and /api/v1/cms (owner-auth.AC12)', () => {
+  it('owner-auth.IT12 / AC12 — POST login with no Origin, and with a foreign Origin, is 403 ORIGIN_NOT_ALLOWED', async () => {
+    const body = { email: OWNER_EMAIL, password: OWNER_PASSWORD };
+
+    const missing = await request(api.handler).post('/api/v1/auth/login').send(body);
+    const foreign = await request(api.handler)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://attacker.example')
+      .send(body);
+
+    for (const response of [missing, foreign]) {
+      expectError(response, 403, 'ORIGIN_NOT_ALLOWED');
+      expect(response.headers['set-cookie']).toBeUndefined();
+    }
+    expect(await storedSession()).toEqual({});
+  });
+
+  it('owner-auth.AC12 — refuses before authentication: refresh and logout with genuine cookies but a foreign Origin are 403 and change nothing', async () => {
+    const jar = await signIn();
+    const before = await storedSession();
+
+    for (const path of ['/api/v1/auth/refresh', '/api/v1/auth/logout']) {
+      const response = await request(api.handler)
+        .post(path)
+        .set('Origin', 'https://attacker.example')
+        .set('Cookie', authCookies(jar));
+      expectError(response, 403, 'ORIGIN_NOT_ALLOWED');
+      expect(response.headers['set-cookie']).toBeUndefined();
+    }
+    expect(await storedSession()).toEqual(before);
+  });
+
+  it('owner-auth.AC12 — covers every non-GET under /cms, even a path no route serves yet', async () => {
+    expectError(await request(api.handler).post('/api/v1/cms/anything'), 403, 'ORIGIN_NOT_ALLOWED');
+    // GET is not checked: it reaches the guard (no cookie → 401).
+    expectError(await probe(), 401, 'UNAUTHENTICATED');
+  });
+
+  it('owner-auth.AC12 — a refused body is not validated, rate limited or counted', async () => {
+    // Six refused attempts with a wrong password: none reaches the limiter, so the right
+    // password still signs in from the web origin afterwards.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const response = await request(api.handler)
+        .post('/api/v1/auth/login')
+        .send({ email: OWNER_EMAIL, password: 'not the password' });
+      expectError(response, 403, 'ORIGIN_NOT_ALLOWED');
+    }
+    expect((await login()).status).toBe(200);
   });
 });
 

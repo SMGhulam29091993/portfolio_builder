@@ -34,6 +34,7 @@
         "MONGODB_URI",
         "REDIS_URL",
         "JWT_ACCESS_SECRET",
+        "WEB_ORIGIN",
         "API_INTERNAL_URL"
       ]
     }

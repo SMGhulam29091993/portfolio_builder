@@ -8,6 +8,7 @@ export { parseCookieHeader } from './cookies.js';
 export { createErrorHandler } from './error-handler.js';
 export { createJsonBodyParser, JSON_BODY_LIMIT_BYTES } from './json-body.js';
 export { notFound } from './not-found.js';
+export { OriginAllowListMiddleware, OriginNotAllowedError } from './origin-allow-list.middleware.js';
 export { RateLimiterFactory, type RateLimitPolicy } from './rate-limiter-factory.js';
 export { createRequestId, REQUEST_ID_HEADER } from './request-id.js';
 export { createSecurityHeaders } from './security-headers.js';
