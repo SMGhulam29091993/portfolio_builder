@@ -17,8 +17,8 @@ follows ADR-0009.
 | `JwtTokenIssuer` | Adapter | `ITokenIssuer` (sign / verify the access token, with an ignore-expiry option) | options (secret from `JWT_ACCESS_SECRET`, TTL, leeway) passed by the container, `IClock` |
 | `CryptoSecureRandom` | Adapter | `ISecureRandom` (bytes, 6-digit code) | — |
 | `SystemClock` | Adapter | `IClock` | — |
-| `GmailMailSender`, `DisabledMailSender` | Adapter | `IMailSender` | `Env` (Gmail only) |
-| `MailSenderFactory` | Factory | — | `Env` |
+| `GmailMailSender`, `DisabledMailSender` | Adapter | `IMailSender` | options (user, app password, sender) built by the container from `Env` (Gmail only) |
+| `MailSenderFactory` | Factory | — | `MailStrategy` registrations and the disabled sender from the container; `Env` per call |
 | `RequireOwnerMiddleware` | HTTP | — (its `handle` is the `IAuthGuard`) | `ISessionAuthorizer`, `ISessionCookieWriter` |
 | `SessionCookieWriter` | HTTP | `ISessionCookieWriter` (read, write, clear) | `Env` (`NODE_ENV`), cookie paths and lifetime from the container; `core/http` `parseCookieHeader` |
 | `OriginAllowListMiddleware` | HTTP (`core/http`) | — | `Env` |
@@ -41,6 +41,13 @@ follows ADR-0009.
 - Origin allow-list (`owner-auth.T06`): mounted by `app.ts` on the `/auth` and `/cms` prefixes
   ahead of every router, so it runs before the limiter and the guard and covers future `/cms`
   modules without any code in them (`architecture.md` → Request lifecycle).
+- Mail (`owner-auth.T07`): `MAIL_STRATEGIES` in `container.ts` lists the strategies in priority
+  order, each declared with `MailSenderFactory.strategy(variables, create)`; the factory runs
+  while the container is built, so production without one fails startup with
+  `MailNotConfiguredError` naming the unset variables, and `ApplicationLifecycle` closes both
+  datastores again. `GmailMailSender` logs nodemailer's error code and SMTP status only, never
+  its message, which can quote the recipient back. SMTP bounds: 10 s connect, 10 s greeting,
+  20 s socket.
 - The Redis client is created in `core/` (ADR-0008); `RedisSessionStore.compareAndSet` is a Lua
   script that replaces the session only while the stored `jti` equals the presented one. The
   client's offline queue is off, so a command fails at once while Redis is down and the store

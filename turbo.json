@@ -35,6 +35,9 @@
         "REDIS_URL",
         "JWT_ACCESS_SECRET",
         "WEB_ORIGIN",
+        "GMAIL_USER",
+        "GMAIL_APP_PASSWORD",
+        "MAIL_FROM",
         "API_INTERNAL_URL"
       ]
     }

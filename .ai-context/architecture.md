@@ -9,8 +9,10 @@ the workspace, the API core (including the event bus), the `health` module, the 
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
 harness, CI and the local development environment exist. `owner-auth` is in progress: the
 Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), its
-`SessionAuthorizer` and `AuthService` (T04), and sign-in, refresh, sign-out, `me` and the
-`requireOwner` guard wired and routed (T05) exist; every other feature module is ⬜ planned.
+`SessionAuthorizer` and `AuthService` (T04), sign-in, refresh, sign-out, `me` and the
+`requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
+(T06), and the mail port with its Gmail strategy and factory (T07) exist; every other feature
+module is ⬜ planned.
 
 ## System overview
 The owner signs in to a CMS panel, edits portfolio content section by section, adjusts or
@@ -35,16 +37,16 @@ portfolio-builder/
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy) closes both datastores again
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock; services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API04), `RequireOwnerMiddleware`, `SessionCookieWriter`)
 │   │       ├── seed/             ⬜ idempotent seeders + seed data
-│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories (test-only, excluded from the build)
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
@@ -239,8 +241,8 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `WEB_ORIGIN` | api | The web app's origin: the only `Origin` accepted on a non-GET under `/api/v1/auth` and `/api/v1/cms` (Origin allow-list) |
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
-| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); unset outside production → mail disabled |
-| `MAIL_FROM` | api | Sender address; defaults to `GMAIL_USER` |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
+| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (seed only) | Creates the owner account |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |

@@ -1,11 +1,15 @@
 # next.md
 ## Queued
-1. Confirm CI on `master` after the PR #12 merge, and the first CI run of
-   `feat/owner-auth-t06-rate-limit-origin` once pushed. A red run reopens the task it breaks.
-2. `owner-auth.T07` — `IMailSender`, `GmailMailSender` (nodemailer), `DisabledMailSender`,
-   `MailSenderFactory`; `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM` in `env.ts`; production
-   fail-fast; contract suite and `RecordingMailSender` (AC22). Unblocked: T06 is completed.
-   Branch: a new `feat/owner-auth-t07-…` off `master` once T06 is merged.
+1. Confirm CI on `master` after the PR #13 merge, and the first CI run of
+   `feat/owner-auth-t07-mail-port` once pushed. A red run reopens the task it breaks.
+2. `owner-auth.T08` — `PasswordResetService` (request, resend, reset), routes API05–API07, send
+   limiter, `OTP_INVALID` / `OTP_EXPIRED` mapping, OpenAPI (AC15–AC21). Unblocked: T07 is
+   completed. Branch: a new `feat/owner-auth-t08-…` off `master` once T07 is merged.
+   From T07: the container already builds the mail sender (`new MailSenderFactory(...)
+   .create(env)`, result unused) — T08 assigns it and injects it into `PasswordResetService`;
+   route tests pass a `RecordingMailSender` (its `refuseSends()` gives the 502 path); the
+   development half of `owner-auth.IT22` (forgot → 503 with no strategy, login still 200)
+   lands with API05.
    Carried to T08: wrap `RedisOtpReferenceStore`'s commands in `whileRedisAvailable` as T05 did
    for the session store, so API05–API07 also answer 503 while Redis is down; the send limiter
    (5 per hour per IP) reuses `RateLimiterFactory`, and API05–API07 get the 403

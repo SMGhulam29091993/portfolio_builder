@@ -120,6 +120,16 @@
   ACs covered by named tests: AC1, AC4–AC8, AC11, AC15, plus IT02, IT09, IT10, IT23 and the
   IT13 runtime half (503 with Redis cut, proven to fail without the offline-queue fix). API01's
   403 / 429 responses are T06's scope and not yet documented. CI not yet run on this branch.
+- owner-auth.T07 — 2026-10-18 — DoD self-check: 2026-10-18, pass. Checked locally with the
+  compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks, with
+  `API_INTERNAL_URL` set as CI sets it; API 44 spec files / 422 tests; services at 100% lines and
+  branches), `pnpm drift` (5 routes match OpenAPI 0.3.0, unchanged: no route in this task) and
+  `pnpm test:e2e` passed. ACs covered by named tests: AC22 (UT18 in
+  `mail-sender.factory.spec.ts`, the production half of IT22 in `main.spec.ts`, the lifecycle
+  regression test); CT06 runs `GmailMailSender` against a local `smtp-server`,
+  `RecordingMailSender` and `DisabledMailSender`. Deviations: `ApplicationLifecycle.start` now
+  builds the request handler inside its cleanup guard (`memory/pitfalls.md`, 2026-10-18), needed
+  for AC22's clean failure; the development half of IT22 needs API05 and moves to T08.
 - owner-auth.T06 — 2026-10-18 — DoD self-check: 2026-10-18, pass. Checked locally with the
   compose Redis running: `pnpm turbo run build typecheck lint test drift` (20 tasks, with
   `API_INTERNAL_URL` set as CI sets it; API 42 spec files / 393 tests; services at 100% lines and

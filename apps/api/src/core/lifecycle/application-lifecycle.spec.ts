@@ -224,6 +224,32 @@ describe('ApplicationLifecycle.start', () => {
     // Redis never opened, so only MongoDB is closed.
     expect(calls).toEqual(['mongodb connect', 'redis connect', 'mongodb disconnect']);
   });
+
+  it('owner-auth.AC22 — closes every datastore, newest first, and opens no port when the handler cannot be built', async () => {
+    // Building the container is where production refuses to start without a mail strategy.
+    const port = await findFreePort();
+    const calls: string[] = [];
+    const lifecycle = new ApplicationLifecycle(
+      [
+        { name: 'mongodb', connection: new FakeDatabase({}, calls, 'mongodb') },
+        { name: 'redis', connection: new FakeDatabase({}, calls, 'redis') },
+      ],
+      () => {
+        throw new Error('No mail strategy is configured');
+      },
+      silentLogger,
+      { port, shutdownGraceMs: 5_000 },
+    );
+
+    await expect(lifecycle.start()).rejects.toThrow('No mail strategy is configured');
+    await expect(isPortOpen(port)).resolves.toBe(false);
+    expect(calls).toEqual([
+      'mongodb connect',
+      'redis connect',
+      'redis disconnect',
+      'mongodb disconnect',
+    ]);
+  });
 });
 
 describe('ApplicationLifecycle.stop', () => {

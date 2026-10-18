@@ -16,7 +16,10 @@ Tests derive from acceptance criteria, never from reading finished code.
    store tests get a claimed logical database on the real compose / CI Redis from
    `RedisTestHarness` (one per spec file; `reset()` between tests), and log assertions use its
    `RecordingLogger`. Service tests use the in-memory fakes there (`InMemorySessionStore`, …),
-   each of which passes its interface's contract suite. Route tests set `WEB_ORIGIN` in the
+   each of which passes its interface's contract suite. No test sends real mail (ADR-0009):
+   service and route tests inject `RecordingMailSender` (`refuseSends()` for the 502 path), and
+   a new mail strategy joins the `IMailSender` contract suite, which runs the real adapter
+   against a local `smtp-server`. Route tests set `WEB_ORIGIN` in the
    env they load and send `Origin: <WEB_ORIGIN>` on every non-GET under `/api/v1/auth` and
    `/api/v1/cms`, as the browser does; without it the allow-list answers 403 first
    (`owner-auth.AC12`).

@@ -170,3 +170,15 @@ export interface OtpIssue {
   readonly expiresAt: Date;
   readonly purgeAt: Date;
 }
+
+/**
+ * One outgoing email (ADR-0009). Plain text only: there is no HTML part and no link, so a
+ * message can carry nothing a mail client would render or follow.
+ */
+export interface MailMessage {
+  /** The recipient's address. PII: never logged (`constitution.md` → PII / logging rules). */
+  readonly to: string;
+  readonly subject: string;
+  /** The body. It holds a one-time code, so it is never logged either. */
+  readonly text: string;
+}

@@ -66,19 +66,23 @@ export class ApplicationLifecycle {
    *   port has been opened, and every datastore this call opened has been closed again.
    */
   async start(): Promise<AddressInfo> {
+    let requestListener: RequestListener;
     try {
       for (const datastore of this.datastores) {
         await datastore.connection.connect();
         this.connected.push(datastore);
         this.logger.info('database connected', { datastore: datastore.name });
       }
+      // Inside the same guard: building the container can refuse too — production without a
+      // mail strategy (`owner-auth.AC22`) — and must not leave the datastores open.
+      requestListener = this.createRequestListener();
     } catch (error) {
       // Release what did open (MongoDB when Redis fails), so the failed process can exit.
       await this.disconnectAll();
       throw error;
     }
 
-    const server = createServer(this.createRequestListener());
+    const server = createServer(requestListener);
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
       server.listen(this.options.port, () => {

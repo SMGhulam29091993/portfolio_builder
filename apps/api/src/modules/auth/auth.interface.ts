@@ -5,8 +5,9 @@
  * only on the methods they call.
  *
  * `owner-auth.T02` defined the persistence ports, `T03` the hashing, token, randomness and
- * clock ports, `T04` the session-authorizer and auth-service ports, and `T05` the two HTTP-layer
- * ports at the end of this file. The password-reset service port follows with `T08`.
+ * clock ports, `T04` the session-authorizer and auth-service ports, `T05` the two HTTP-layer
+ * ports at the end of this file, and `T07` the mail port. The password-reset service port
+ * follows with `T08`.
  *
  * Only the HTTP-layer ports mention Express types; no service imports them.
  */
@@ -18,6 +19,7 @@ import type {
   AuthSession,
   AuthUser,
   LoginRequest,
+  MailMessage,
   NewUser,
   OtpIssue,
   OtpRecord,
@@ -178,6 +180,22 @@ export interface ISecureRandom {
 /** The current time, injectable so expiry, cooldown and TTL tests are deterministic. */
 export interface IClock {
   now(): Date;
+}
+
+/**
+ * Sends one plain-text email (ADR-0009). The strategy behind it — Gmail today — is picked by
+ * `MailSenderFactory` from configuration, so the password reset never knows which provider
+ * delivers its code.
+ */
+export interface IMailSender {
+  /**
+   * Hands the message to the provider; resolves once the provider has accepted it.
+   *
+   * @throws {UpstreamError} The provider refused or could not be reached (`provider: "mail"`,
+   *   502). No provider-specific error type crosses this port.
+   * @throws {ServiceUnavailableError} No mail strategy is configured outside production (503).
+   */
+  send(message: MailMessage): Promise<void>;
 }
 
 /** Options for `ISessionAuthorizer.authorize`. */

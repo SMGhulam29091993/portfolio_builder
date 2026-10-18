@@ -64,6 +64,9 @@ appends the tools it installs to this table in the same change.
 | argon2 | 0.45.1 | `owner-auth.T03` | `apps/api`; native with bundled prebuilds (`allowBuilds` in `pnpm-workspace.yaml`); argon2id m=64 MiB, t=3, p=4 pinned in `Argon2PasswordHasher` |
 | bcryptjs | 3.0.3 | `owner-auth.T03` | `apps/api`; pure JavaScript, ships its own types; cost 10 for one-time codes and references |
 | jose | 6.2.12 | `owner-auth.T03` | `apps/api`; HS256 access tokens, algorithm pinned on verify |
+| nodemailer | 10.1.2 | `owner-auth.T07` | `apps/api`; ships its own types; Gmail SMTP through its well-known `Gmail` service entry, plain text only (ADR-0009) |
+| smtp-server | 3.19.23 | `owner-auth.T07` | `apps/api` dev only; the local SMTP server the `IMailSender` contract suite (`owner-auth.CT06`) sends to, so no test sends real mail |
+| @types/smtp-server | 3.5.13 | `owner-auth.T07` | `apps/api` dev only; smtp-server ships no types |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but

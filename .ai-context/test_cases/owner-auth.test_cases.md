@@ -26,7 +26,7 @@
 | owner-auth.IT19 | AC19 | Five wrong codes, then the right one | `OTP_INVALID` each time, `attempts` = 5; right code `OTP_INVALID` |
 | owner-auth.IT20 | AC20 | Advance the clock 11 min, then reset with the right code | 400 `OTP_EXPIRED`; document present |
 | owner-auth.IT21 | AC21 | Resend at 30 s; resend at 61 s; old reference and old code | 429 with `Retry-After`; then new reference and code; old reference `OTP_INVALID` |
-| owner-auth.IT22 | AC22 | Boot in production with no mail variables; boot in development with none and call forgot | Startup fails naming the variables; forgot → 503, login → 200 |
+| owner-auth.IT22 | AC22 | Boot in production with no mail variables; boot in development with none and call forgot | Startup fails naming the variables; forgot → 503, login → 200. Production half in `main.spec.ts` (T07); the forgot half lands with API05 (T08) |
 | owner-auth.IT23 | Edge | Login with the email in mixed case | 200 |
 | owner-auth.IT24 | Edge | Two forgot calls in a row for the owner, then reset with the first reference | Second replaces the document; first reference `OTP_INVALID` |
 | owner-auth.IT25 | Edge | `otps` TTL index definition | `purgeAt` with `expireAfterSeconds: 0`; unique `{ userId, purpose }` and `identifier` |
