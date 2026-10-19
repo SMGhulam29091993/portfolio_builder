@@ -18,8 +18,8 @@
 | owner-auth.IT11 | AC11 | Login → logout → refresh; and A/B from IT07 with A calling logout | Logout 200, refresh 401; B's session still present |
 | owner-auth.IT12 | AC12 | POST login with no `Origin`, and with a foreign `Origin` | 403 `ORIGIN_NOT_ALLOWED` each |
 | owner-auth.IT13 | ADR-0008 | Start the API with Redis unreachable; stop Redis while running and call a guarded route | Startup exits 1 without opening a port and closes MongoDB again (`main.spec.ts`, `application-lifecycle.spec.ts`, `redis-connection.spec.ts` — T01); guarded route and every auth route → 503 `SERVICE_UNAVAILABLE` at once, recovering when Redis returns; "stopping" Redis is cutting a TCP proxy in front of the shared compose server (`modules/auth/auth-redis-outage.spec.ts` — T05; API05–API07 added in T08) |
-| owner-auth.IT14 | AC13 | Run the development seeder twice (non-production env) | One user; `passwordHash` unchanged on the second run |
-| owner-auth.IT26 | AC23 | Run the `seed:owner` script with `NODE_ENV=production` | Exit code non-zero; `users` empty; output names no email or password |
+| owner-auth.IT14 | AC13 | Run the development seeder twice (non-production env) | One user; `passwordHash` unchanged on the second run (`seed/seed-owner.spec.ts`, spawning the script against a real `mongod`; unit cases in `seed/owner.seeder.spec.ts` — T09) |
+| owner-auth.IT26 | AC23 | Run the `seed:owner` script with `NODE_ENV=production` | Exit code non-zero; `users` empty; output names no email or password (`seed/seed-owner.spec.ts` — T09) |
 | owner-auth.IT15 | AC15 | Capture logs across IT01–IT11 and IT16–IT21 | No password, cookie, token, `jti`, code, identifier, reference or email substring present (`auth.routes.spec.ts`, `password-reset.routes.spec.ts`, `auth-redis-outage.spec.ts`) |
 | owner-auth.IT16 | AC16 | Forgot with the owner's email (`RecordingMailSender`) | 200 with a reference; one `otps` document with a bcrypt `otpHash` and `expiresAt` = `sentAt` + 10 min; Redis maps the reference to the identifier; one mail with a 6-digit code |
 | owner-auth.IT17 | AC17 | Forgot with an unknown email | Same status and body shape as IT16; no document, key or mail |
@@ -48,7 +48,7 @@
 | owner-auth.CT06 | `IMailSender` | `GmailMailSender` (against a local SMTP test server), `DisabledMailSender` and `RecordingMailSender` accept the same message; provider failures surface as `UpstreamError`; `ensureAvailable` resolves without delivering or connecting, and is 503 for `DisabledMailSender` (T08) |
 
 ## Data variations
-- Passwords: 1 character, 200 characters, 201 characters (400), unicode, leading/trailing spaces (not trimmed). Reset `newPassword`: 11 characters (400), 12 characters (200).
+- Passwords: 1 character, 200 characters, 201 characters (400), unicode, leading/trailing spaces (not trimmed). Reset `newPassword`: 11 characters (400), 12 characters (200). `OWNER_PASSWORD` for the seeder: unset, 11, 12 and 201 characters (refused, accepted, refused — T09).
 - Emails: malformed (400), 255 characters (400).
 - Codes: 5 digits, 7 digits, letters (400 `VALIDATION_FAILED`); `000000` is a valid code.
 - References: empty, 101 characters (400); a well-formed bcrypt string never issued (`OTP_INVALID`).

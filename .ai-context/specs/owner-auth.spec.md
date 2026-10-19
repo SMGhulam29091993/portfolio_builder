@@ -291,6 +291,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
     (ADR-0010).
 ## Edge Cases Covered
 - Email compared case-insensitively; stored lower-cased (login and forgot).
+- Development seeder: an `OWNER_PASSWORD` over 200 characters is refused like a short one,
+  because sign-in (API01) could never accept it; an account that already exists is left as is,
+  even when `OWNER_PASSWORD` has changed since; the display name is the fixed `Owner` (OQ1).
 - An expired or missing Redis session → 401 `UNAUTHENTICATED`; the 7-day TTL removes idle
   sessions with no sweeper.
 - Sessions slide: every refresh resets the 7-day TTL. There is no absolute session cap.
@@ -320,8 +323,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 - Hashing, signing, Redis or mail failures → 500 `INTERNAL_ERROR`, 503 or 502 as listed; nothing
   about the cause is returned.
 - Creating a user whose email already exists → `ConflictError` with code `USER_EXISTS`. In this
-  spec only the development seeder creates users, and it checks first, so here this surfaces
-  only when two seeder runs race and no HTTP route reaches it. Registration
+  spec only the development seeder creates users, and it looks the email up first; when two
+  seeder runs race, the loser catches `USER_EXISTS` and reports the account unchanged, so no
+  HTTP route and no seed run surfaces it (`owner-auth.T09`). Registration
   (`account-registration`) will create users over HTTP and must map it without revealing that
   the email is taken (ADR-0010).
 - Login and send rate-limit counters are in process memory (`RateLimiterFactory`); a restart

@@ -143,8 +143,13 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Accounts, roles, the one-time owner claim and tenant isolation
 **Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision (the `account-registration` spec takes over the mechanics once written)
-**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`
-**Last updated:** 2026-10-18
+**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`, `apps/api/src/seed/owner.seeder.ts` (the production refusal)
+**Last updated:** 2026-10-19
+
+## Seeder port and seed data (`ISeeder`, `SeedOutcome`, `buildSeeders`, `apps/api/src/seed/data/`)
+**Canonical definition:** `apps/api/src/seed/seeder.interface.ts` (the port); `apps/api/src/container.ts` → `buildSeeders` (wiring); `constitution.md` → Security Posture (seed data lives in `seed/data/`)
+**Referenced by:** `owner-auth` plan (Architecture Approach, Data Model) and tasks (T09); `section-engine` plan and tasks (T06); `architecture.md` (repository tree); `test_cases/_integration.md` (INT09)
+**Last updated:** 2026-10-19
 
 ## Password length bounds (12 to 200 characters)
 **Canonical definition:** `packages/contracts/src/auth/auth-contracts.ts` (`PASSWORD_MIN_LENGTH`, `PASSWORD_MAX_LENGTH`)
