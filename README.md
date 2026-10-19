@@ -59,6 +59,7 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
 | `pnpm test` | Unit and integration tests, with the 80% coverage floor on module services |
 | `pnpm test:e2e` | Playwright end-to-end specs (boots its own API and MongoDB; uses the compose Redis) |
 | `pnpm drift` | Fails when `apps/api/openapi/openapi.yaml` and the mounted routes disagree |
+| `pnpm seed:owner` | Creates one local account from `OWNER_EMAIL` / `OWNER_PASSWORD` in `apps/api/.env` (12–200 characters; display name `Owner`). Running it again changes nothing; it refuses with `NODE_ENV=production`. Needs the compose MongoDB and a `.env` that also passes the API's own checks |
 
 ## Where to start
 | You want to | Read |

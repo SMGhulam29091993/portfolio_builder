@@ -1,12 +1,12 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` was ⚠️ REVISED on 2026-10-18 and is back in `Draft`
-  (the product became multi-tenant — ADR-0010, ADR-0011). T01–T08 are completed and stand;
-  T09, now a development-only seeder, waits for the owner to settle `owner-auth.OQ1` (the
-  seeded `displayName`) and move the spec back to `Ready`.
-- The revision is records only, on its own branch `feat/owner-auth-t09-registration-revision`,
-  cut from `master` after the PR #15 merge (T08); check `git log` / `git branch -a` for whether
-  it has been merged. No code changed.
+- Nothing is `inprogress`. `owner-auth` is `Implemented` (2026-10-19): T09, the
+  development-only `OwnerSeeder` and `pnpm seed:owner`, was done on
+  `feat/owner-auth-t09-dev-seeder`, cut from `master` after the PR #16 merge; check
+  `git log` / `git branch -a` for whether it has been merged.
+- Since T09, `apps/api/.env` may set `OWNER_EMAIL` and `OWNER_PASSWORD` (12–200 characters);
+  `pnpm seed:owner` then creates that local account with the display name `Owner`. Blank, the
+  API still starts and only the seeder refuses. The seeder never runs in production.
 - Since T08, `POST /api/v1/auth/password/forgot`, `/resend` and `/reset` are live. With the
   Gmail variables blank they answer 503 for every address; sign-in is unaffected.
 - Since T07, `NODE_ENV=production` refuses to start without `GMAIL_USER` and

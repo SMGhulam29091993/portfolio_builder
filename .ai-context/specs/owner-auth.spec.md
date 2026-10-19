@@ -2,7 +2,12 @@
 ## Spec ID
 owner-auth
 ## Status
-Draft
+Implemented
+- `In Progress → Implemented` on 2026-10-19: T01–T09 completed, each with a DoD self-check line
+  in `state/completed.md`.
+- DoR self-check: 2026-10-19, pass (re-run after the 2026-10-18 revision; OQ1 resolved by the
+  owner). Moved `Draft → Ready` by the owner on 2026-10-19, then `Ready → In Progress` with
+  `owner-auth.T09` started the same day.
 - ⚠️ REVISED 2026-10-18 (the product became multi-tenant — ADR-0010, ADR-0011, BRD-009 to
   BRD-011). Raised while starting `owner-auth.T09`, when the spec did not say where the seeded
   owner's `displayName` comes from. What changed: accounts are now created by registration
@@ -286,6 +291,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
     (ADR-0010).
 ## Edge Cases Covered
 - Email compared case-insensitively; stored lower-cased (login and forgot).
+- Development seeder: an `OWNER_PASSWORD` over 200 characters is refused like a short one,
+  because sign-in (API01) could never accept it; an account that already exists is left as is,
+  even when `OWNER_PASSWORD` has changed since; the display name is the fixed `Owner` (OQ1).
 - An expired or missing Redis session → 401 `UNAUTHENTICATED`; the 7-day TTL removes idle
   sessions with no sweeper.
 - Sessions slide: every refresh resets the 7-day TTL. There is no absolute session cap.
@@ -315,8 +323,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 - Hashing, signing, Redis or mail failures → 500 `INTERNAL_ERROR`, 503 or 502 as listed; nothing
   about the cause is returned.
 - Creating a user whose email already exists → `ConflictError` with code `USER_EXISTS`. In this
-  spec only the development seeder creates users, and it checks first, so here this surfaces
-  only when two seeder runs race and no HTTP route reaches it. Registration
+  spec only the development seeder creates users, and it looks the email up first; when two
+  seeder runs race, the loser catches `USER_EXISTS` and reports the account unchanged, so no
+  HTTP route and no seed run surfaces it (`owner-auth.T09`). Registration
   (`account-registration`) will create users over HTTP and must map it without revealing that
   the email is taken (ADR-0010).
 - Login and send rate-limit counters are in process memory (`RateLimiterFactory`); a restart
@@ -347,7 +356,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 1. owner-auth.OQ1 — The development seeder must give the account a `displayName` (required on
    `users` and returned by API04), and no source is specified. Proposed: a third
    development-only variable, `OWNER_DISPLAY_NAME`, read with `OWNER_EMAIL` and
-   `OWNER_PASSWORD`. Open — owner to confirm or choose another source.
+   `OWNER_PASSWORD`. **Resolved 2026-10-19 (owner):** a fixed default, `Owner`, held as seed
+   data in `apps/api/src/seed/data/` (`constitution.md` → Security Posture) — no third
+   variable. The user changes it later in the CMS.
 ## Explicitly Out of Scope
 - Registration, email verification, roles and the one-time owner claim — `account-registration`
   (ADR-0010). Invitations.

@@ -7,14 +7,13 @@ lives in `decisions/`; the constraints live in `.agent/rules/constitution.md`.
 The tree below marks each path's current state; `monorepo-foundation` is implemented, so
 the workspace, the API core (including the event bus), the `health` module, the boundary
 checks, the `apps/web` scaffold (placeholder pages and the `/api/v1` proxy), the API test
-harness, CI and the local development environment exist. `owner-auth` is in progress: the
+harness, CI and the local development environment exist. `owner-auth` is implemented: the
 Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), its
 `SessionAuthorizer` and `AuthService` (T04), sign-in, refresh, sign-out, `me` and the
 `requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
 (T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
-code (T08) exist; only the development-only seeder (T09) remains, and it waits on the spec
-revision of 2026-10-18 (ADR-0010). Every other feature module is ⬜
-planned.
+code (T08) exist, and so does the development-only owner seeder with its `seed:owner` script
+(T09, ADR-0010). Every other feature module is ⬜ planned.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -49,8 +48,8 @@ portfolio-builder/
 │   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` 🚧 (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`, `PasswordResetService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API07), `RequireOwnerMiddleware`, `SessionCookieWriter`)
-│   │       ├── seed/             ⬜ idempotent seeders + seed data
+│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` ✅ (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`, `PasswordResetService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API07), `RequireOwnerMiddleware`, `SessionCookieWriter`)
+│   │       ├── seed/             🚧 idempotent seeders behind `ISeeder`, built by `buildSeeders` in `container.ts` — `OwnerSeeder` + `seed-owner.ts` (`pnpm seed:owner`, development only; refuses in production) ✅ · `data/` (`DEV_OWNER`) ✅; the reference portfolio content seeder ⬜ `section-engine`
 │   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
@@ -135,7 +134,7 @@ use and that may use no module.
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
 | Collection | Writer | Purpose |
 |---|---|---|
-| `users` | `auth` | User accounts; password hash (roles, verification and the Google link arrive with `account-registration` and `google-sign-in`, ADR-0010, ADR-0011) |
+| `users` | `auth` | User accounts; password hash (roles, verification and the Google link arrive with `account-registration` and `google-sign-in`, ADR-0010, ADR-0011). The development seeder writes only through `auth`'s `IUserCreator` |
 | `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
 | Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
 | `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
@@ -251,7 +250,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
 | `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
-| `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | Creates one local account for development and tests; the seeder refuses in production (ADR-0010) |
+| `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | `pnpm seed:owner` creates one local account from them (display name `Owner`); optional, so the API starts without them; the seeder refuses when either is unset, when the password is outside 12–200 characters, and always in production (ADR-0010) |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves — to be revised by `public-site-rendering`, which now resolves a portfolio per request host (ADR-0010) |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |

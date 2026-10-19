@@ -76,6 +76,17 @@ const envSchema = z.object({
   GMAIL_APP_PASSWORD: optional(z.string()),
   /** The sender address on outgoing mail; the Gmail strategy falls back to `GMAIL_USER`. */
   MAIL_FROM: optional(z.email()),
+  /**
+   * The account the development-only seeder creates (`pnpm seed:owner`, ADR-0010). Optional,
+   * so the API starts without it; `OwnerSeeder` refuses to run when it is unset. PII: never
+   * logged.
+   */
+  OWNER_EMAIL: optional(z.email()),
+  /**
+   * That account's password. A secret. No length rule here, so a short value cannot stop the
+   * API from starting — `OwnerSeeder` enforces the 12-character floor (`owner-auth.AC14`).
+   */
+  OWNER_PASSWORD: optional(z.string()),
 });
 
 /** The validated, read-only configuration object. */

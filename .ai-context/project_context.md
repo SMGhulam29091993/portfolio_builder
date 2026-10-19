@@ -9,12 +9,12 @@ custom domain (BRD-011). The first site to publish is the reference design in `d
 (Express, TypeScript, MongoDB) and `apps/web` (Next.js — public site and CMS). AI design
 generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: `monorepo-foundation`
 implemented 2026-10-17; `owner-auth` (revised 2026-10-17: Redis session, OTP password reset;
-⚠️ revised again 2026-10-18 for multi-tenancy) is back in `Draft` with T01–T08 completed.**
+⚠️ revised 2026-10-18 for multi-tenancy) implemented 2026-10-19.**
 
 ## Current sprint
 Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
-`Draft` again after the 2026-10-18 revision (T01–T05 completed 2026-10-17, T06–T08 2026-10-18;
-T09 waits for the owner to move it back to `Ready`); the other 14 specs are `Draft`. Four more
+`Implemented` (T01–T05 completed 2026-10-17, T06–T08 2026-10-18, T09 2026-10-19 after the
+multi-tenant revision); the other 14 specs are `Draft`. Four more
 slugs are planned with no spec yet (`status.md` → Planned slugs). Live picture: `state/current.md`,
 `state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
 

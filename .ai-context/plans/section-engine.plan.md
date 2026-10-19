@@ -11,7 +11,7 @@ Module `apps/api/src/modules/portfolio/`.
 | `SectionRegistry` | Strategy registry | `ISectionRegistry` | `ISectionDefinition[]` (constructor) |
 | `<Type>SectionDefinition` × 6 | Strategy | `ISectionDefinition` | contract schema — **added by each section spec, not here** |
 | `ResolvePortfolioMiddleware` | HTTP | `IPortfolioResolver` | `IPortfolioRepository` |
-| `PortfolioSeeder`, `SectionSeeder` | Seed | `ISeeder` | repositories, `ISectionRegistry`, seed-data loader |
+| `PortfolioSeeder`, `SectionSeeder` | Seed | `ISeeder` (since `owner-auth.T09`; built in `container.ts` → `buildSeeders`) | repositories, `ISectionRegistry`, seed-data loader |
 
 ```typescript
 interface ISectionDefinition<T = unknown> {

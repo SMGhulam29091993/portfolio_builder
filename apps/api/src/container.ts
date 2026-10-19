@@ -48,6 +48,8 @@ import { HealthController } from './modules/health/health.controller.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { createHealthRouter } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { OwnerSeeder } from './seed/owner.seeder.js';
+import type { ISeeder } from './seed/seeder.interface.js';
 
 /**
  * Upper bound on the health check's database ping (spec → Error Handling: the endpoint cannot
@@ -255,6 +257,28 @@ export function buildContainer({
   };
 
   return { logger, originAllowList, apiRouters: [healthRouter, authRouter], authGuard };
+}
+
+/** What the seeders need: configuration and MongoDB — no Redis, mail or HTTP. */
+export interface SeederDependencies {
+  readonly env: Env;
+  readonly mongo: IMongoConnectionProvider;
+}
+
+/** The seeders a script can run. */
+export interface Seeders {
+  /** The development-only account (`owner-auth.T09`); refuses in production (AC23). */
+  readonly owner: ISeeder;
+}
+
+/**
+ * Wires the seeders for the `seed:*` scripts. Kept apart from `buildContainer` so a seed run
+ * builds no mail strategy, limiter or router — and so production's mail fail-fast cannot
+ * pre-empt the seeder's own, clearer production refusal. Performs no I/O.
+ */
+export function buildSeeders({ env, mongo }: SeederDependencies): Seeders {
+  const users = new UserRepository(mongo);
+  return { owner: new OwnerSeeder(users, users, new Argon2PasswordHasher(), env) };
 }
 
 /**

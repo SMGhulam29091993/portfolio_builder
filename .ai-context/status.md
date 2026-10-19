@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-18_
+_Last updated: 2026-10-19_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -8,7 +8,7 @@ owner moves a spec to `Ready`.
 | # | Spec ID | Title | Status | BRD | Blocked on before `Ready` |
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
-| 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Draft (⚠️ REVISED 2026-10-18; T01–T08 completed) | BRD-002 | OQ1 seeder `displayName`; owner re-approval |
+| 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Implemented | BRD-002 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
@@ -35,6 +35,15 @@ owner moves a spec to `Ready`.
 | `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
 
 ## Daily Execution Log
+### 2026-10-19
+- `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
+  re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.
+- `owner-auth.T09` completed on `feat/owner-auth-t09-dev-seeder`: `ISeeder`, `OwnerSeeder`
+  (refuses in production first, then checks `OWNER_EMAIL` and a 12–200 character
+  `OWNER_PASSWORD`, idempotent by email), `SeedRefusedError` / `SeedConfigurationError`,
+  `seed/data/owner.ts`, `buildSeeders` in `container.ts`, the `seed:owner` script (API and
+  root); `OWNER_EMAIL` / `OWNER_PASSWORD` read by `env.ts` as optional. With it `owner-auth`
+  moved `In Progress → Implemented`. No route changed; OpenAPI stays 0.4.0.
 ### 2026-10-18
 - The product became multi-tenant (owner, while `owner-auth.T09` was being started): anyone
   registers, email verification is required, Google sign-in is offered, the platform owner is
