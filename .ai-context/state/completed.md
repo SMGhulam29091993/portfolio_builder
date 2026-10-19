@@ -158,3 +158,12 @@
   BRD-001/002 revised, BRD-009–011 added; T09 is now a development-only seeder. Not an
   implementation task, so no DoD self-check line applies; the spec is back in `Draft` and its
   DoR self-check is re-run once OQ1 is answered.
+- owner-auth.T09 — 2026-10-19 — DoD self-check: 2026-10-19, pass (checked locally:
+  `pnpm turbo run build typecheck lint test drift` — 20 tasks pass, 493 API tests; the web
+  build needs `API_INTERNAL_URL` set as CI sets it). AC13 (IT14 in `seed-owner.spec.ts`, plus
+  the idempotency cases in `owner.seeder.spec.ts`), AC14 (UT11, the 12- and 201-character
+  boundaries, the process-level case) and AC23 (UT19, IT26) are covered by named tests. OQ1
+  resolved by the owner: a fixed `displayName`, `Owner`, in `seed/data/owner.ts`. No route
+  changed, so OpenAPI stays 0.4.0. One self-review finding, kept by design
+  (`memory/review-findings.md`, 2026-10-19). With T09, `owner-auth` is `Implemented`. CI not
+  yet run on this branch.

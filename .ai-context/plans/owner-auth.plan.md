@@ -80,7 +80,7 @@ follows ADR-0009.
 **Redis** — `auth:session:<userId>` → a hash with the fields `jti`, `refreshTokenHash` and `issuedAt` (epoch ms; a hash so the Lua scripts read the `jti` with `HGET`, `owner-auth.T02`), TTL 7 days;
 `auth:otp-ref:<reference>` → identifier, TTL 24 hours.
 Seed (development and tests only, ADR-0010): one user from `OWNER_EMAIL` / `OWNER_PASSWORD`
-(and the `displayName` source OQ1 settles); refuses when `NODE_ENV=production`; no literal
+and the fixed `displayName` `Owner` from `seed/data/` (OQ1, resolved 2026-10-19); refuses when `NODE_ENV=production`; no literal
 credentials anywhere. Production accounts come from `account-registration` and
 `google-sign-in`, which add `role`, `emailVerifiedAt` and `googleSub` to `users`.
 ## Constitution Check

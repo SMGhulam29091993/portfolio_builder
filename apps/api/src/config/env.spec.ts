@@ -177,6 +177,35 @@ describe('loadEnv', () => {
     },
   );
 
+  it('owner-auth.T09 — leaves the seeder variables unset when they are absent or blank', () => {
+    // The API starts without them: only the development seeder needs them, and it enforces
+    // their presence and the password length itself (owner-auth.AC14).
+    for (const blank of [undefined, '']) {
+      const env = loadEnv({ ...VALID_SOURCE, OWNER_EMAIL: blank, OWNER_PASSWORD: blank });
+
+      expect(env.OWNER_EMAIL).toBeUndefined();
+      expect(env.OWNER_PASSWORD).toBeUndefined();
+    }
+  });
+
+  it('owner-auth.T09 — reads the seeder variables, keeping the password exactly as given', () => {
+    const env = loadEnv({
+      ...VALID_SOURCE,
+      OWNER_EMAIL: 'owner@portfolio.example',
+      OWNER_PASSWORD: '  short  ',
+    });
+
+    // No length rule here: a short password must not stop the API from starting.
+    expect(env).toMatchObject({ OWNER_EMAIL: 'owner@portfolio.example', OWNER_PASSWORD: '  short  ' });
+  });
+
+  it('owner-auth.T09 — rejects an OWNER_EMAIL that is not an email address, without echoing it', () => {
+    const error = captureEnvError({ ...VALID_SOURCE, OWNER_EMAIL: 'not-an-address' });
+
+    expect(error.variables).toEqual(['OWNER_EMAIL']);
+    expect(error.message).not.toContain('not-an-address');
+  });
+
   it('defaults NODE_ENV to development when it is unset', () => {
     const env = loadEnv({ ...VALID_SOURCE, NODE_ENV: undefined });
 

@@ -64,7 +64,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 ## Environment variables
 **Canonical definition:** `.ai-context/architecture.md` → Environment
 **Referenced by:** `monorepo-foundation`, `owner-auth`, `ai-design-studio`, `publish-pipeline`, `public-site-rendering` plans; `int-standards.nextjs.md` → Configuration; `int-standards.express.md` → Configuration; `.agent/workflows/generate-plan.md` step 9; `.agent/workflows/code-review.md` (Security); `apps/api/src/config/env.ts`, `apps/web/src/lib/env.ts`, `turbo.json` (`build.env`, `dev.passThroughEnv`), `apps/api/.env.example`, `apps/web/.env.example` (both checked against the table by `env-example.spec.ts`), `README.md` → Local development, `apps/web/e2e/start-api.ts` (the API's environment for E2E; `WEB_ORIGIN` from `playwright.config.ts`)
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ## Reference content, visual tokens, design unknowns
 **Canonical definition:** `.ai-context/design_reference.md`
@@ -145,6 +145,11 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision (the `account-registration` spec takes over the mechanics once written)
 **Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`
 **Last updated:** 2026-10-18
+
+## Password length bounds (12 to 200 characters)
+**Canonical definition:** `packages/contracts/src/auth/auth-contracts.ts` (`PASSWORD_MIN_LENGTH`, `PASSWORD_MAX_LENGTH`)
+**Referenced by:** `owner-auth` spec (AC14, AC18, API01, API07); `apps/api/src/seed/owner.seeder.ts` (imports both); `architecture.md` → Environment (`OWNER_PASSWORD` row); `apps/api/.env.example`; `README.md` (`pnpm seed:owner`)
+**Last updated:** 2026-10-19
 
 ## Google sign-in boundary
 **Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the `google-sign-in` spec takes over the mechanics once written)

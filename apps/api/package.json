@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --coverage",
-    "drift": "tsx src/openapi/check-drift.ts"
+    "drift": "tsx src/openapi/check-drift.ts",
+    "seed:owner": "tsx --env-file-if-exists=.env src/seed/seed-owner.ts"
   },
   "dependencies": {
     "@portfolio/contracts": "workspace:*",

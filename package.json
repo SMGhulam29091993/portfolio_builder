@@ -13,7 +13,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
-    "drift": "turbo run drift"
+    "drift": "turbo run drift",
+    "seed:owner": "pnpm --filter @portfolio/api seed:owner"
   },
   "devDependencies": {
     "turbo": "2.11.8"

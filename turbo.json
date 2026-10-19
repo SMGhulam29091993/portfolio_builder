@@ -38,6 +38,8 @@
         "GMAIL_USER",
         "GMAIL_APP_PASSWORD",
         "MAIL_FROM",
+        "OWNER_EMAIL",
+        "OWNER_PASSWORD",
         "API_INTERNAL_URL"
       ]
     }

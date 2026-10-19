@@ -32,8 +32,6 @@
   files stay on disk) needs the owner's go-ahead. Blocks nothing; noise in every diff until done.
 
 ## Raised 2026-10-18 (multi-tenancy — ADR-0010, ADR-0011)
-- **`owner-auth.OQ1` — seeded `displayName`** — the development seeder needs a value and no
-  source is specified. Proposed: `OWNER_DISPLAY_NAME`. Blocks `owner-auth.T09`.
 - **What the owner role may do** that a member may not (an admin area? free credits?). Blocks
   the `account-registration` spec.
 - **Owner claim through Google** — allowed, or only through the registration form? Blocks the

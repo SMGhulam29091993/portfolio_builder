@@ -101,6 +101,16 @@ owner's 503 came only after a code document and reference had been written.
 called first by `requestCode` and `resend`. `owner-auth.IT22` now sends both addresses and
 asserts nothing is written; it fails with the call removed.
 
+### 2026-10-19 — owner-auth.T09
+**Finding:** The smoke run of `pnpm seed:owner` against a developer's `apps/api/.env` from before
+T05 refused on `JWT_ACCESS_SECRET` and `WEB_ORIGIN`, although the seeder uses MongoDB only: the
+script parses the environment with the API's one `loadEnv`, so a `.env` that cannot start the
+API cannot seed either. Kept on purpose — a second, seeder-only schema would be a second reader
+of `process.env`. Also checked: in production the script connects to MongoDB before the seeder
+refuses; AC23 forbids reading or hashing, not connecting, and the refusal stays in one place.
+**Resulting rule/check added:** `README.md` → `pnpm seed:owner` says the `.env` must also pass
+the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in production.
+
 <!-- Template
 ### <date> — <slug>.T<NN>
 **Finding:** ...

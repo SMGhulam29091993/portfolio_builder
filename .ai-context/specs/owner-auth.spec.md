@@ -2,7 +2,12 @@
 ## Spec ID
 owner-auth
 ## Status
-Draft
+Implemented
+- `In Progress → Implemented` on 2026-10-19: T01–T09 completed, each with a DoD self-check line
+  in `state/completed.md`.
+- DoR self-check: 2026-10-19, pass (re-run after the 2026-10-18 revision; OQ1 resolved by the
+  owner). Moved `Draft → Ready` by the owner on 2026-10-19, then `Ready → In Progress` with
+  `owner-auth.T09` started the same day.
 - ⚠️ REVISED 2026-10-18 (the product became multi-tenant — ADR-0010, ADR-0011, BRD-009 to
   BRD-011). Raised while starting `owner-auth.T09`, when the spec did not say where the seeded
   owner's `displayName` comes from. What changed: accounts are now created by registration
@@ -347,7 +352,9 @@ Redis reference and the auth session, clears all three cookies. `message: "Passw
 1. owner-auth.OQ1 — The development seeder must give the account a `displayName` (required on
    `users` and returned by API04), and no source is specified. Proposed: a third
    development-only variable, `OWNER_DISPLAY_NAME`, read with `OWNER_EMAIL` and
-   `OWNER_PASSWORD`. Open — owner to confirm or choose another source.
+   `OWNER_PASSWORD`. **Resolved 2026-10-19 (owner):** a fixed default, `Owner`, held as seed
+   data in `apps/api/src/seed/data/` (`constitution.md` → Security Posture) — no third
+   variable. The user changes it later in the CMS.
 ## Explicitly Out of Scope
 - Registration, email verification, roles and the one-time owner claim — `account-registration`
   (ADR-0010). Invitations.
