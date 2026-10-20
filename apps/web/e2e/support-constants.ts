@@ -12,3 +12,9 @@ export const E2E_OWNER = Object.freeze({
 
 /** The mailbox endpoint's port (`start-api.ts`). */
 export const E2E_MAILBOX_PORT = 4199;
+
+/**
+ * The secret the E2E API and web app share for publish → revalidation
+ * (`public-site-rendering.API03`). A placeholder for a throwaway run, never a real value.
+ */
+export const E2E_REVALIDATE_SECRET = 'e2e-revalidate-secret-000000000000000000';

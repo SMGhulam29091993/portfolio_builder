@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-20_
+_Last updated: 2026-10-21_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -16,14 +16,14 @@ owner moves a spec to `Ready`.
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Implemented | BRD-001 | — (built after `media-assets`) |
 | 6 | `media-assets` | Résumé and image uploads | Implemented | BRD-006 | — (built before `site-identity`, which depends on it; swap recorded 2026-10-20) |
 | 7 | `design-theme` | Theme tokens and layout variants | Implemented | BRD-003 | — |
-| 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
-| 9 | `about-section` | Bio, currently, stats, process | Draft | BRD-001 | — |
-| 10 | `work-showcase` | Featured project and project cards | Draft | BRD-001 | — (OQ1 Second Brain copy blocks the first publish, not `Ready`) |
-| 11 | `experience-timeline` | Role timeline | Draft | BRD-001 | — |
-| 12 | `stack-credentials` | Skills, education, certifications | Draft | BRD-001 | — |
-| 13 | `contact-section` | Contact card | Draft | BRD-001 | — |
-| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Draft | BRD-005 | ADR-0004; revise for ADR-0010 |
-| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Draft | BRD-003 | OQ1 mobile nav, OQ2 motion; revise for ADR-0010 (portfolio per request host) |
+| 8 | `hero-section` | Hero, code card, tech marquee | Implemented | BRD-001 | — |
+| 9 | `about-section` | Bio, currently, stats, process | Implemented | BRD-001 | — |
+| 10 | `work-showcase` | Featured project and project cards | Implemented | BRD-001 | — (the Second Brain copy blocks the owner's first publish, by design) |
+| 11 | `experience-timeline` | Role timeline | Implemented | BRD-001 | — |
+| 12 | `stack-credentials` | Skills, education, certifications | Implemented | BRD-001 | — |
+| 13 | `contact-section` | Contact card | Implemented | BRD-001 | — |
+| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
+| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
 | 16 | `ai-design-studio` | AI design proposals | Draft | BRD-004 | ADR-0006, ADR-0003 mechanics; revise for ADR-0010 (per-user limits) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
@@ -36,6 +36,22 @@ owner moves a spec to `Ready`.
 | `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
 
 ## Daily Execution Log
+### 2026-10-21
+- Section specs: the template placeholders renamed to the `[Your …]` form and matched by the
+  shared `PLACEHOLDER_PATTERN`; the layout checks ran in the public-site journeys. All six
+  `Implemented`.
+- `publish-pipeline` revised (per-portfolio snapshots and pointer, ADR-0004 retention, ADR-0013
+  ports, template placeholders blocked), `Ready` and implemented T01–T09: snapshot repository
+  with the retention prune, contributors in `portfolio` / `identity` / `design`, canonical
+  hashing, nine rules, the pipeline (validate, persist, activate, prune, emit), history and
+  rollback, site revalidation over HTTP, OpenAPI 0.11.0, `/cms/publish`. `Implemented`.
+- `public-site-rendering` revised for ADR-0010 (portfolios at `<platform>/<slug>`, the platform
+  home at `/`, a sitemap list) and the owner's navigation and motion answers, `Ready` and
+  implemented T01–T08: the anonymous `public-site` API module (OpenAPI 0.12.0), the slug page
+  with per-slug tag caching and the revalidate route, the shell (nav with the mobile menu, skip
+  link, footer, anchor focus, fade-up), metadata and JSON-LD, robots and sitemap, the snapshot
+  version adapter and failure pages. E2E runs in its own build directory (`NEXT_DIST_DIR`) so it
+  works beside `pnpm dev`. `Implemented`.
 ### 2026-10-20
 - The owner answered every open question in one session and asked for the rest of the project
   to be built on one branch (`feat/full-build`), stopping only for a new decision. Recorded:

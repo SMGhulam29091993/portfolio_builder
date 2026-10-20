@@ -416,3 +416,28 @@
   `MonthYearField`; `MetaFields`. `e2e/cms-editing.spec.ts` runs the editing journeys
   E2E05–E2E09 handed on by `cms-panel-shell`. The layout tasks (hero T06, others T05) stay
   in progress until the public site renders the page at real widths.
+- Publish pipeline — publish-pipeline.T01–T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass
+  (gate; E2E01–E2E03 pass). Spec revised for ADR-0010 / ADR-0004 retention / ADR-0013 and the
+  `[Your …]` template placeholders (AC20, AC21). `SnapshotRepository` (insert, reads, delivery
+  update, retention prune; AC14 enumerated); `PublishedPointerStore` (compare-and-swap, revision
+  untouched), `SectionsDraftContributor`, `IdentityDraftContributor`, `DesignDraftContributor`,
+  `DesignPublishCheck`; content walker, `CanonicalHasher`, `SnapshotBuilder`, `DraftAssembler`;
+  nine rule classes and `PublishRuleRegistry`; `PublishPipeline` with five steps (prune added for
+  AC20); `PublishingService`; `SiteRevalidationListener` with HTTP / no-op clients under the
+  dev-bypass guard; routes, OpenAPI 0.11.0, `SnapshotAssetReferenceProvider`; `/cms/publish`
+  with grouped issues, confirmation, history and "Make live". Deviations in the test cases file
+  (IT13 accepts either 409, IT14 at service level).
+- Public site — public-site-rendering.T01–T08 — 2026-10-21 — DoD self-check: 2026-10-21, pass
+  (gate; E2E 35 passed). Spec revised for `<platform>/<slug>`, `/` as the platform home and the
+  owner's motion answers. API: `public-site` module over `ISnapshotReader` and `IAssetReader`
+  only (architecture test checks named imports), ETag / 304, public limiter, API04 for the
+  sitemap, OpenAPI 0.12.0. Web: `PublishedSource` (per-slug tag, 300 s fallback, last good copy),
+  `adaptSnapshot`, `/<slug>` page with not-found and error pages, `/` home, `/api/revalidate`
+  (constant-time secret, `{ expire: 0 }`), robots and sitemap, metadata and JSON-LD; shell in
+  `packages/sections/src/shell`. Fixed on the way: duplicate dialog title ids on `/cms/publish`
+  and a keyboard-unreachable scrolling code card (both found by the E2E run). Deviations in the
+  spec's Status.
+- Section layout checks — hero-section.T06, about-section.T05, work-showcase.T05,
+  experience-timeline.T05, stack-credentials.T05, contact-section.T05 — 2026-10-21 — DoD
+  self-check: 2026-10-21, pass. Run as `public-site-rendering` VR01/VR02 and E2E11 at real
+  widths; screenshots are attached to the test results for the owner's review.

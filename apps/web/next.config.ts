@@ -9,11 +9,13 @@
 import type { NextConfig } from 'next';
 
 import { createApiRewrites } from './src/lib/api-proxy';
-import { loadEnv } from './src/lib/env';
+import { distDirFrom, loadEnv } from './src/lib/env';
 
 const nextConfig: NextConfig = {
   // No framework fingerprint header, matching the API (`app.ts`).
   poweredByHeader: false,
+  // `.next` unless `NEXT_DIST_DIR` names another, as the E2E web server does.
+  distDir: distDirFrom(),
   reactStrictMode: true,
   // Agent instructions live at the repository root (ADR-0002); stop `next dev` writing a second,
   // framework-managed `AGENTS.md` into this app.

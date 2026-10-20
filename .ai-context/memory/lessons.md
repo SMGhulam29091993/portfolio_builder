@@ -45,3 +45,20 @@ step and only the first line was chained with `&&`; `set -e` did not stop an emb
 `python3 -` heredoc either. Approach now: run the full gate script
 (`build typecheck lint test drift`) as its own step and commit only after it exits 0; record
 edits run in a script that exits non-zero on the first miss, followed by `|| exit 1`.
+
+### 2026-10-21 — a global text replace hit code as well as copy
+Renaming template placeholders by replacing `[0]` everywhere also turned `sectionTypes[0]` into
+`sectionTypes[Your number]`; it surfaced only when the web build ran. **Carry forward:** replace
+copy inside quotes only (match the quote too), and grep afterwards for the new text next to an
+identifier (`[A-Za-z)\]][Your `) before the gate.
+
+### 2026-10-21 — the Redis test pool was smaller than the number of Redis spec files
+Sixteen spec files claim one of fourteen test databases, and crashed runs leave claims for ten
+minutes, so a full run could fail every Redis suite at once. **Carry forward:** the harness now
+waits (up to 45 s) for a free database; a new Redis-backed spec needs no other change.
+
+### 2026-10-21 — two dialogs on one screen shared a title id
+`ConfirmDialog` used a fixed `id`, so the second dialog was named by the first one's heading;
+only the browser journey caught it. **Carry forward:** any id a reusable component renders comes
+from `useId()`.
+

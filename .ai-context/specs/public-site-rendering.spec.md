@@ -2,7 +2,14 @@
 ## Spec ID
 public-site-rendering
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-21: T01–T08 completed (DoD self-checks in
+  `state/completed.md`). Recorded deviations: (1) AC17's "temporarily unavailable" page answers
+  HTTP 500, not 503 — a Next.js page can only end in 200, 404 or its error boundary's 500;
+  (2) E2E12 (stopping the API mid-run) is covered by `published-source.spec.ts`, because the
+  shared E2E harness cannot stop its API without failing every later journey; (3) UT09 (the
+  mobile menu) runs in E2E04, as `packages/sections` has no DOM test environment; (4) the first
+  performance baseline is measured at the first deployment (Non-Functional Constraints).
 - `Ready → In Progress` on 2026-10-21 with `public-site-rendering.T01` started.
 - DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`).
@@ -11,8 +18,8 @@ In Progress
   slug, API03 revalidates one slug, and a new API04 lists published portfolios for the sitemap;
   an unknown slug and an unpublished portfolio answer the same 404, so existence is not
   revealed; (2) `/` is the platform home (AC20) — a portfolio on a bare domain is
-  `custom-domains`; (3) OQ1 and OQ2 resolved as "sensible defaults" (owner, 2026-10-20) — see
-  Resolved Questions; AC4 gains the mobile menu; (4) AC14 asserts layout at the reference widths
+  `custom-domains`; (3) OQ1 and OQ2 resolved from the owner's answers of 2026-10-20 in
+  `design_reference.md` — see Resolved Questions; AC4 gains the mobile menu; (4) AC14 asserts layout at the reference widths
   instead of owner-approved pixel baselines, as the section specs did (2026-10-20); full-page
   screenshots are still captured for the owner to review; (5) `DEFAULT_PORTFOLIO_SLUG` is
   retired — the slug comes from the URL.
@@ -175,14 +182,15 @@ before the body; 400 when `slug` is missing or malformed.
 | public-site-rendering.UT08 | AC11 | Revalidate handler with a right, wrong and missing secret; a right secret without a slug | 200 / 401 / 401 / 400 |
 | public-site-rendering.UT09 | AC4 | Mobile menu: toggle, Escape, choosing a link | Opens with `aria-expanded="true"`; closes each way |
 ## Resolved Questions
-Both answered "sensible defaults" by the owner on 2026-10-20; the defaults chosen are:
+Answered by the owner on 2026-10-20 (`design_reference.md` → Owner answers, rows 3, 4 and 7):
 1. **OQ1 — Navigation behaviour.** (a) Below 768 a "Menu" button opens the section links under
    the bar (AC4). (b) `Contact` is a permanent filled pill, not an active-section state. (c) The
-   nav is fixed at the top while scrolling; section anchors leave room for it
-   (`scroll-margin-top`).
-2. **OQ2 — Motion and hover.** Links and buttons have hover and pressed states; in-page jumps
-   scroll smoothly only when the design's motion is not `none` and the visitor has not asked for
-   reduced motion; there are no scroll reveals.
+   nav pill is fixed while scrolling; section anchors leave room for it (`scroll-margin-top`).
+2. **OQ2 — Motion and hover.** Sections fade up once when they enter the viewport; the marquee
+   loops leftward in about 40 s and pauses on hover and focus; buttons and cards brighten their
+   border on hover; in-page jumps scroll smoothly. All motion is off under
+   `prefers-reduced-motion` and when the theme's motion is `none`. The fade-up hides nothing
+   until script has run, so with JavaScript off every section is visible (AC18).
 ## Explicitly Out of Scope
 - Each section's internal layout — the six section specs.
 - Analytics, cookie banners, a blog, a contact form, search.
@@ -192,6 +200,6 @@ Both answered "sensible defaults" by the owner on 2026-10-20; the defaults chose
 ## Non-Functional Constraints (from constitution.md)
 - WCAG 2.1 AA.
 - Performance targets (Core Web Vitals, Lighthouse) are not yet defined — set from the first
-  measured baseline after `T07`.
+  baseline measured on the first deployment (a `next dev` measurement would mislead).
 - No latency target is defined yet for API01 and API02.
 - No client-side data fetching on the public page.

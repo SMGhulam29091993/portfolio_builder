@@ -20,7 +20,12 @@ export function CodeCard({ card, identity }: { card: HeroSection['codeCard']; id
         <span aria-hidden="true" className="h-3 w-3 rounded-full bg-border" />
         <span className="ml-2 font-mono text-xs text-text-muted">{card.filename}</span>
       </div>
-      <pre className="overflow-x-auto px-5 py-4 font-mono text-[13px] leading-7 text-text">
+      {/* It may scroll sideways on narrow screens, so keyboard users can focus it to scroll (WCAG 2.1.1). */}
+      <pre
+        tabIndex={0}
+        aria-label={card.filename}
+        className="overflow-x-auto px-5 py-4 font-mono text-[13px] leading-7 text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
         <code>
           <span className="text-text-muted">export const </span>
           {card.exportName}

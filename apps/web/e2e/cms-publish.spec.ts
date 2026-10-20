@@ -41,6 +41,7 @@ test.beforeEach(async ({ page }) => {
 test('publish-pipeline.E2E01 / AC19 — the seed placeholder is listed, links to the work editor, and blocks Publish', async ({ page }) => {
   await openPublish(page);
   await expect(page.getByText('Nothing is published yet.')).toBeVisible();
+  await expect(page.getByTestId('publish-status')).toHaveText('Never published');
   await expect(page.getByRole('heading', { name: /^Must fix before publishing/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeDisabled();
 
@@ -58,6 +59,9 @@ test('publish-pipeline.E2E02 / AC19 — fix it and publish with a note: version 
   await expect(first.getByText('First version')).toBeVisible();
   await expect(page.getByText(/^Version 1 is live, since /)).toBeVisible();
   await expect(page.getByText('The live site matches the draft.')).toBeVisible();
+  // cms-panel-shell.AC11 — the header shows the live version and no badge.
+  await expect(page.getByTestId('publish-status')).toHaveText(/^Version 1 live since /);
+  await expect(page.getByText('Unpublished changes')).toHaveCount(0);
 });
 
 test('publish-pipeline.E2E03 / AC19 — publish again, then make version 1 live after confirming', async ({ page }) => {
@@ -73,4 +77,6 @@ test('publish-pipeline.E2E03 / AC19 — publish again, then make version 1 live 
 
   await expect(history.getByRole('listitem').filter({ hasText: 'Version 1' }).getByText('Live', { exact: true })).toBeVisible();
   await expect(page.getByText('The draft has changes that are not published.')).toBeVisible();
+  // cms-panel-shell.AC11 — the draft now differs from the live version 1.
+  await expect(page.getByText('Unpublished changes')).toBeVisible();
 });

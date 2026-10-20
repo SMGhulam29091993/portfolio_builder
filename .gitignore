@@ -11,6 +11,7 @@ node_modules/
 .pnpm-store/
 .turbo/
 .next/
+.next-e2e/
 dist/
 build/
 coverage/

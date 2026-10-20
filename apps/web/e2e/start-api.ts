@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SMTPServer } from 'smtp-server';
 
-import { E2E_OWNER } from './support-constants.ts';
+import { E2E_OWNER, E2E_REVALIDATE_SECRET } from './support-constants.ts';
 
 const API_ROOT = fileURLToPath(new URL('../../api', import.meta.url));
 
@@ -100,6 +100,9 @@ const apiEnv: NodeJS.ProcessEnv = {
   MAIL_FROM: 'no-reply@portfolio.test',
   OWNER_EMAIL: E2E_OWNER.email,
   OWNER_PASSWORD: E2E_OWNER.password,
+  // A publish refreshes the web app's page at once (`public-site-rendering.AC11`).
+  WEB_REVALIDATE_URL: `${webOrigin}/api/revalidate`,
+  REVALIDATE_SECRET: E2E_REVALIDATE_SECRET,
 };
 
 // The development account, verified and the owner, before the API takes traffic.

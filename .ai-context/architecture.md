@@ -275,3 +275,4 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
 | `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_SITE_URL` | web | Server-side fetch target; canonical URL |
+| `NEXT_DIST_DIR` | web | Optional build directory (default `.next`); the E2E web server uses its own so it can run beside `pnpm dev` |

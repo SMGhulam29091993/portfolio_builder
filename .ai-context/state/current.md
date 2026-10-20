@@ -1,11 +1,12 @@
 # current.md
 ## In progress right now
-- 2026-10-20: the owner asked for the rest of the project to be built on one branch,
-  `feat/full-build` (cut from `master` after PR #17), one task after another in the build order
-  of `project_context.md`, stopping only when a decision needs the owner. Every open question
-  was answered first (`state/blockers.md` → Resolved 2026-10-20). Next up: the
-  `account-registration` spec. Check `git log feat/full-build` for how far the build has got.
-- Local environment notes carried from `owner-auth`: `apps/api/.env` needs `WEB_ORIGIN`,
-  `JWT_ACCESS_SECRET`, `REDIS_URL`; `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose
-  Redis (`docker compose -f docker-compose.dev.yml up -d --wait redis`); mail variables may stay
-  blank locally (password reset then answers 503).
+- 2026-10-21: building the whole project on `feat/full-build` (owner's request of 2026-10-20),
+  one spec after another in the build order of `project_context.md`, stopping only for an owner
+  decision. Done so far: everything through `public-site-rendering`. Next up:
+  `ai-design-studio` (revise for ADR-0010 per-user limits and the credits allowance, then build).
+- Local environment notes: `apps/api/.env` needs `WEB_ORIGIN`, `JWT_ACCESS_SECRET`, `REDIS_URL`;
+  `apps/web/.env` now also needs `NEXT_PUBLIC_SITE_URL` (e.g. `http://localhost:3000`) — the web
+  app refuses to start without it; set `WEB_REVALIDATE_URL` and the same `REVALIDATE_SECRET` in
+  both apps to see publishes refresh the site at once (otherwise pages refresh within 300 s).
+  `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose Redis. `pnpm test:e2e` runs beside
+  `pnpm dev` (its own `.next-e2e` build directory).

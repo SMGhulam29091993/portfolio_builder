@@ -2,7 +2,9 @@
 ## Spec ID
 stack-credentials
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-21: the last task, the layout check at 1440 and 390 with
+  axe, ran in `public-site-rendering`'s journeys, where the page renders at real widths.
 - DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`), then `Ready → In Progress`.
 - Revised 2026-10-20, before the spec was ever `Ready`: (1) ADR-0010 — the definition's

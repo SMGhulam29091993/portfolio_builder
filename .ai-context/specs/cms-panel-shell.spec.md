@@ -3,6 +3,9 @@
 cms-panel-shell
 ## Status
 Implemented
+- 2026-10-21: AC11's data arrived with `publish-pipeline.T09` — the header shows the live version
+  and time or "Never published", and the "Unpublished changes" badge; asserted in
+  `e2e/cms-publish.spec.ts`.
 - `In Progress → Implemented` on 2026-10-20: T01–T08 completed, each with a DoD self-check line
   in `state/completed.md`. Handed on, as recorded below: AC11's data (`publish-pipeline`) and
   the editing E2E05–E2E09 (`about-section`).

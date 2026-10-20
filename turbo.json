@@ -15,7 +15,9 @@
         "!.next/cache/**"
       ],
       "env": [
-        "API_INTERNAL_URL"
+        "API_INTERNAL_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "REVALIDATE_SECRET"
       ]
     },
     "typecheck": {

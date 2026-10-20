@@ -8,20 +8,27 @@
  * this one (`cms-panel-shell.AC3`). Cached data is dropped first, so nothing of the previous
  * session lingers in memory.
  */
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 
 import { ApiClient, ApiError, type SessionLoss } from '../../../lib/api/client';
 import { ApiClientProvider } from '../../../lib/api/context';
+import { publishingKeys } from '../../../lib/api/publishing';
 import { loginUrl } from '../../../lib/cms/navigation';
 
 export function CmsProviders({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
+  const [queryClient] = useState(() => {
+    const client: QueryClient = new QueryClient({
+      // Any successful write may change the draft, so the header's "Unpublished changes" badge
+      // (`cms-panel-shell.AC11`) and the publish screen re-read the status after every one.
+      mutationCache: new MutationCache({
+        onSuccess: () => {
+          void client.invalidateQueries({ queryKey: publishingKeys.all });
+        },
+      }),
+      defaultOptions: {
           queries: {
             // A 4xx is an answer, not a blip; retry only what may be transient.
             retry: (failures, error) =>
@@ -29,8 +36,9 @@ export function CmsProviders({ children }: { children: ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      }),
-  );
+    });
+    return client;
+  });
   const [apiClient] = useState(
     () =>
       new ApiClient({

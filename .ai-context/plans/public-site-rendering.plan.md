@@ -37,6 +37,8 @@
 - `AnchorFocus` — tiny client helper moving focus to the target heading after hash navigation.
 - `MobileMenu` — client disclosure below 768 (OQ1 resolved); the links are server-rendered, so
   with JavaScript off the sections are still reachable through the skip link and the page.
+- `RevealOnScroll` — client helper (OQ2 resolved): after mount, and only when motion is allowed,
+  marks below-the-fold sections pending and reveals each once it intersects the viewport.
 - Patterns: Adapter (snapshot version adapters, keyed by `schemaVersion`).
 ## Data Model
 None. Reads `snapshots` through `ISnapshotReader` and file bytes through `IAssetReader`.
@@ -48,7 +50,6 @@ None. Reads `snapshots` through `ISnapshotReader` and file bytes through `IAsset
 - [x] Accessibility is an acceptance criterion
 - [ ] Non-functional baselines for the public page — not yet defined; measured in T07
 ## Explicitly Deferred
-- Scroll reveals (OQ2 resolved: none).
 - Edge caching / CDN in front of the site — hosting is undecided.
 - Routing by custom domain — `custom-domains`.
 ## Sequencing

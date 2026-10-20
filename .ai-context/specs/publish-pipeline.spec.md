@@ -2,7 +2,9 @@
 ## Spec ID
 publish-pipeline
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-21: T01–T09 completed, each with a DoD self-check line in
+  `state/completed.md`; E2E01–E2E03 pass in the browser.
 - `Ready → In Progress` on 2026-10-21 with `publish-pipeline.T01` started.
 - DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`); ADR-0004 accepted (with retention),

@@ -20,3 +20,4 @@ export {
   type SectionRendererEntry,
   type SectionRendererProps,
 } from './registry.js';
+export * from './shell/index.js';

@@ -7,7 +7,7 @@
 import type { LinkTarget } from '@portfolio/contracts';
 import type { ReactNode } from 'react';
 
-import { headingId } from './layout.js';
+import { focusSectionHeading } from './section-anchor.js';
 
 const STYLES = {
   primary: 'bg-accent text-on-accent hover:brightness-110',
@@ -29,10 +29,7 @@ export function CtaButton({ label, target, variant, icon }: { label: string; tar
       href={`#${target.sectionType}`}
       className={className}
       onClick={() => {
-        // After the browser's own jump, move focus so keyboard and screen-reader users land there.
-        requestAnimationFrame(() => {
-          document.getElementById(headingId(target.sectionType))?.focus({ preventScroll: true });
-        });
+        focusSectionHeading(target.sectionType);
       }}
     >
       {label}

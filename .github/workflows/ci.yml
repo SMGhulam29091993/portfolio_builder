@@ -45,6 +45,8 @@ jobs:
       # The web build bakes the `/api/v1` rewrite target in and fails fast without one
       # (`apps/web/src/lib/env.ts`). Nothing listens here during the build; E2E sets its own.
       API_INTERNAL_URL: http://127.0.0.1:4000
+      # The public site's origin, for canonical URLs and the sitemap (`apps/web/src/lib/env.ts`).
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       TURBO_TELEMETRY_DISABLED: '1'
     steps:
       - name: Check out

@@ -59,3 +59,29 @@
 [data-dot-grid='off'] [data-effect='dot-grid'] {
   display: none;
 }
+
+/* public-site-rendering (OQ2 resolved): in-page jumps scroll smoothly, unless motion is off. */
+html:has([data-theme-root]:not([data-motion='none'])) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Sections fade up once on entering the viewport; `RevealOnScroll` sets these only after it runs
+   and only when motion is allowed, so nothing is hidden without JavaScript. */
+[data-reveal='pending'] {
+  opacity: 0;
+  transform: translateY(1.5rem);
+}
+
+[data-reveal='shown'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
