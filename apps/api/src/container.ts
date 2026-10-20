@@ -61,6 +61,11 @@ import { AssetService } from './modules/assets/asset.service.js';
 import type { IAssetReferenceProvider, IFileStorage } from './modules/assets/index.js';
 import { GridFsFileStorage } from './modules/assets/storage/gridfs-file-storage.js';
 import { HealthController } from './modules/health/health.controller.js';
+import { IdentityAssetReferenceProvider } from './modules/identity/identity-asset-reference.provider.js';
+import { IdentityController } from './modules/identity/identity.controller.js';
+import { IdentityRepository } from './modules/identity/identity.repository.js';
+import { createIdentityRouter } from './modules/identity/identity.routes.js';
+import { IdentityService } from './modules/identity/identity.service.js';
 import { CryptoIdGenerator } from './modules/portfolio/adapters/crypto-id-generator.js';
 import type { ISectionDefinition } from './modules/portfolio/index.js';
 import { PortfolioController } from './modules/portfolio/portfolio.controller.js';
@@ -74,7 +79,9 @@ import { SectionService } from './modules/portfolio/section.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { createHealthRouter } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { REFERENCE_IDENTITY } from './seed/data/identity.js';
 import { REFERENCE_SECTIONS } from './seed/data/sections/index.js';
+import { IdentitySeeder } from './seed/identity.seeder.js';
 import { OwnerSeeder } from './seed/owner.seeder.js';
 import { PortfolioSeeder } from './seed/portfolio.seeder.js';
 import { SeedAll } from './seed/seed-all.seeder.js';
@@ -385,7 +392,11 @@ export function buildContainer({
 
   // assets (`media-assets`): bytes in GridFS; the reference providers are the modules that
   // store asset ids (identity, publishing), each added by its own spec.
-  const assetReferenceProviders: IAssetReferenceProvider[] = [...extraAssetReferenceProviders];
+  const identityRepository = new IdentityRepository(mongo);
+  const assetReferenceProviders: IAssetReferenceProvider[] = [
+    new IdentityAssetReferenceProvider(identityRepository),
+    ...extraAssetReferenceProviders,
+  ];
   const assetService = new AssetService(
     new AssetRepository(mongo),
     fileStorage ?? new GridFsFileStorage(mongo),
@@ -393,6 +404,16 @@ export function buildContainer({
     assetReferenceProviders,
   );
   const assetRouter = createAssetRouter(new AssetController(assetService), authGuard, resolvePortfolio);
+
+  // identity (`site-identity`): asset ids checked through the asset service's lookup; the
+  // template's name and email adapted from `auth`'s reader, so `identity` imports nothing from it.
+  const identityService = new IdentityService(identityRepository, assetService, {
+    accountOf: async (userId) => {
+      const user = await users.findById(userId);
+      return user ? { displayName: user.displayName, email: user.email } : null;
+    },
+  });
+  const identityRouter = createIdentityRouter(new IdentityController(identityService), authGuard, resolvePortfolio);
 
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
@@ -402,7 +423,7 @@ export function buildContainer({
   return {
     logger,
     originAllowList,
-    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter],
+    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter, identityRouter],
     authGuard,
   };
 }
@@ -421,8 +442,8 @@ export interface Seeders {
   /** The development-only account (`owner-auth.T09`); refuses in production (AC23). */
   readonly owner: ISeeder;
   /**
-   * Every development seeder in order (`section-engine.T06`): account → portfolio → sections.
-   * Later specs append their own steps here.
+   * Every development seeder in order (`section-engine.T06`): account → portfolio → sections →
+   * identity (`site-identity.T06`). Later specs append their own steps here.
    */
   readonly all: SeedAll;
 }
@@ -463,6 +484,10 @@ export function buildSeeders({
         referenceContent,
         env,
       ),
+    },
+    {
+      name: 'identity',
+      seeder: new IdentitySeeder(users, portfolios, new IdentityRepository(mongo), REFERENCE_IDENTITY, env),
     },
   ]);
   return { owner, all };

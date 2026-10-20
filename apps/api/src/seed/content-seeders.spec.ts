@@ -10,6 +10,7 @@ import {
   FakePasswordHasher,
   InMemoryPortfolioRepository,
   InMemorySectionRepository,
+  InMemoryIdentityRepository,
   InMemoryUserRepository,
   ManualClock,
 } from '../testing/index.js';
@@ -19,6 +20,8 @@ import { PortfolioSeeder, type ContentSeederEnv } from './portfolio.seeder.js';
 import { SeedAll } from './seed-all.seeder.js';
 import { SeedConfigurationError, SeedDataError, SeedRefusedError } from './seed.errors.js';
 import { SectionSeeder } from './section.seeder.js';
+import { IdentitySeeder } from './identity.seeder.js';
+import { REFERENCE_IDENTITY } from './data/identity.js';
 
 const ENV = { NODE_ENV: 'development', OWNER_EMAIL: 'dev@example.test', OWNER_PASSWORD: 'a dev password value' } as const;
 /** A registry over `definitions` — the seeders only read it. */
@@ -100,3 +103,28 @@ describe('seed:all (section-engine.AC12)', () => {
     ).rejects.toBeInstanceOf(SeedConfigurationError);
   });
 });
+
+describe('IdentitySeeder (site-identity.AC1, AC9)', () => {
+  it('site-identity.IT07 — creates the reference identity once and keeps an edit', async () => {
+    const { users, portfolios, all } = build();
+    await all.run();
+    const identities = new InMemoryIdentityRepository();
+    const seeder = new IdentitySeeder(users, portfolios, identities, REFERENCE_IDENTITY, ENV);
+
+    await expect(seeder.run()).resolves.toBe('created');
+    const portfolio = await portfolios.findByUserId((await users.findByEmail(ENV.OWNER_EMAIL))?.id ?? '');
+    const stored = await identities.find(portfolio?.id ?? '');
+    expect(stored?.data).toMatchObject({
+      fullName: 'S M Ghulam Ghaus Faiyaz',
+      monogram: 'GF',
+      location: { label: 'Kolkata, India', timezoneLabel: 'IST (UTC+5:30)' },
+      availability: { label: 'Open to Full Stack & Gen AI roles' },
+      resume: { label: 'Résumé' },
+      footer: { builtWith: ['Next.js', 'Tailwind', 'Motion'] },
+    });
+    await identities.update(portfolio?.id ?? '', 1, { ...(stored?.data ?? REFERENCE_IDENTITY), roleTitle: 'Edited' } as never);
+    await expect(seeder.run()).resolves.toBe('unchanged');
+    await expect(identities.find(portfolio?.id ?? '')).resolves.toMatchObject({ data: { roleTitle: 'Edited' } });
+  });
+});
+

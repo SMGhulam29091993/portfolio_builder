@@ -44,3 +44,4 @@ export {
   InMemoryAssetRepository,
   InMemoryFileStorage,
 } from './assets/in-memory-assets.js';
+export { InMemoryIdentityRepository } from './identity/in-memory-identity-repository.js';

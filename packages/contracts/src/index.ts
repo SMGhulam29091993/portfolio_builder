@@ -10,4 +10,5 @@ export * from './assets/index.js';
 export * from './auth/index.js';
 export * from './common/index.js';
 export * from './health/index.js';
+export * from './identity/index.js';
 export * from './sections/index.js';

@@ -2,11 +2,21 @@
 ## Spec ID
 site-identity
 ## Status
-Draft
+In Progress
+- `Ready → In Progress` on 2026-10-20 with `site-identity.T01` started.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`). OQ1 and OQ2 resolved by the owner on
+  2026-10-20.
+- Revised 2026-10-20, before the spec was ever `Ready`, for ADR-0010: one identity per user's
+  portfolio. With no stored identity, API01 answers the template — `fullName` and
+  `copyrightName` from the account's display name, `email` from the account, `monogram` from
+  the name's initials, bracketed placeholders elsewhere — at `revision: 0`, and the first API02
+  (`expectedRevision: 0`) creates it (AC11). The reference values below are the development
+  account's seed data only (AC1, AC9). Built after `media-assets`, which it validates against.
 ## Linked BRD
 .ai-context/BRD.md#BRD-001
 ## Intent
-Hold the facts about the owner that more than one part of the page uses — name, monogram,
+Hold the facts about a portfolio's person that more than one part of the page uses — name, monogram,
 role, email, location, availability, social links, the résumé file, footer credits and SEO text
 — in one editable record, so the nav, hero, contact card, footer and page metadata all read the
 same values and none of them is typed twice.
@@ -72,6 +82,10 @@ Limits: `socials` 0..6 with at most one entry per platform; `footer.builtWith` 0
 10. site-identity.AC10 — Given `/cms/identity`, when the owner edits and saves, then the form
     validates with the same schema, the résumé field offers only uploaded assets of kind
     `resume` (and "None"), and saving follows the shell's save, 400 and 409 behaviour.
+11. site-identity.AC11 — Given a user with no stored identity, when API01 is called, then it
+    returns the template built from their account at `revision: 0`; API02 with
+    `expectedRevision: 0` creates it at revision 1; a second create answers 409; another user's
+    identity is never read or written (tenant isolation).
 ## Edge Cases Covered
 - Email is stored lower-cased; display uses the stored value.
 - Emptying `socials` is valid; the hero and contact then render no social links.
@@ -93,12 +107,9 @@ Limits: `socials` 0..6 with at most one entry per platform; `footer.builtWith` 0
 | site-identity.UT06 | AC7 | Payload with `phone` | Parsed value has no `phone` |
 | site-identity.UT07 | AC8 | `referencesAsset(id)` for the résumé id, the OG image id, another id | true, true, false |
 ## Open Questions
-1. **OQ1 — Link targets.** The export encodes no URLs. The seed uses
-   `https://github.com/SMGhulam29091993` and `https://linkedin.com/in/s-m-ghulam-ghaus-faiyaz`
-   from the résumé PDF. Confirm both.
-2. **OQ2 — SEO text.** The design shows no page title or description. The seed composes the title
-   from `fullName` and `roleTitle` and reuses the hero intro as the description. Confirm or
-   supply.
+1. ~~**OQ1 — Link targets.**~~ Resolved 2026-10-20 (owner): both résumé URLs confirmed.
+2. ~~**OQ2 — SEO text.**~~ Resolved 2026-10-20 (owner): title `<fullName> — <roleTitle>`,
+   description the hero intro.
 ## Explicitly Out of Scope
 - Uploading files — `media-assets`.
 - Rendering the nav, footer and metadata — `public-site-rendering`.

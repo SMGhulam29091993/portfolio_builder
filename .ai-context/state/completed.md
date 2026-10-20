@@ -339,3 +339,12 @@
   explained with the limit / accepted types, file list, Delete disabled with its reason while in
   use; `lib/api/assets.ts`, `lib/cms/assets.ts` (unit-tested), `e2e/cms-assets.spec.ts` (E2E01,
   E2E02). With T06, `media-assets` is `Implemented`.
+- site-identity.T01–T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010 (per-portfolio identity, the account template at revision 0, AC11), OQ1/OQ2 resolved
+  by the owner, `Ready` under the standing authorisation. `identitySchema` (https socials, one
+  per platform, monogram rule, no phone); `identities` model and `IdentityRepository`;
+  `IdentityService` (template from the account via a container-adapted `IIdentityAccounts`;
+  asset kinds checked through `IAssetLookup` within the portfolio, all paths in one 400);
+  `IdentityAssetReferenceProvider` registered with `assets` (deleting the résumé in use → 409
+  `draft identity`); controller, routes API01–API02, OpenAPI 0.9.0; `IdentitySeeder` +
+  `seed/data/identity.ts` as a `seed:all` step. UT01–UT07, IT02–IT08, AC11 isolation.

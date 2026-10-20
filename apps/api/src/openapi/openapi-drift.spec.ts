@@ -122,6 +122,8 @@ describe('readDocumentedOperations', () => {
       { method: 'get', path: '/api/v1/cms/assets', specId: 'media-assets.API02' },
       { method: 'delete', path: '/api/v1/cms/assets/{id}', specId: 'media-assets.API03' },
       { method: 'get', path: '/api/v1/cms/assets/{id}/content', specId: 'media-assets.API04' },
+      { method: 'get', path: '/api/v1/cms/identity', specId: 'site-identity.API01' },
+      { method: 'put', path: '/api/v1/cms/identity', specId: 'site-identity.API02' },
     ]);
   });
 });
