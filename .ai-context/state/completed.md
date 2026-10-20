@@ -197,3 +197,13 @@
   `IGoogleLinker` (`findByGoogleSub`, `linkGoogle`) on `UserRepository` and the fake, in CT10;
   `IOAuthStateStore` → `RedisOAuthStateStore` (`GETDEL`) and `InMemoryOAuthStateStore` with
   contract suite CT01; sign-in treats a passwordless account like a wrong password (AC10).
+- google-sign-in.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local:
+  `pnpm turbo run build typecheck lint test drift` — 20 of 20). `GoogleSignInService` (state
+  check, single-use stored state, user resolution: subject → verified email link → new verified
+  member), `GoogleAuthController` (redirects only, targets from `WEB_ORIGIN`, unexpected errors
+  logged by class name), `OAuthStateCookie` (`SameSite=Lax`), `createGoogleAuthRouter` with one
+  20-per-15-minutes limiter, `pkceChallenge` in `core/crypto`, Google variables in `env.ts`
+  (all-or-nothing, issuer default), `googleSignIn` in registration options, OpenAPI 0.6.0,
+  `google-sign-in.service.spec.ts` and `google-sign-in.routes.spec.ts` against the real
+  provider and `LocalOidcIssuer`. Spec deviation recorded in the spec: the limiter answers a
+  JSON 429 like every limiter, not a redirect. With T03, `google-sign-in` is `Implemented`.

@@ -27,6 +27,7 @@ import { CryptoSecureRandom } from './modules/auth/adapters/crypto-secure-random
 import { DisabledMailSender } from './modules/auth/adapters/disabled-mail-sender.js';
 import { GmailMailSender } from './modules/auth/adapters/gmail-mail-sender.js';
 import { JwtTokenIssuer } from './modules/auth/adapters/jwt-token-issuer.js';
+import { DisabledOidcProvider, OidcProvider } from './modules/auth/adapters/oidc-provider.js';
 import {
   MailSenderFactory,
   type MailStrategy,
@@ -35,7 +36,12 @@ import { SystemClock } from './modules/auth/adapters/system-clock.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { createAuthRouter, loginAttemptKey } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
-import type { IAuthGuard, IClock, IMailSender } from './modules/auth/index.js';
+import { GoogleAuthController } from './modules/auth/google-auth.controller.js';
+import { createGoogleAuthRouter } from './modules/auth/google-auth.routes.js';
+import { GoogleSignInService } from './modules/auth/google-sign-in.service.js';
+import type { IAuthGuard, IClock, IMailSender, IOidcProvider } from './modules/auth/index.js';
+import { OAuthStateCookie } from './modules/auth/oauth-state-cookie.js';
+import { RedisOAuthStateStore } from './modules/auth/oauth-state.store.js';
 import { RedisOtpReferenceStore } from './modules/auth/otp-reference.store.js';
 import { OtpRepository } from './modules/auth/otp.repository.js';
 import { OwnerClaimPolicy } from './modules/auth/owner-claim.policy.js';
@@ -107,6 +113,12 @@ const CODE_SEND_RATE_LIMIT: RateLimitPolicy = { windowMs: 60 * 60 * 1_000, max: 
  */
 const OTP_REFERENCE_TTL_SEC = 24 * 60 * 60;
 
+/** Lifetime of a Google sign-in's stored state and its cookie: 10 minutes (`google-sign-in`). */
+const GOOGLE_STATE_TTL_SEC = 10 * 60;
+
+/** Google start + callback requests per client IP: 20 per 15 minutes (`google-sign-in` → API02). */
+const GOOGLE_RATE_LIMIT: RateLimitPolicy = { windowMs: 15 * 60 * 1_000, max: 20 };
+
 /**
  * Mounts whose non-GET requests must come from `WEB_ORIGIN` (`owner-auth.AC12`): the sign-in
  * flow and everything the CMS writes. `/health` and `/public` stay open to any caller.
@@ -148,6 +160,11 @@ export interface ContainerDependencies {
    * omits it, and the factory then decides — failing startup when nothing is configured.
    */
   readonly mailSender?: IMailSender;
+  /**
+   * Replaces the configured Google provider. Production omits it; the container then picks
+   * `OidcProvider` when the three Google variables are set, else `DisabledOidcProvider`.
+   */
+  readonly oidcProvider?: IOidcProvider;
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -183,6 +200,7 @@ export function buildContainer({
   redis,
   clock = new SystemClock(),
   mailSender,
+  oidcProvider,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -243,6 +261,10 @@ export function buildContainer({
     clock,
     users,
   );
+  // Google sign-in (`google-sign-in`, ADR-0011): on only when all three variables are set
+  // (`env.ts` refuses a partial set).
+  const google = oidcProvider ?? buildOidcProvider(env);
+
   // Registration and email verification (`account-registration`). Verification signs in
   // through `AuthService.startFor`, so sessions are minted in one place.
   const registrationService = new RegistrationService(
@@ -258,6 +280,7 @@ export function buildContainer({
     clock,
     new OwnerClaimPolicy(users, { secret: env.OWNER_REGISTRATION_SECRET }),
     authService,
+    google,
   );
   const sessionCookies = new SessionCookieWriter(env, {
     apiPath: API_PREFIX,
@@ -274,12 +297,37 @@ export function buildContainer({
     },
   );
 
+  const googleRouter = createGoogleAuthRouter(
+    new GoogleAuthController(
+      new GoogleSignInService(
+        google,
+        new RedisOAuthStateStore(redis, { ttlSec: GOOGLE_STATE_TTL_SEC }),
+        users,
+        users,
+        users,
+        authService,
+        secureRandom,
+        clock,
+      ),
+      sessionCookies,
+      new OAuthStateCookie(env, { path: `${AUTH_PATH}/google`, maxAgeSec: GOOGLE_STATE_TTL_SEC }),
+      { success: `${env.WEB_ORIGIN}/cms`, failure: `${env.WEB_ORIGIN}/cms/login` },
+      logger,
+    ),
+    rateLimiters.create(GOOGLE_RATE_LIMIT),
+  );
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
   };
 
-  return { logger, originAllowList, apiRouters: [healthRouter, authRouter], authGuard };
+  return {
+    logger,
+    originAllowList,
+    apiRouters: [healthRouter, authRouter, googleRouter],
+    authGuard,
+  };
 }
 
 /** What the seeders need: configuration and MongoDB — no Redis, mail or HTTP. */
@@ -312,6 +360,20 @@ export function buildSeeders({ env, mongo }: SeederDependencies): Seeders {
       new SystemClock(),
     ),
   };
+}
+
+/** The configured Google provider, or the disabled one when the variables are unset. */
+function buildOidcProvider(env: Env): IOidcProvider {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URL, GOOGLE_ISSUER } = env;
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URL) {
+    return new DisabledOidcProvider();
+  }
+  return new OidcProvider({
+    issuer: GOOGLE_ISSUER,
+    clientId: GOOGLE_CLIENT_ID,
+    clientSecret: GOOGLE_CLIENT_SECRET,
+    redirectUrl: GOOGLE_REDIRECT_URL,
+  });
 }
 
 /**

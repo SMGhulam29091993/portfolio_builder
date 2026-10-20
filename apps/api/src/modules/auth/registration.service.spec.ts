@@ -17,6 +17,7 @@ import {
   SequenceSecureRandom,
 } from '../../testing/index.js';
 import { DisabledMailSender } from './adapters/disabled-mail-sender.js';
+import { DisabledOidcProvider } from './adapters/oidc-provider.js';
 import { OtpExpiredError, OtpInvalidError, OwnerClaimRefusedError } from './auth.errors.js';
 import type { IMailSender, ISessionStarter } from './auth.interface.js';
 import type { RegisterRequest, SignedInSession, User } from './auth.types.js';
@@ -70,6 +71,7 @@ function serviceWith(
     clock,
     new OwnerClaimPolicy(users, { secret: options.secret }),
     sessions,
+    new DisabledOidcProvider(),
   );
 }
 
@@ -145,12 +147,12 @@ describe('register (account-registration.UT03)', () => {
   });
 
   it('account-registration.AC4 — the matching secret makes the owner and closes the claim', async () => {
-    await expect(service.options()).resolves.toEqual({ ownerClaimOpen: true });
+    await expect(service.options()).resolves.toEqual({ ownerClaimOpen: true, googleSignIn: false });
 
     await service.register({ ...REQUEST, ownerSecret: SECRET });
 
     await expect(users.findByEmail(EMAIL)).resolves.toMatchObject({ role: 'owner' });
-    await expect(service.options()).resolves.toEqual({ ownerClaimOpen: false });
+    await expect(service.options()).resolves.toEqual({ ownerClaimOpen: false, googleSignIn: false });
   });
 
   it('a later member registration of the pending owner keeps it the owner', async () => {

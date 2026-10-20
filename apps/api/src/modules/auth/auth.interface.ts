@@ -150,6 +150,45 @@ export interface IOidcProvider {
   exchange(code: string, codeVerifier: string, expectedNonce: string): Promise<OidcIdentity>;
 }
 
+/** The redirect that starts a Google sign-in, and the state its cookie must carry. */
+export interface GoogleSignInStart {
+  readonly redirectUrl: string;
+  readonly state: string;
+}
+
+/** What the callback hands the service. */
+export interface GoogleCallback {
+  /** Google's `error` parameter, when it sent one (the user cancelled). */
+  readonly error?: string;
+  readonly code?: string;
+  readonly state?: string;
+  /** The `google-state` cookie the browser carried. */
+  readonly cookieState?: string;
+}
+
+/** Google sign-in (`google-sign-in.API01`, `API02`). */
+export interface IGoogleSignInService {
+  /**
+   * Mints `state`, the PKCE verifier and the nonce, stores them and builds the redirect.
+   *
+   * @throws {GoogleSignInError} `google_unavailable` or `google_failed`.
+   */
+  start(): Promise<GoogleSignInStart>;
+  /**
+   * Checks the state, exchanges the code, resolves the user and starts their session.
+   *
+   * @throws {GoogleSignInError} With the reason the redirect carries.
+   */
+  complete(callback: GoogleCallback): Promise<SignedInSession>;
+}
+
+/** Reads, writes and clears the `google-state` cookie (`google-sign-in` → API01). */
+export interface IOAuthStateCookie {
+  read(req: Request): string | undefined;
+  write(res: Response, state: string): void;
+  clear(res: Response): void;
+}
+
 /** Whether the owner slot is taken (`account-registration` → Roles and the owner claim). */
 export interface IOwnerLookup {
   ownerExists(): Promise<boolean>;

@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.5.0
+  version: 0.6.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -25,7 +25,8 @@ tags:
       travels only by email. The login rate limit and the Origin allow-list (403
       ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06, the password-reset
       routes and their send limit by owner-auth.T08. Registration, email verification and the
-      one-time owner claim by account-registration.T03.
+      one-time owner claim by account-registration.T03. Google sign-in (two browser redirects)
+      by google-sign-in.T03.
 
 paths:
   /api/v1/health:
@@ -383,7 +384,7 @@ paths:
               example:
                 success: true
                 message: Registration options
-                data: { ownerClaimOpen: false }
+                data: { ownerClaimOpen: false, googleSignIn: true }
 
   /api/v1/auth/register:
     post:
@@ -534,6 +535,54 @@ paths:
         '503':
           $ref: '#/components/responses/PasswordResetUnavailable'
 
+  /api/v1/auth/google/start:
+    get:
+      tags: [auth]
+      operationId: google-sign-in.API01
+      x-spec-id: google-sign-in.API01
+      summary: Start Google sign-in (browser navigation)
+      description: >-
+        Mints state, a PKCE verifier and a nonce, stores the verifier and nonce for 10 minutes,
+        sets the google-state cookie and redirects to Google. When Google is not configured or
+        cannot be reached, redirects to the CMS sign-in page with error=google_unavailable or
+        error=google_failed. Shares a limit of 20 requests per 15 minutes per IP with API02.
+      security: []
+      responses:
+        '302':
+          description: To Google's authorization endpoint, or to /cms/login?error=<reason>.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/v1/auth/google/callback:
+    get:
+      tags: [auth]
+      operationId: google-sign-in.API02
+      x-spec-id: google-sign-in.API02
+      summary: Complete Google sign-in (browser navigation)
+      description: >-
+        Checks the google-state cookie against the state query value, takes the stored verifier
+        and nonce once, exchanges the code and verifies the ID token, resolves the user (linked
+        subject, then a Google-verified email which links, then a new verified member) and sets
+        the three session cookies. Never answers JSON on failure: redirects to /cms/login with
+        error= one of google_unavailable, google_cancelled, google_state, google_failed,
+        google_unverified, google_conflict.
+      security: []
+      parameters:
+        - { name: code, in: query, schema: { type: string, maxLength: 2048 } }
+        - { name: state, in: query, schema: { type: string, maxLength: 2048 } }
+        - { name: error, in: query, schema: { type: string, maxLength: 2048 } }
+      responses:
+        '302':
+          description: To /cms with the session cookies set, or to /cms/login?error=<reason>.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
 components:
   securitySchemes:
     sessionCookies:
@@ -617,9 +666,12 @@ components:
           properties:
             data:
               type: object
-              required: [ownerClaimOpen]
+              required: [ownerClaimOpen, googleSignIn]
               properties:
                 ownerClaimOpen: { type: boolean }
+                googleSignIn:
+                  type: boolean
+                  description: Whether Google sign-in is configured (google-sign-in.AC9).
     UserEnvelope:
       allOf:
         - $ref: '#/components/schemas/SuccessEnvelope'

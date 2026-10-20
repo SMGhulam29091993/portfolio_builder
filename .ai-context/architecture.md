@@ -257,6 +257,8 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | `pnpm seed:owner` creates one local account from them (display name `Owner`); optional, so the API starts without them; the seeder refuses when either is unset, when the password is outside 12–200 characters, and always in production (ADR-0010) |
 | `OWNER_REGISTRATION_SECRET` | api | The owner secret key: a registration carrying it while no owner exists claims the owner account (`account-registration`, ADR-0010); optional, 32–200 characters; unset keeps the claim closed |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL` | api | Google sign-in (`google-sign-in`, ADR-0011): all three switch it on, none leaves it off (routes redirect with `google_unavailable`); some but not all fails startup |
+| `GOOGLE_ISSUER` | api | The OpenID Connect issuer whose discovery document gives the endpoints; default `https://accounts.google.com` |
 | `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves — to be revised by `public-site-rendering`, which now resolves a portfolio per request host (ADR-0010) |
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |

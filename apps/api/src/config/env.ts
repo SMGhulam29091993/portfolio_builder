@@ -93,7 +93,28 @@ const envSchema = z.object({
    * closed. A secret: compared in constant time, never logged or stored.
    */
   OWNER_REGISTRATION_SECRET: optional(z.string().min(32).max(200)),
+  /**
+   * Google sign-in (`google-sign-in`, ADR-0011): the OAuth client id. With the secret and the
+   * redirect URL it switches Google on; all three unset leave it off. Setting only some is a
+   * configuration error (`GOOGLE_SETTINGS` below).
+   */
+  GOOGLE_CLIENT_ID: optional(z.string().min(1)),
+  /** The OAuth client secret. A secret: sent only to the token endpoint, never logged. */
+  GOOGLE_CLIENT_SECRET: optional(z.string().min(1)),
+  /**
+   * The callback URL as the browser reaches it, registered with Google — through the web app's
+   * `/api/v1` rewrite, e.g. `http://localhost:3000/api/v1/auth/google/callback`.
+   */
+  GOOGLE_REDIRECT_URL: optional(z.url()),
+  /**
+   * The OpenID Connect issuer whose discovery document names the endpoints. Configuration, so
+   * no provider URL is a code literal; tests point it at a local issuer.
+   */
+  GOOGLE_ISSUER: z.url().default('https://accounts.google.com'),
 });
+
+/** The three variables that switch Google sign-in on together (`google-sign-in.AC9`). */
+const GOOGLE_SETTINGS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL'] as const;
 
 /** The validated, read-only configuration object. */
 export type Env = Readonly<z.infer<typeof envSchema>>;
@@ -126,6 +147,14 @@ export class EnvValidationError extends Error {
  */
 export function loadEnv(source: Readonly<Record<string, string | undefined>> = process.env): Env {
   const result = envSchema.safeParse(source);
+
+  // Google is all-or-nothing: some set and some not is a mistake to name, not a silent "off".
+  if (result.success) {
+    const missing = GOOGLE_SETTINGS.filter((name) => result.data[name] === undefined);
+    if (missing.length > 0 && missing.length < GOOGLE_SETTINGS.length) {
+      throw new EnvValidationError(missing);
+    }
+  }
 
   if (!result.success) {
     // Keep only the variable name of each issue; zod's messages are dropped on purpose so no

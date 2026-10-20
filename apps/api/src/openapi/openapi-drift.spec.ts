@@ -110,6 +110,8 @@ describe('readDocumentedOperations', () => {
       { method: 'post', path: '/api/v1/auth/register/verify', specId: 'account-registration.API03' },
       { method: 'post', path: '/api/v1/auth/verification/request', specId: 'account-registration.API04' },
       { method: 'post', path: '/api/v1/auth/verification/resend', specId: 'account-registration.API05' },
+      { method: 'get', path: '/api/v1/auth/google/start', specId: 'google-sign-in.API01' },
+      { method: 'get', path: '/api/v1/auth/google/callback', specId: 'google-sign-in.API02' },
     ]);
   });
 });

@@ -20,8 +20,14 @@ export const DISPLAY_NAME_MAX_LENGTH = 80;
 /** Longest accepted owner secret in a request (the configured one is 32–200 characters). */
 export const OWNER_SECRET_MAX_LENGTH = 200;
 
-/** `account-registration.API01` — `data` of `GET /api/v1/auth/registration/options`. */
-export const registrationOptionsResponseSchema = z.object({ ownerClaimOpen: z.boolean() });
+/**
+ * `account-registration.API01` — `data` of `GET /api/v1/auth/registration/options`.
+ * `googleSignIn` joined with `google-sign-in` (additive): whether to show "Continue with Google".
+ */
+export const registrationOptionsResponseSchema = z.object({
+  ownerClaimOpen: z.boolean(),
+  googleSignIn: z.boolean(),
+});
 
 /** `account-registration.API02` — `POST /api/v1/auth/register` body. */
 export const registerRequestSchema = z.object({

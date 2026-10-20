@@ -21,6 +21,7 @@ import type {
   IMailSender,
   IOtpHasher,
   IOtpReferenceStore,
+  IOidcProvider,
   IOtpRepository,
   IOwnerClaimPolicy,
   IPasswordHasher,
@@ -90,10 +91,12 @@ export class RegistrationService implements IRegistrationService {
     private readonly clock: IClock,
     private readonly ownerClaim: IOwnerClaimPolicy,
     private readonly sessions: ISessionStarter,
+    /** Only asked whether Google is configured (`google-sign-in.AC9`). */
+    private readonly google: IOidcProvider,
   ) {}
 
   async options(): Promise<RegistrationOptionsResponse> {
-    return { ownerClaimOpen: await this.ownerClaim.isOpen() };
+    return { ownerClaimOpen: await this.ownerClaim.isOpen(), googleSignIn: this.google.isEnabled() };
   }
 
   async register({

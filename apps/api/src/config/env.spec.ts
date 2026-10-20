@@ -51,6 +51,8 @@ describe('loadEnv', () => {
       REDIS_URL: VALID_SOURCE.REDIS_URL,
       JWT_ACCESS_SECRET: VALID_SOURCE.JWT_ACCESS_SECRET,
       WEB_ORIGIN: VALID_SOURCE.WEB_ORIGIN,
+      // The one defaulted variable (google-sign-in): the issuer is Google's unless overridden.
+      GOOGLE_ISSUER: 'https://accounts.google.com',
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -209,6 +211,23 @@ describe('loadEnv', () => {
       expect(error.variables).toEqual(['OWNER_REGISTRATION_SECRET']);
       expect(error.message).not.toContain(value);
     }
+  });
+
+  it('google-sign-in.AC9 — Google is all three variables or none; the issuer defaults', () => {
+    const off = loadEnv(VALID_SOURCE);
+    expect(off.GOOGLE_CLIENT_ID).toBeUndefined();
+    expect(off.GOOGLE_ISSUER).toBe('https://accounts.google.com');
+
+    const on = loadEnv({
+      ...VALID_SOURCE,
+      GOOGLE_CLIENT_ID: 'id',
+      GOOGLE_CLIENT_SECRET: 'secret-value',
+      GOOGLE_REDIRECT_URL: 'http://localhost:3000/api/v1/auth/google/callback',
+    });
+    expect(on.GOOGLE_CLIENT_ID).toBe('id');
+
+    const partial = captureEnvError({ ...VALID_SOURCE, GOOGLE_CLIENT_ID: 'id' });
+    expect(partial.variables).toEqual(['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL']);
   });
 
   it('owner-auth.T09 — rejects an OWNER_EMAIL that is not an email address, without echoing it', () => {

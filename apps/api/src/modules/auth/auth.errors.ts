@@ -71,3 +71,26 @@ export class OwnerClaimRefusedError extends AppError {
     super('OWNER_CLAIM_REFUSED', message);
   }
 }
+
+/** Why a Google sign-in failed — the word the redirect carries (`google-sign-in` → API02). */
+export const GOOGLE_FAILURE_REASONS = [
+  'google_unavailable',
+  'google_cancelled',
+  'google_state',
+  'google_failed',
+  'google_unverified',
+  'google_conflict',
+] as const;
+export type GoogleFailureReason = (typeof GOOGLE_FAILURE_REASONS)[number];
+
+/**
+ * A Google sign-in that cannot complete. The HTTP layer never sends it as JSON: it redirects to
+ * the CMS sign-in page with `error=<reason>`, so the 400 here is nominal.
+ */
+export class GoogleSignInError extends AppError {
+  readonly status = 400;
+
+  constructor(readonly reason: GoogleFailureReason) {
+    super('GOOGLE_SIGN_IN_FAILED', 'Google sign-in failed', { reason });
+  }
+}

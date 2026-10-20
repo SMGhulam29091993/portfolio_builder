@@ -198,14 +198,14 @@ describe('POST /api/v1/auth/register (account-registration.API02)', () => {
     expect(before.body).toEqual({
       success: true,
       message: 'Registration options',
-      data: { ownerClaimOpen: true },
+      data: { ownerClaimOpen: true, googleSignIn: false },
     });
 
     expect((await register({ ownerSecret: OWNER_SECRET })).status).toBe(200);
 
     expect((await stored())?.role).toBe('owner');
     const after = await request(api.handler).get('/api/v1/auth/registration/options');
-    expect((after.body as { data: unknown }).data).toEqual({ ownerClaimOpen: false });
+    expect((after.body as { data: unknown }).data).toEqual({ ownerClaimOpen: false, googleSignIn: false });
   });
 
   it('account-registration.IT05 / AC5 — a refused claim is 403 and writes and sends nothing', async () => {

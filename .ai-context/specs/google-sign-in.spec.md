@@ -2,7 +2,9 @@
 ## Spec ID
 google-sign-in
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-20: T01–T03 completed, each with a DoD self-check line
+  in `state/completed.md`.
 - `Ready → In Progress` on 2026-10-20 with `google-sign-in.T01` started.
 - DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`).
@@ -67,7 +69,9 @@ cleared.
 | `google_failed` | Code exchange or ID-token verification failed |
 | `google_unverified` | Google reports the email unverified and no account has this subject |
 | `google_conflict` | The email's account is linked to a different Google subject |
-| `rate_limited` | More than 20 callbacks per IP in 15 minutes |
+
+API01 and API02 share one limiter: 20 requests per IP in 15 minutes, then 429 `RATE_LIMITED`
+(the standard JSON envelope, as every limiter answers).
 ### Change to `account-registration.API01`
 `data` gains `googleSignIn: boolean` — true when Google is configured (additive).
 ## Acceptance Criteria
@@ -94,7 +98,9 @@ cleared.
    the same email, then `error=google_conflict` and the link is unchanged.
 9. google-sign-in.AC9 — Given Google is not configured, then API01 and API02 redirect with
    `error=google_unavailable`, `account-registration.API01` answers `googleSignIn: false`, and
-   the API still starts (in production too, unless the variables are only partly set).
+   the API still starts. Setting only some of `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+   `GOOGLE_REDIRECT_URL` is a configuration error in every environment: startup fails naming
+   the missing ones.
 10. google-sign-in.AC10 — Given a Google-only account, when `owner-auth.API01` is called with any
     password, then the response is the same 401 as a wrong password.
 11. google-sign-in.AC11 — No log line contains a code, state, verifier, nonce, ID token, email or

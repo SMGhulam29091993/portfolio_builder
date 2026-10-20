@@ -100,6 +100,8 @@ describe('app with MongoDB reachable', () => {
       { method: 'post', path: '/api/v1/auth/register/verify' },
       { method: 'post', path: '/api/v1/auth/verification/request' },
       { method: 'post', path: '/api/v1/auth/verification/resend' },
+      { method: 'get', path: '/api/v1/auth/google/start' },
+      { method: 'get', path: '/api/v1/auth/google/callback' },
     ]);
   });
 
