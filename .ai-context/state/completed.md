@@ -221,3 +221,9 @@
   `emphasisHeadingSchema`, `sectionMetaSchema`, `metricSchema`, `tagSchema`, `itemIdSchema`,
   `listItem`, `linkTargetSchema`) and engine schemas for API01–API06 with the slug rules and
   reserved list; 27 new schema tests.
+- section-engine.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `portfolios`
+  (`userId`, `slug` unique) and `sections` (`{ portfolioId, type }` unique, `data` Mixed with
+  `minimize: false`) models; `PortfolioRepository` (create with `PORTFOLIO_EXISTS` /
+  `SLUG_TAKEN`, conditional `updateOrder` / `updateSlug`), `SectionRepository` (scoped by
+  portfolio, conditional `update`, insert-only `createMissing` via `$setOnInsert` upserts);
+  in-memory fakes; contract suite CT02 on both (AC2, AC3, AC9, AC12, AC15–AC17 at the store).

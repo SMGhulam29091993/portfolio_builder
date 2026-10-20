@@ -28,3 +28,7 @@ export {
   LocalOidcIssuer,
   type IssuedCode,
 } from './auth/local-oidc-issuer.js';
+export {
+  InMemoryPortfolioRepository,
+  InMemorySectionRepository,
+} from './portfolio/in-memory-portfolio-repositories.js';
