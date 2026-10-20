@@ -355,3 +355,10 @@
   at revision 0, the shell's save / 400 / 409 behaviour; `lib/api/identity.ts`;
   `e2e/cms-identity.spec.ts` (E2E01). CMS forms expose `data-dirty` / `data-valid` (pitfall
   recorded). With T07, `site-identity` is `Implemented`.
+- design-theme.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised (ADR-0006
+  variant amendment: two variants per section; ADR-0010: per-portfolio design, default at
+  revision 0, no seeder — T05 dropped; fonts and colours from the owner's answers), `Ready`
+  under the standing authorisation. `packages/design-tokens`: `designSpecSchema` (hex
+  normalised), `VARIANT_CATALOGUE`, `FONT_ALLOW_LIST`, `contrastRatio` / `checkContrast` /
+  `CONTRAST_PAIRS`, `validateDesign` (shape, font roles, variants, contrast — all issues with
+  paths), `toCssVariables`, `DEFAULT_DESIGN` (passes its own validator). UT01–UT03, UT06–UT08.
