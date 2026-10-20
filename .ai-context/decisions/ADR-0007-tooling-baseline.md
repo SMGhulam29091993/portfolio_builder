@@ -75,6 +75,7 @@ appends the tools it installs to this table in the same change.
 | smtp-server, @types/smtp-server in `apps/web` | 3.19.23, 3.5.13 | `cms-panel-shell.T08` | dev only; the E2E harness's local SMTP server (same pins as `apps/api`) |
 | Playwright Chromium | the build @playwright/test 1.64.1 expects (headless shell v1248) | `cms-panel-shell.T08` | installed by `playwright install --with-deps chromium` in CI; locally once by hand |
 | @axe-core/playwright | 4.13.0 | `cms-panel-shell.T01` | `apps/web` dev only; accessibility checks in E2E (`cms-panel-shell.AC14`) |
+| busboy, @types/busboy | 1.6.0, 1.5.4 | `media-assets.T05` | `apps/api`; streaming multipart on the upload route only |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but

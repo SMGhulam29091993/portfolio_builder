@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.7.0
+  version: 0.8.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -30,6 +30,9 @@ tags:
   - name: portfolio
     description: >-
       The section engine (section-engine): the signed-in user's own portfolio, its sections, their order, visibility and the portfolio slug. Every route runs requireOwner then resolvePortfolio, which provisions the portfolio on first use; no route takes a portfolio id.
+  - name: assets
+    description: >-
+      Files of the signed-in user's portfolio (media-assets): the résumé PDF and images, type detected from the bytes, size capped while streaming, deletion refused while referenced. Another user's asset id answers 404 everywhere.
 
 paths:
   /api/v1/health:
@@ -771,6 +774,119 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/SlugConflict'
+  /api/v1/cms/assets:
+    post:
+      tags: [assets]
+      operationId: media-assets.API01
+      x-spec-id: media-assets.API01
+      summary: Upload a file
+      description: >-
+        multipart/form-data with a kind field (resume or image) before one file part. The type
+        is detected from the bytes (never the name or header); resume accepts PDF up to 5 MB,
+        image PNG, JPEG or WebP up to 2 MB. An identical file already uploaded as the same kind
+        answers 200 with that asset. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind: { enum: [resume, image] }
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Uploaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    get:
+      tags: [assets]
+      operationId: media-assets.API02
+      x-spec-id: media-assets.API02
+      summary: List files
+      description: >-
+        The portfolio's assets, newest first, optionally of one kind, each with inUse.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: kind, in: query, schema: { enum: [resume, image] } }
+      responses:
+        '200':
+          description: The assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/assets/{id}:
+    delete:
+      tags: [assets]
+      operationId: media-assets.API03
+      x-spec-id: media-assets.API03
+      summary: Delete a file
+      description: >-
+        Removes the bytes, then the metadata, unless some module still references the asset (409
+        ASSET_IN_USE with usedBy). Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/AssetInUse'
+
+  /api/v1/cms/assets/{id}/content:
+    get:
+      tags: [assets]
+      operationId: media-assets.API04
+      x-spec-id: media-assets.API04
+      summary: Read a file
+      description: >-
+        The bytes with the stored Content-Type, X-Content-Type-Options nosniff,
+        Content-Disposition inline and Cache-Control private, no-store. Only the asset's own
+        user can read it.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: The file bytes.
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:
@@ -1017,6 +1133,51 @@ components:
               required: [portfolio]
               properties:
                 portfolio: { : '#/components/schemas/CmsPortfolio' }
+    AssetReference:
+      type: object
+      required: [id, kind, filename, mime, sizeBytes, sha256, createdAt, inUse]
+      properties:
+        id: { type: string }
+        kind: { enum: [resume, image] }
+        filename: { type: string, maxLength: 100 }
+        mime: { type: string }
+        sizeBytes: { type: integer, minimum: 1 }
+        sha256: { type: string }
+        createdAt: { type: string, format: date-time }
+        inUse: { type: boolean }
+    AssetEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [asset]
+              properties:
+                asset: { : '#/components/schemas/AssetReference' }
+    AssetListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [assets]
+              properties:
+                assets: { type: array, items: { : '#/components/schemas/AssetReference' } }
+    DeletedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [deleted]
+              properties:
+                deleted: { const: true }
   responses:
     ValidationFailed:
       description: The request failed its schema.
@@ -1392,3 +1553,63 @@ components:
             success: false
             message: That address is already taken
             data: { code: SLUG_TAKEN }
+    PayloadTooLarge:
+      description: >-
+        The file is over its kind's limit; data.maxBytes holds it. Nothing was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: PAYLOAD_TOO_LARGE }
+                      maxBytes: { type: integer }
+          example:
+            success: false
+            message: Request body is too large
+            data: { code: PAYLOAD_TOO_LARGE }
+    UnsupportedMediaType:
+      description: >-
+        The detected type is not accepted for the kind; data.allowed lists what is. Nothing was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: UNSUPPORTED_MEDIA_TYPE }
+                      allowed: { type: array, items: { type: string } }
+          example:
+            success: false
+            message: Unsupported media type
+            data: { code: UNSUPPORTED_MEDIA_TYPE }
+    AssetInUse:
+      description: >-
+        The asset is referenced; data.usedBy names where. Nothing was deleted.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: ASSET_IN_USE }
+                      usedBy: { type: array, items: { type: string } }
+          example:
+            success: false
+            message: This file is in use and cannot be deleted
+            data: { code: ASSET_IN_USE }

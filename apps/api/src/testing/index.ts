@@ -38,3 +38,9 @@ export {
   fakeSectionSchema,
   type FakeSection,
 } from './portfolio/fake-section-definitions.js';
+export {
+  FIXTURE_HEADERS,
+  fixtureFile,
+  InMemoryAssetRepository,
+  InMemoryFileStorage,
+} from './assets/in-memory-assets.js';

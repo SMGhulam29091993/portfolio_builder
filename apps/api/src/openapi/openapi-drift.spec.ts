@@ -118,6 +118,10 @@ describe('readDocumentedOperations', () => {
       { method: 'patch', path: '/api/v1/cms/portfolio/sections/{type}/visibility', specId: 'section-engine.API04' },
       { method: 'put', path: '/api/v1/cms/portfolio/section-order', specId: 'section-engine.API05' },
       { method: 'put', path: '/api/v1/cms/portfolio/slug', specId: 'section-engine.API06' },
+      { method: 'post', path: '/api/v1/cms/assets', specId: 'media-assets.API01' },
+      { method: 'get', path: '/api/v1/cms/assets', specId: 'media-assets.API02' },
+      { method: 'delete', path: '/api/v1/cms/assets/{id}', specId: 'media-assets.API03' },
+      { method: 'get', path: '/api/v1/cms/assets/{id}/content', specId: 'media-assets.API04' },
     ]);
   });
 });

@@ -17,8 +17,9 @@ code (T08) exist, and so does the development-only owner seeder with its `seed:o
 verification by one-time code, roles and the one-time owner claim; and `google-sign-in`: the
 OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). `section-engine` is implemented: the `portfolio`
 module (one portfolio per user, provisioned on the first CMS request; the section registry and
-engine; `resolvePortfolio`), `seed:all`, and the composer in `packages/sections`. Every other
-feature module is ⬜ planned.
+engine; `resolvePortfolio`), `seed:all`, and the composer in `packages/sections`. The `assets` module
+(`media-assets`) stores files in GridFS behind `IFileStorage`. Every other feature module is ⬜
+planned.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they

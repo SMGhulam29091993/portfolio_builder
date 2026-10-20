@@ -108,6 +108,10 @@ describe('app with MongoDB reachable', () => {
       { method: 'patch', path: '/api/v1/cms/portfolio/sections/:type/visibility' },
       { method: 'put', path: '/api/v1/cms/portfolio/section-order' },
       { method: 'put', path: '/api/v1/cms/portfolio/slug' },
+      { method: 'post', path: '/api/v1/cms/assets' },
+      { method: 'get', path: '/api/v1/cms/assets' },
+      { method: 'delete', path: '/api/v1/cms/assets/:id' },
+      { method: 'get', path: '/api/v1/cms/assets/:id/content' },
     ]);
   });
 

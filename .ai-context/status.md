@@ -14,7 +14,7 @@ owner moves a spec to `Ready`.
 | 3 | `section-engine` | Section registry, draft content engine, per-user portfolio | Implemented | BRD-001 | — |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview, sign-in and registration screens | Implemented | BRD-001 | — |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
-| 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | Revise for ADR-0010 (serves bytes to the asset's own user, not "the owner") |
+| 6 | `media-assets` | Résumé and image uploads | In Progress | BRD-006 | — (built before `site-identity`, which depends on it; swap recorded 2026-10-20) |
 | 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006; revise for ADR-0010 (one design per user's portfolio) |
 | 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
 | 9 | `about-section` | Bio, currently, stats, process | Draft | BRD-001 | — |

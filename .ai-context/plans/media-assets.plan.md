@@ -28,6 +28,10 @@ interface IAssetReferenceProvider {               // owned here, implemented by 
   `IAssetReferenceProvider`, and the `AssetReference` type.
 - The container passes the provider list into `AssetService`; `identity` and `publishing` each
   register one. `assets` imports neither module (**Dependency Inversion**).
+- Multipart: `busboy` 1.6.0 on the upload route only (ADR-0007); the request stream is piped
+  straight into the upload pipeline, with busboy's own `fileSize` limit as a second cap.
+- Every repository query filters by `portfolioId` (ADR-0010; AC13); storage keys are random, so
+  a key never reveals another portfolio's asset.
 - Upload pipeline: multipart stream → first-chunk detection → `SizeLimitStream` → hashing
   pass-through → `IFileStorage.put`. Nothing is buffered whole in memory.
 - Patterns: **Adapter + Factory** for storage (`FileStorageFactory`, one backend today).

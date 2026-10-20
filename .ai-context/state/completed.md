@@ -323,3 +323,13 @@
   one worker; `e2e/cms-auth.spec.ts` (E2E01–E2E03, E2E10–E2E12, E2E14, E2E15, registration);
   CI installs Playwright Chromium. axe found contrast and colour-only-link issues on the overview
   (fixed; `memory/review-findings.md`). With T08, `cms-panel-shell` is `Implemented`.
+- media-assets.T01–T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010 (per-portfolio assets, AC13), `Ready` under the standing authorisation, built before
+  `site-identity` (swap in `status.md`). Contracts (`ASSET_KINDS`, `ASSET_RULES`,
+  `assetReferenceSchema`); `assets` model (unique `{ portfolioId, sha256, kind }`),
+  `AssetRepository`; `IFileStorage` → `GridFsFileStorage` (hashes while streaming, removes
+  partial objects) and `InMemoryFileStorage`, contract suite CT01; `MagicByteContentTypeDetector`,
+  streaming size cap, `sanitizeFilename`; `AssetService` (dedupe, race-safe, provider-gated
+  delete failing closed, `IAssetLookup`, `IAssetReader`); `AssetController` with `busboy`,
+  routes API01–API04, container wiring (empty provider list + test-only extras), OpenAPI 0.8.0.
+  UT01–UT08, IT01–IT11, AC13. No `FileStorageFactory` (one backend; recorded in the task).

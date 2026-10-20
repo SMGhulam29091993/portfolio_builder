@@ -53,6 +53,13 @@ import { SessionAuthorizer } from './modules/auth/session-authorizer.service.js'
 import { SessionCookieWriter } from './modules/auth/session-cookie-writer.js';
 import { RedisSessionStore } from './modules/auth/session.store.js';
 import { UserRepository } from './modules/auth/user.repository.js';
+import { MagicByteContentTypeDetector } from './modules/assets/adapters/magic-byte-content-type-detector.js';
+import { AssetController } from './modules/assets/asset.controller.js';
+import { AssetRepository } from './modules/assets/asset.repository.js';
+import { createAssetRouter } from './modules/assets/asset.routes.js';
+import { AssetService } from './modules/assets/asset.service.js';
+import type { IAssetReferenceProvider, IFileStorage } from './modules/assets/index.js';
+import { GridFsFileStorage } from './modules/assets/storage/gridfs-file-storage.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { CryptoIdGenerator } from './modules/portfolio/adapters/crypto-id-generator.js';
 import type { ISectionDefinition } from './modules/portfolio/index.js';
@@ -198,6 +205,10 @@ export interface ContainerDependencies {
    * so the engine is proven without the six real types; production omits it.
    */
   readonly sectionDefinitions?: readonly ISectionDefinition[];
+  /** Test-only additions to the asset reference providers (`media-assets.IT08`). */
+  readonly extraAssetReferenceProviders?: readonly IAssetReferenceProvider[];
+  /** Replaces GridFS; production omits it. */
+  readonly fileStorage?: IFileStorage;
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -235,6 +246,8 @@ export function buildContainer({
   mailSender,
   oidcProvider,
   sectionDefinitions = SECTION_DEFINITIONS,
+  extraAssetReferenceProviders = [],
+  fileStorage,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -370,6 +383,17 @@ export function buildContainer({
     resolvePortfolio,
   );
 
+  // assets (`media-assets`): bytes in GridFS; the reference providers are the modules that
+  // store asset ids (identity, publishing), each added by its own spec.
+  const assetReferenceProviders: IAssetReferenceProvider[] = [...extraAssetReferenceProviders];
+  const assetService = new AssetService(
+    new AssetRepository(mongo),
+    fileStorage ?? new GridFsFileStorage(mongo),
+    new MagicByteContentTypeDetector(),
+    assetReferenceProviders,
+  );
+  const assetRouter = createAssetRouter(new AssetController(assetService), authGuard, resolvePortfolio);
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
@@ -378,7 +402,7 @@ export function buildContainer({
   return {
     logger,
     originAllowList,
-    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter],
+    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter],
     authGuard,
   };
 }
