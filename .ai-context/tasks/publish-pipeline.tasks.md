@@ -10,4 +10,4 @@
 - [x] publish-pipeline.T06 — Snapshot history listing with cursor pagination; activate (rollback) through the same pointer writer — Acceptance: AC13
 - [x] publish-pipeline.T07 — `portfolio.published` event, `SiteRevalidationListener`, `HttpRevalidationClient` / `NoopRevalidationClient` with the dev-bypass guard and production startup check, manual retry — Acceptance: AC12
 - [x] publish-pipeline.T08 — `PublishingController`, routes, container wiring (contributors, rules, steps), OpenAPI for API01–API06; `SnapshotAssetReferenceProvider` registered with `assets` — Acceptance: AC2, AC18
-- [ ] publish-pipeline.T09 — `/cms/publish` screen: status, grouped issues with links, confirm + note, history with "Make live" — Acceptance: AC19
+- [~] publish-pipeline.T09 — `/cms/publish` screen: status, grouped issues with links, confirm + note, history with "Make live" — Acceptance: AC19

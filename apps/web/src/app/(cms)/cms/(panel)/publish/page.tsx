@@ -1,6 +1,6 @@
-/** `/cms/publish` — mount point (`cms-panel-shell` → Screens), filled by its own spec. */
-import { AreaPlaceholder } from '../../../../../components/cms/panel/area-placeholder';
+/** `/cms/publish` (`publish-pipeline.T09`). */
+import { PublishScreen } from '../../../../../components/cms/publish/publish-screen';
 
-export default function Page() {
-  return <AreaPlaceholder title="Publish" note="This area is not available yet." />;
+export default function PublishPage() {
+  return <PublishScreen />;
 }
