@@ -105,6 +105,51 @@ export interface IOAuthStateStore {
   take(state: string): Promise<OAuthState | null>;
 }
 
+/** What the authorization redirect carries (`google-sign-in` → Flow, step 1). */
+export interface OidcAuthorizationRequest {
+  readonly state: string;
+  readonly nonce: string;
+  /** `BASE64URL(SHA-256(code_verifier))` — PKCE S256. */
+  readonly codeChallenge: string;
+}
+
+/** The verified identity an ID token carried (`google-sign-in` → Flow, step 4). */
+export interface OidcIdentity {
+  /** The issuer's stable subject id. */
+  readonly sub: string;
+  /** Lower-cased. */
+  readonly email: string;
+  /** Whether the issuer reports the email as verified. */
+  readonly emailVerified: boolean;
+  /** The display name claim, when present. Untrusted text: cleaned before it is stored. */
+  readonly name?: string;
+}
+
+/**
+ * The OpenID Connect provider — Google (ADR-0011). Chosen by the container from configuration:
+ * `OidcProvider` when configured, `DisabledOidcProvider` otherwise. No provider-specific type or
+ * error crosses this port.
+ */
+export interface IOidcProvider {
+  /** `false` for the disabled provider; read by the registration options (`googleSignIn`). */
+  isEnabled(): boolean;
+  /**
+   * The authorization endpoint URL with every parameter of the flow.
+   *
+   * @throws {ServiceUnavailableError} Not configured (503).
+   * @throws {UpstreamError} The issuer's discovery document could not be read (`provider: "google"`).
+   */
+  authorizationUrl(request: OidcAuthorizationRequest): Promise<string>;
+  /**
+   * Exchanges the code (with the PKCE verifier) and verifies the ID token: signature against
+   * the issuer's keys, `iss`, `aud`, expiry and `nonce`.
+   *
+   * @throws {ServiceUnavailableError} Not configured (503).
+   * @throws {UpstreamError} The exchange failed or the ID token did not verify (`provider: "google"`).
+   */
+  exchange(code: string, codeVerifier: string, expectedNonce: string): Promise<OidcIdentity>;
+}
+
 /** Whether the owner slot is taken (`account-registration` → Roles and the owner claim). */
 export interface IOwnerLookup {
   ownerExists(): Promise<boolean>;

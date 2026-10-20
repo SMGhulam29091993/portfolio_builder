@@ -22,3 +22,9 @@ export {
   ManualClock,
   SequenceSecureRandom,
 } from './auth/test-doubles.js';
+export {
+  LOCAL_CLIENT_ID,
+  LOCAL_CLIENT_SECRET,
+  LocalOidcIssuer,
+  type IssuedCode,
+} from './auth/local-oidc-issuer.js';
