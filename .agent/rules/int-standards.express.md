@@ -68,8 +68,11 @@ Every endpoint returns this shape through `core/http/respond.ts` (`ok`, `created
 | 401 | `UNAUTHENTICATED` | — |
 | 401 | `SESSION_EXPIRED` | — (a newer sign-in replaced this session; `owner-auth`) |
 | 403 | `ORIGIN_NOT_ALLOWED` | — |
+| 403 | `EMAIL_NOT_VERIFIED` | — (right password, unverified email; `account-registration`) |
+| 403 | `OWNER_CLAIM_REFUSED` | — (owner secret refused; `account-registration`) |
 | 404 | `NOT_FOUND` | — |
 | 409 | `REVISION_CONFLICT` | `currentRevision` |
+| 409 | `OWNER_EXISTS` | — (the owner claim lost a race; `account-registration`) |
 | 409 | feature-specific (named in the owning spec) | per spec |
 | 413 | `PAYLOAD_TOO_LARGE` | `maxBytes` |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | `allowed: string[]` |
@@ -94,7 +97,8 @@ Every endpoint returns this shape through `core/http/respond.ts` (`ok`, `created
   validated value and never re-parse the raw request.
 - Every module uses this pattern — no per-module exceptions.
 - Free-text strings pass through the shared `plainText` schema helper (trim, strip HTML tags and
-  control characters, enforce max length).
+  control characters, enforce max length) in `packages/contracts/src/common/plain-text.ts`
+  (built by `account-registration.T01`).
 
 ## Optimistic concurrency
 Mutable documents carry an integer `revision`. Every write sends `expectedRevision`; the

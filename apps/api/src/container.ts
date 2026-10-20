@@ -38,7 +38,9 @@ import { AuthService } from './modules/auth/auth.service.js';
 import type { IAuthGuard, IClock, IMailSender } from './modules/auth/index.js';
 import { RedisOtpReferenceStore } from './modules/auth/otp-reference.store.js';
 import { OtpRepository } from './modules/auth/otp.repository.js';
+import { OwnerClaimPolicy } from './modules/auth/owner-claim.policy.js';
 import { PasswordResetService } from './modules/auth/password-reset.service.js';
+import { RegistrationService } from './modules/auth/registration.service.js';
 import { RequireOwnerMiddleware } from './modules/auth/require-owner.middleware.js';
 import { SessionAuthorizer } from './modules/auth/session-authorizer.service.js';
 import { SessionCookieWriter } from './modules/auth/session-cookie-writer.js';
@@ -91,8 +93,9 @@ const LOGIN_RATE_LIMIT: RateLimitPolicy = {
 };
 
 /**
- * Code sends allowed per client IP on API05 and API06 together: 5 per hour (spec → Password
- * reset: send limit). Every admitted request counts, whatever its outcome, so a decoy answer
+ * Code sends allowed per client IP on every route that emails a code (`owner-auth.API05`,
+ * `API06`; `account-registration.API02`, `API04`, `API05`) together: 5 per hour (spec →
+ * Password reset: send limit; `account-registration.AC14`). Every admitted request counts, whatever its outcome, so a decoy answer
  * for an unknown address costs the same as a real send and malformed bodies cannot be used to
  * probe for free.
  */
@@ -224,18 +227,37 @@ export function buildContainer({
     mailSender ?? new MailSenderFactory(MAIL_STRATEGIES, new DisabledMailSender()).create(env);
 
   // Password reset by one-time code (`owner-auth.T08`).
+  const otpRepository = new OtpRepository(mongo);
+  const otpReferences = new RedisOtpReferenceStore(redis, { ttlSec: OTP_REFERENCE_TTL_SEC });
+  const otpHasher = new BcryptOtpHasher();
   const passwordResetService = new PasswordResetService(
     users,
     users,
-    new OtpRepository(mongo),
-    new RedisOtpReferenceStore(redis, { ttlSec: OTP_REFERENCE_TTL_SEC }),
-    new BcryptOtpHasher(),
+    otpRepository,
+    otpReferences,
+    otpHasher,
     passwordHasher,
     sessionStore,
     mail,
     secureRandom,
     clock,
     users,
+  );
+  // Registration and email verification (`account-registration`). Verification signs in
+  // through `AuthService.startFor`, so sessions are minted in one place.
+  const registrationService = new RegistrationService(
+    users,
+    users,
+    users,
+    otpRepository,
+    otpReferences,
+    otpHasher,
+    passwordHasher,
+    mail,
+    secureRandom,
+    clock,
+    new OwnerClaimPolicy(users, { secret: env.OWNER_REGISTRATION_SECRET }),
+    authService,
   );
   const sessionCookies = new SessionCookieWriter(env, {
     apiPath: API_PREFIX,
@@ -244,7 +266,7 @@ export function buildContainer({
   });
   const authGuard = new RequireOwnerMiddleware(sessionAuthorizer, sessionCookies).handle;
   const authRouter = createAuthRouter(
-    new AuthController(authService, sessionCookies, passwordResetService),
+    new AuthController(authService, sessionCookies, passwordResetService, registrationService),
     authGuard,
     {
       login: rateLimiters.create(LOGIN_RATE_LIMIT),

@@ -13,7 +13,9 @@ Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), 
 `requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
 (T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
 code (T08) exist, and so does the development-only owner seeder with its `seed:owner` script
-(T09, ADR-0010). Every other feature module is ⬜ planned.
+(T09, ADR-0010). `account-registration` is implemented in the same module: registration, email
+verification by one-time code, roles and the one-time owner claim. Every other feature module is
+⬜ planned.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -79,7 +81,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
+| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code, registration, email verification and the one-time owner claim | `users`, `otps`; Redis `auth:*` keys | `owner-auth`, `account-registration` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -137,8 +139,8 @@ use and that may use no module.
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
 | Collection | Writer | Purpose |
 |---|---|---|
-| `users` | `auth` | User accounts; password hash (roles, verification and the Google link arrive with `account-registration` and `google-sign-in`, ADR-0010, ADR-0011). The development seeder writes only through `auth`'s `IUserCreator` |
-| `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
+| `users` | `auth` | User accounts: password hash, `role` (`owner` \| `member`; the `one_owner` partial unique index admits one owner), `emailVerifiedAt` (`account-registration`); the Google link arrives with `google-sign-in` (ADR-0011). The development seeder writes only through `auth`'s ports |
+| `otps` | `auth` | One-time codes (`password_reset`, `email_verification`): bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
 | Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
 | `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |

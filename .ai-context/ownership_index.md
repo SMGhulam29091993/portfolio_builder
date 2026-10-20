@@ -16,7 +16,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
-**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
+**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`, `EMAIL_NOT_VERIFIED`, `OWNER_CLAIM_REFUSED`), `modules/auth/user.repository.ts` (`OWNER_EXISTS`, `USER_EXISTS`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
 **Last updated:** 2026-10-18
 
 ## Module router convention (`ApiRouter`, mounted route table)
@@ -108,7 +108,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## One-time-code contract (code, identifier, reference, expiry, attempts, cooldown, send limit)
 **Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Password reset by one-time code
-**Referenced by:** ADR-0008 (the reference key and its TTL), `owner-auth` plan → Architecture Approach and Data Model, `architecture.md` → Request lifecycle (the shared send limiter), `cms-panel-shell` spec AC15 (what the screen shows for each outcome); code that restates its values: `apps/api/src/modules/auth/password-reset.service.ts` (code length, identifier bytes, 10-minute expiry, 24-hour purge, 60-second cooldown, 5 attempts), `apps/api/src/container.ts` (`CODE_SEND_RATE_LIMIT`, `OTP_REFERENCE_TTL_SEC`), `apps/api/src/modules/auth/otp.model.ts` (indexes), `apps/api/openapi/openapi.yaml` (API05–API07, `CodeSendRateLimited`, `OtpRejected`)
+**Referenced by:** `account-registration` spec (Email verification: the same contract, purpose `email_verification`), `memory/patterns.md` (one-time code issuance), ADR-0008 (the reference key and its TTL), `owner-auth` plan → Architecture Approach and Data Model, `architecture.md` → Request lifecycle (the shared send limiter), `cms-panel-shell` spec AC15 (what the screen shows for each outcome); code that restates its values: `apps/api/src/modules/auth/password-reset.service.ts` (code length, identifier bytes, 10-minute expiry, 24-hour purge, 60-second cooldown, 5 attempts) and `registration.service.ts` (the same values), `apps/api/src/container.ts` (`CODE_SEND_RATE_LIMIT`, `OTP_REFERENCE_TTL_SEC`), `apps/api/src/modules/auth/otp.model.ts` (indexes), `apps/api/openapi/openapi.yaml` (API05–API07, `CodeSendRateLimited`, `OtpRejected`)
 **Last updated:** 2026-10-18
 
 ## Redis unreachable at runtime → 503, never fail open
@@ -142,9 +142,9 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Last updated:** 2026-10-11
 
 ## Accounts, roles, the one-time owner claim and tenant isolation
-**Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision (the `account-registration` spec takes over the mechanics once written)
-**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`, `apps/api/src/seed/owner.seeder.ts` (the production refusal)
-**Last updated:** 2026-10-19
+**Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision and Owner answers (the product rule); `.ai-context/specs/account-registration.spec.md` → Roles and the owner claim · Email verification (the mechanics)
+**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`; code that restates its rules: `modules/auth/owner-claim.policy.ts`, `user.model.ts` (`one_owner` index), `auth.service.ts` (the `EMAIL_NOT_VERIFIED` check), `registration.service.ts`, `seed/owner.seeder.ts` (production refusal; verified owner or member)
+**Last updated:** 2026-10-20
 
 ## Seeder port and seed data (`ISeeder`, `SeedOutcome`, `buildSeeders`, `apps/api/src/seed/data/`)
 **Canonical definition:** `apps/api/src/seed/seeder.interface.ts` (the port); `apps/api/src/container.ts` → `buildSeeders` (wiring); `constitution.md` → Security Posture (seed data lives in `seed/data/`)
@@ -160,3 +160,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the `google-sign-in` spec takes over the mechanics once written)
 **Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan
 **Last updated:** 2026-10-18
+
+## Free-text cleaning (`plainText`)
+**Canonical definition:** `packages/contracts/src/common/plain-text.ts` (`plainText`, `cleanPlainText`)
+**Referenced by:** `int-standards.express.md` → Input validation, `constitution.md` → Plain text only, `account-registration` (`displayName`), every section payload schema
+**Last updated:** 2026-10-20

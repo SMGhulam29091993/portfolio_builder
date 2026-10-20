@@ -9,6 +9,7 @@ owner moves a spec to `Ready`.
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
 | 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Implemented | BRD-002 | — |
+| 2a | `account-registration` | Registration, email verification, roles, the one-time owner claim | Implemented | BRD-009 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
@@ -29,7 +30,6 @@ owner moves a spec to `Ready`.
 ## Planned slugs — no spec written yet (ADR-0010, ADR-0011)
 | Slug | Title | BRD | Place in the build order |
 |---|---|---|---|
-| `account-registration` | Registration, email verification, roles, the one-time owner claim | BRD-009 | After `owner-auth` |
 | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | BRD-010 | After `account-registration` |
 | `platform-admin` | The owner's admin area (list, suspend, re-enable members) and platform settings | BRD-009, BRD-011 | After `ai-design-studio` (added 2026-10-20, ADR-0010 → Owner answers) |
 | `credits-billing` | Buying credits through Stripe; spending them on AI generations and domains | BRD-011 | After `platform-admin` (ADR-0012) |
@@ -45,6 +45,12 @@ owner moves a spec to `Ready`.
   -011 updated; `design_reference.md` → Unknowns answered; standing authorisation to move specs
   to `Ready` recorded in `governance.md`; new planned slug `platform-admin`. Build output and
   symlinks untracked from git.
+- `account-registration` written (spec, plan, tasks, test cases), moved `Draft → Ready` under
+  the standing authorisation, and implemented: T01 (contracts, `plainText`, `users.role`,
+  `emailVerifiedAt`, the `one_owner` index, registrar ports), T02 (`OwnerClaimPolicy`,
+  `RegistrationService`, `AuthService` as session starter, login refuses unverified accounts,
+  reset verifies the email and checks the code purpose, `OWNER_REGISTRATION_SECRET`, seeder),
+  T03 (five routes, shared code-send limit, OpenAPI 0.5.0, route tests). `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

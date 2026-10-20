@@ -184,3 +184,11 @@
   `.env.example`, `turbo.json`, `architecture.md`; seeder creates a verified owner (or member)
   and verifies an existing unverified account (`updated` outcome). Deviation from the plan:
   no separate `SessionStarter` class — the plan was corrected.
+- account-registration.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local:
+  `pnpm turbo run build typecheck lint test drift` — 20 of 20 tasks; the web build with
+  `API_INTERNAL_URL` set as CI does). Routes API01–API05 in `auth.routes.ts` with the one
+  shared code-send limiter, controller handlers, container wiring, OpenAPI 0.5.0
+  (`LoginForbidden`, `RegistrationForbidden`, `OwnerExists`, `role` on `AuthUser`), the two
+  pinned route-table tests, `registration.routes.spec.ts` (IT01–IT15 against real mongod and
+  Redis, recorded mail). With T03, `account-registration` is `Implemented`. CI not yet run on
+  this branch.

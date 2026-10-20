@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.4.0
+  version: 0.5.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -24,7 +24,8 @@ tags:
       Tokens travel only in the three HttpOnly session cookies, never in a body; a one-time code
       travels only by email. The login rate limit and the Origin allow-list (403
       ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06, the password-reset
-      routes and their send limit by owner-auth.T08.
+      routes and their send limit by owner-auth.T08. Registration, email verification and the
+      one-time owner claim by account-registration.T03.
 
 paths:
   /api/v1/health:
@@ -111,13 +112,13 @@ paths:
                 success: true
                 message: Signed in
                 data:
-                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner }
+                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner, role: owner }
         '400':
           $ref: '#/components/responses/ValidationFailed'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/OriginNotAllowed'
+          $ref: '#/components/responses/LoginForbidden'
         '429':
           $ref: '#/components/responses/LoginRateLimited'
         '503':
@@ -363,6 +364,176 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /api/v1/auth/registration/options:
+    get:
+      tags: [auth]
+      operationId: account-registration.API01
+      x-spec-id: account-registration.API01
+      summary: Whether the registration form should offer the owner key
+      description: >-
+        ownerClaimOpen is true while no owner account exists and an owner secret is configured.
+      security: []
+      responses:
+        '200':
+          description: The registration options.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationOptionsEnvelope'
+              example:
+                success: true
+                message: Registration options
+                data: { ownerClaimOpen: false }
+
+  /api/v1/auth/register:
+    post:
+      tags: [auth]
+      operationId: account-registration.API02
+      x-spec-id: account-registration.API02
+      summary: Register an account and email a verification code
+      description: >-
+        Creates an unverified account (or refreshes the password and display name of an
+        unverified one) and emails a 6-digit code; for an address that is already verified,
+        answers identically with a decoy reference and writes and sends nothing. A non-empty
+        ownerSecret claims the platform owner account while the claim is open and the value
+        matches; otherwise it is refused with 403 OWNER_CLAIM_REFUSED and nothing is written.
+        Spends the shared code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: The reference and the code's lifetime. The same for every address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+              example:
+                success: true
+                message: Check your email for a verification code
+                data:
+                  reference: $2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+                  expiresInSec: 600
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/RegistrationForbidden'
+        '409':
+          $ref: '#/components/responses/OwnerExists'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/register/verify:
+    post:
+      tags: [auth]
+      operationId: account-registration.API03
+      x-spec-id: account-registration.API03
+      summary: Verify the email with the code and sign in
+      description: >-
+        Checks the code (5 attempts, 10 minutes), marks the email verified and starts the
+        user's session exactly as a sign-in does. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Verified and signed in. The body carries the user only.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/auth/verification/request:
+    post:
+      tags: [auth]
+      operationId: account-registration.API04
+      x-spec-id: account-registration.API04
+      summary: Request a new verification code by email
+      description: >-
+        For an unverified account, issues and emails a fresh code; for an unknown or verified
+        address, answers identically with a decoy reference and writes and sends nothing. Spends
+        the shared code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: The reference and the code's lifetime. The same for every address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/verification/resend:
+    post:
+      tags: [auth]
+      operationId: account-registration.API05
+      x-spec-id: account-registration.API05
+      summary: Resend a verification code
+      description: >-
+        Replaces the verification code the reference names; the old reference and code stop
+        working. Allowed once 60 seconds have passed since the last send. Spends the shared
+        code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOtpRequest'
+      responses:
+        '200':
+          description: A new reference and the code's lifetime.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
 components:
   securitySchemes:
     sessionCookies:
@@ -412,11 +583,43 @@ components:
           additionalProperties: true
     AuthUser:
       type: object
-      required: [id, email, displayName]
+      required: [id, email, displayName, role]
       properties:
         id: { type: string }
         email: { type: string, format: email }
         displayName: { type: string }
+        role: { enum: [owner, member] }
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 12, maxLength: 200 }
+        displayName:
+          type: string
+          maxLength: 80
+          description: Plain text; HTML tags and control characters are removed, then 1..80 characters.
+        ownerSecret:
+          type: string
+          maxLength: 200
+          description: The owner secret key. An empty string is treated as absent.
+    VerifyEmailRequest:
+      type: object
+      required: [reference, otp]
+      properties:
+        reference: { type: string, minLength: 1, maxLength: 100 }
+        otp: { type: string, pattern: '^[0-9]{6}$' }
+    RegistrationOptionsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [ownerClaimOpen]
+              properties:
+                ownerClaimOpen: { type: boolean }
     UserEnvelope:
       allOf:
         - $ref: '#/components/schemas/SuccessEnvelope'
@@ -697,6 +900,63 @@ components:
             success: false
             message: Upstream provider failed
             data: { code: UPSTREAM_FAILED, provider: mail }
+    LoginForbidden:
+      description: >-
+        ORIGIN_NOT_ALLOWED — the Origin is not the web app's. EMAIL_NOT_VERIFIED — the password was right but the email has not been verified yet; no session is created.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ORIGIN_NOT_ALLOWED, EMAIL_NOT_VERIFIED] }
+          example:
+            success: false
+            message: Verify your email address before signing in
+            data: { code: EMAIL_NOT_VERIFIED }
+    RegistrationForbidden:
+      description: >-
+        ORIGIN_NOT_ALLOWED — the Origin is not the web app's. OWNER_CLAIM_REFUSED — an owner secret was sent while the owner claim is closed, or it does not match; nothing is written or sent.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ORIGIN_NOT_ALLOWED, OWNER_CLAIM_REFUSED] }
+          example:
+            success: false
+            message: The owner key was not accepted
+            data: { code: OWNER_CLAIM_REFUSED }
+    OwnerExists:
+      description: >-
+        Another registration claimed the owner account first; nothing was written for this one.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: OWNER_EXISTS }
+          example:
+            success: false
+            message: The platform owner has already been claimed
+            data: { code: OWNER_EXISTS }
     PasswordResetUnavailable:
       description: >-
         No mail strategy is configured (outside production only; production refuses to start
