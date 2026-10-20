@@ -167,3 +167,10 @@
   changed, so OpenAPI stays 0.4.0. One self-review finding, kept by design
   (`memory/review-findings.md`, 2026-10-19). With T09, `owner-auth` is `Implemented`. CI not
   yet run on this branch.
+- account-registration.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck,
+  lint, contracts 54 tests, API auth 282 tests against real mongod and Redis). `plainText` /
+  `cleanPlainText` in `packages/contracts/src/common`; registration payloads; `role` on
+  `AuthUser` (additive); `users.role`, `users.emailVerifiedAt`, the `one_owner` partial unique
+  index; `IUserRegistrar`, `IOwnerLookup` on `UserRepository` and the in-memory fake, both in
+  CT10 (AC3, AC6 cases). Self-review finding fixed: the fake threw synchronously on a refused
+  owner slot instead of rejecting (`memory/review-findings.md`, 2026-10-20).

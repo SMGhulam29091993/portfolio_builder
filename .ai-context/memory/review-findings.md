@@ -116,3 +116,10 @@ the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in 
 **Finding:** ...
 **Resulting rule/check added:** ...
 -->
+
+### 2026-10-20 — account-registration.T01
+- **Fake threw where the real repository rejects.** `InMemoryUserRepository.updatePending` was
+  a non-async method returning `Promise.resolve`, so the owner-slot check threw synchronously;
+  the contract suite's `rejects` assertion caught it. Fixed by making the method `async`. Rule:
+  a fake method that can fail is `async`, so failure is always a rejected promise like the real
+  adapter's.

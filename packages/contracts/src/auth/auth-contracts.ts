@@ -8,6 +8,10 @@
  */
 import { z } from 'zod';
 
+/** The two account roles (ADR-0010): at most one `owner`, everyone else a `member`. */
+export const USER_ROLES = ['owner', 'member'] as const;
+export const userRoleSchema = z.enum(USER_ROLES);
+
 /** Longest accepted email address (RFC 5321 path limit). */
 export const EMAIL_MAX_LENGTH = 254;
 
@@ -47,11 +51,15 @@ export const loginRequestSchema = z.object({
   password: passwordSchema,
 });
 
-/** The signed-in owner as every auth response returns it. No password hash, no token. */
+/**
+ * The signed-in user as every auth response returns it. No password hash, no token. `role`
+ * joined with `account-registration` (additive).
+ */
 export const authUserSchema = z.object({
   id: z.string().min(1),
   email: z.string(),
   displayName: z.string(),
+  role: userRoleSchema,
 });
 
 /** `data` of API01, API02 and API04: `{ user }`. */
@@ -79,6 +87,7 @@ export const otpIssuedResponseSchema = z.object({
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type AuthUser = z.infer<typeof authUserSchema>;
+export type UserRole = z.infer<typeof userRoleSchema>;
 export type AuthUserResponse = z.infer<typeof authUserResponseSchema>;
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
 export type ResendOtpRequest = z.infer<typeof resendOtpRequestSchema>;

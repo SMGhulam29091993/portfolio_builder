@@ -3,7 +3,7 @@
  * payloads are owned by `packages/contracts` and re-exported here
  * (`int-standards.express.md` → Input validation).
  */
-import type { AuthUser } from '@portfolio/contracts';
+import type { AuthUser, UserRole } from '@portfolio/contracts';
 
 export {
   authUserResponseSchema,
@@ -20,6 +20,18 @@ export {
   type OtpIssuedResponse,
   type ResendOtpRequest,
   type ResetPasswordRequest,
+  USER_ROLES,
+  registerRequestSchema,
+  registrationOptionsResponseSchema,
+  verificationCodeRequestSchema,
+  verificationResendRequestSchema,
+  verifyEmailRequestSchema,
+  type RegisterRequest,
+  type RegistrationOptionsResponse,
+  type UserRole,
+  type VerificationCodeRequest,
+  type VerificationResendRequest,
+  type VerifyEmailRequest,
 } from '@portfolio/contracts';
 
 /** A stored user. `users` is the only authentication source (`constitution.md` → Auth boundary). */
@@ -30,6 +42,16 @@ export interface User {
   /** argon2id hash. Never logged, never returned over HTTP. */
   readonly passwordHash: string;
   readonly displayName: string;
+  /**
+   * `owner` for the one platform owner, `member` for everyone else (ADR-0010). A document
+   * written before `account-registration` has no role and reads as `member`.
+   */
+  readonly role: UserRole;
+  /**
+   * When the email was proved by a one-time code (`account-registration`). Absent: the account
+   * cannot sign in yet.
+   */
+  readonly emailVerifiedAt?: Date;
   /** When the password was last set by a reset; absent until the first reset. */
   readonly passwordChangedAt?: Date;
   readonly createdAt: Date;
@@ -41,6 +63,20 @@ export interface NewUser {
   readonly email: string;
   readonly passwordHash: string;
   readonly displayName: string;
+  /** Default `member`. */
+  readonly role?: UserRole;
+  /** Set for an account whose email is already proved (the development seeder). */
+  readonly emailVerifiedAt?: Date;
+}
+
+/**
+ * What re-registering an unverified account replaces (`account-registration.AC3`). `role` is
+ * given only when the request carried a matching owner claim; otherwise the stored role stays.
+ */
+export interface PendingUserUpdate {
+  readonly passwordHash: string;
+  readonly displayName: string;
+  readonly role?: UserRole;
 }
 
 /**
@@ -132,8 +168,11 @@ declare global {
   }
 }
 
-/** The actions a one-time code can authorise. Only one exists today. */
-export const OTP_PURPOSES = ['password_reset'] as const;
+/**
+ * The actions a one-time code can authorise. A code issued for one purpose never completes
+ * another (`account-registration.AC12`).
+ */
+export const OTP_PURPOSES = ['password_reset', 'email_verification'] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];
 
 /**

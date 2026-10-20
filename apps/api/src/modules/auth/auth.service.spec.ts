@@ -87,6 +87,7 @@ describe('AuthService.login', () => {
       id: owner.id,
       email: owner.email,
       displayName: owner.displayName,
+      role: 'member',
     });
     // 256-bit refresh token, 128-bit jti, base64url without padding.
     expect(signedIn.tokens.refreshToken).toMatch(/^[\w-]{43}$/);
@@ -353,6 +354,7 @@ describe('AuthService.me', () => {
       id: owner.id,
       email: owner.email,
       displayName: owner.displayName,
+      role: 'member',
     });
   });
 

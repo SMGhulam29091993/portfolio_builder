@@ -160,5 +160,5 @@ export class AuthService implements IAuthService {
 
 /** The user as responses show it: no password hash, no timestamps. */
 function toAuthUser(user: User): AuthUser {
-  return { id: user.id, email: user.email, displayName: user.displayName };
+  return { id: user.id, email: user.email, displayName: user.displayName, role: user.role };
 }

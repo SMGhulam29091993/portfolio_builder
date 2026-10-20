@@ -25,6 +25,7 @@ import type {
   OtpIssue,
   OtpIssuedResponse,
   OtpRecord,
+  PendingUserUpdate,
   ResendOtpRequest,
   ResetPasswordRequest,
   SessionCookies,
@@ -42,12 +43,40 @@ export interface IUserReader {
   findById(id: string): Promise<User | null>;
 }
 
-/** Creates users. Used by the owner seeder only — there is no sign-up. */
+/** Creates users. Used by registration (`account-registration`) and the development seeder. */
 export interface IUserCreator {
   /**
-   * @throws {ConflictError} When a user with the same email already exists.
+   * @throws {ConflictError} `USER_EXISTS` when a user with the same email already exists;
+   *   `OWNER_EXISTS` when `role` is `owner` and an owner already exists.
    */
   create(user: NewUser): Promise<User>;
+}
+
+/**
+ * The writes registration and verification make to an existing account
+ * (`account-registration.T01`).
+ */
+export interface IUserRegistrar {
+  /**
+   * Replaces the password hash and display name (and the role, when given) of an account whose
+   * email is **not yet verified** (`account-registration.AC3`). Conditional in one update, so a
+   * verification landing in between is never overwritten.
+   *
+   * @returns The updated user, or `null` when no unverified account has this id.
+   * @throws {ConflictError} `OWNER_EXISTS` when `role` is `owner` and another owner exists.
+   */
+  updatePending(id: string, update: PendingUserUpdate): Promise<User | null>;
+  /**
+   * Sets `emailVerifiedAt` when it is unset; an already-verified account keeps its first date.
+   *
+   * @returns `false` when no user has this id.
+   */
+  markEmailVerified(id: string, at: Date): Promise<boolean>;
+}
+
+/** Whether the owner slot is taken (`account-registration` → Roles and the owner claim). */
+export interface IOwnerLookup {
+  ownerExists(): Promise<boolean>;
 }
 
 /** Replaces a password hash. Used by the password reset only. */
