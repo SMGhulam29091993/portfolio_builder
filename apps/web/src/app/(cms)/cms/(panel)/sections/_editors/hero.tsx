@@ -18,7 +18,7 @@ function ValueEditor({ path }: { path: string }) {
   const isList = Array.isArray(value);
   const toggle = () => {
     const next = isList ? (value as string[]).join(', ') : (typeof value === 'string' ? value : '').split(',').map((part) => part.trim()).filter(Boolean).slice(0, 8);
-    setValue(`${path}.value`, isList ? next : next.length > 0 ? next : ['[Item]'], { shouldDirty: true, shouldValidate: true });
+    setValue(`${path}.value`, isList ? next : next.length > 0 ? next : ['[Your item]'], { shouldDirty: true, shouldValidate: true });
   };
   return (
     <div className="flex flex-col gap-2">
@@ -75,7 +75,7 @@ function HeroEditor({ sectionTypes }: SectionEditorProps) {
           name="codeCard.entries"
           label="Lines"
           itemLabel="line"
-          newItem={() => ({ key: 'key', value: '[Value]' })}
+          newItem={() => ({ key: 'key', value: '[Your value]' })}
           renderItem={(path) => (
             <div className="flex flex-col gap-3">
               <TextField name={`${path}.key`} label="Key" />

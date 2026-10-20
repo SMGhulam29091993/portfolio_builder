@@ -47,7 +47,7 @@ function StackEditor() {
         name="groups"
         label="Groups"
         itemLabel="group"
-        newItem={() => ({ label: '[Group]', items: ['[Tool]'] })}
+        newItem={() => ({ label: '[Your group]', items: ['[Your tool]'] })}
         renderItem={(path) => (
           <div className="flex flex-col gap-3">
             <TextField name={`${path}.label`} label="Label" />
@@ -63,7 +63,7 @@ function StackEditor() {
           name="education.entries"
           label="Entries"
           itemLabel="entry"
-          newItem={() => ({ title: '[Degree]', institution: '[Institution]', startYear: new Date().getFullYear() - 1, endYear: null })}
+          newItem={() => ({ title: '[Your degree]', institution: '[Your institution]', startYear: new Date().getFullYear() - 1, endYear: null })}
           renderItem={(path) => (
             <div className="grid gap-3 sm:grid-cols-2">
               <TextField name={`${path}.title`} label="Title" />
@@ -83,7 +83,7 @@ function StackEditor() {
           name="certifications.entries"
           label="Certifications"
           itemLabel="certification"
-          newItem={() => ({ name: '[Certification]', issuer: '[Issuer]', url: null })}
+          newItem={() => ({ name: '[Your certification]', issuer: '[Your issuer]', url: null })}
           renderItem={(path) => (
             <div className="grid gap-3 sm:grid-cols-2">
               <TextField name={`${path}.name`} label="Name" />

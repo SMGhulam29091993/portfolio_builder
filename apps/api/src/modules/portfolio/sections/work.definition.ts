@@ -14,16 +14,16 @@ export class WorkSectionDefinition implements ISectionDefinition<WorkSection> {
   defaults(): WorkSection {
     return {
       meta: { eyebrow: 'Selected work', navLabel: 'Work', showInNav: true },
-      heading: { lead: '[Work that', emphasis: 'matters.]' },
+      heading: { lead: '[Your heading lead]', emphasis: '[Your emphasis.]' },
       featuredBadge: 'Featured',
       projects: [
         {
-          title: '[Project name]',
-          category: '[What kind of project]',
-          description: '[What it does, what you built, and the result.]',
+          title: '[Your project]',
+          category: '[Your project category]',
+          description: '[Your project story: what it does and the result.]',
           featured: true,
-          metrics: [{ value: '[0]', label: '[What this number measures]' }],
-          tags: ['[Tool]'],
+          metrics: [{ value: '[Your stat]', label: '[Your metric label]' }],
+          tags: ['[Your tool]'],
           link: null,
         },
       ],

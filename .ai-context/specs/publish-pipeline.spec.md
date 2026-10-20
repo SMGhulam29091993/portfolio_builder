@@ -2,7 +2,23 @@
 ## Spec ID
 publish-pipeline
 ## Status
-Draft
+In Progress
+- `Ready → In Progress` on 2026-10-21 with `publish-pipeline.T01` started.
+- DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`); ADR-0004 accepted (with retention),
+  ADR-0013 accepted.
+- Revised 2026-10-21, before the spec was ever `Ready`: (1) ADR-0010 — every snapshot, pointer
+  and route belongs to the signed-in user's portfolio; `portfolio.published` carries the
+  portfolio's slug so the site revalidates that page only; (2) ADR-0004 retention — after a
+  successful pointer switch, snapshots older than the newest 20 of that portfolio are deleted,
+  except the live one; a pruning failure is logged and never fails the publish (AC20); the
+  snapshot repository gains that one delete, scoped to non-live, out-of-window versions;
+  (3) ADR-0013 — `publishing` owns `IDraftContributor`, `IPublishedPointerWriter`,
+  `IPublishedPointerReader` and `IPublishDesignCheck` (used by `design-valid`) and imports
+  neither `portfolio` nor `design`; (4) `no-placeholder-text` also blocks template placeholders
+  (`[Your …]`, `section-engine` → Portfolio provisioning) through the shared
+  `PLACEHOLDER_PATTERN` in `packages/contracts`, so an untouched new portfolio cannot publish
+  (AC21).
 ## Linked BRD
 .ai-context/BRD.md#BRD-005
 ## Intent
@@ -35,7 +51,7 @@ only the snapshot's `delivery` record (revalidation attempts) is updated later.
 Canonical owner. Each is one `IPublishRule` class.
 | Rule id | Severity | Fails when |
 |---|---|---|
-| `no-placeholder-text` | error | Any string in the content contains a bracketed upper-case instruction — matches `\[[A-Z0-9][A-Z0-9 ,.'’:;!?/-]{7,}\]` |
+| `no-placeholder-text` | error | Any string in the content matches `PLACEHOLDER_PATTERN` (`packages/contracts`): a bracketed upper-case instruction `\[[A-Z0-9][A-Z0-9 ,.'’:;!?/-]{7,}\]`, or a template placeholder `[Your …]` (AC21) |
 | `links-valid` | error | Any stored URL does not parse, or is not `https:` / `mailto:` |
 | `internal-links-resolve` | error | A `LinkTarget` of kind `section` points at a section that is hidden or absent |
 | `assets-resolve` | error | A referenced asset does not exist or has the wrong kind |
@@ -137,8 +153,9 @@ An issue is `{ "rule", "severity", "path", "message" }`, with `path` such as
     then the pointer switches to version 1, the event is emitted, no snapshot document's content
     changes, no new snapshot is created, and no draft document changes.
 14. publish-pipeline.AC14 — Given the snapshot repository interface, when it is inspected, then
-    it offers insert, read and delivery-record update only — no method can modify `content`,
-    `contentHash` or `version`, and none can delete.
+    it offers insert, reads, the delivery-record update and the retention prune only — no method
+    can modify `content`, `contentHash` or `version`, and the only delete (AC20) can never remove
+    the live snapshot or one of the newest 20.
 15. publish-pipeline.AC15 — Given the snapshot insert succeeds and the pointer switch then
     fails, when the request ends, then it returns an error, the live site still serves the
     previous snapshot, and a retried publish succeeds with a new version.
@@ -153,6 +170,12 @@ An issue is `{ "rule", "severity", "path", "message" }`, with `path` such as
     validation issues grouped by severity with each linked to the screen that fixes it, a
     Publish button disabled while errors exist, a confirmation step with an optional note, and
     the history with a confirmed "Make live" action per older version.
+20. publish-pipeline.AC20 — Given 21 snapshots and a new publish, when the pointer has switched,
+    then the oldest snapshot is deleted unless it is live; with the live one outside the newest
+    20 it is kept; a failing prune is logged and the publish still answers 201.
+21. publish-pipeline.AC21 — Given a portfolio still holding any template placeholder (`[Your …]`)
+    in a section or the identity, when API03 is called, then the response is 422 with a
+    `no-placeholder-text` issue at that path.
 ## Edge Cases Covered
 - A placeholder inside a list item, a tag, a metric label or identity text is found — the rule
   walks every string in the content, not a field list.
@@ -189,7 +212,7 @@ An issue is `{ "rule", "severity", "path", "message" }`, with `path` such as
 ## Explicitly Out of Scope
 - Scheduled publishing; publishing part of a draft.
 - Restoring an old snapshot back into the draft (BRD-005, open).
-- Diffing two versions; pruning old snapshots.
+- Diffing two versions.
 - A multi-step approval flow — there are no reviewers (ADR-0001).
 - Rendering the published content — `public-site-rendering`.
 ## Non-Functional Constraints (from constitution.md)

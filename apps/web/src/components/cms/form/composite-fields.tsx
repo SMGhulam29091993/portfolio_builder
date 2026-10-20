@@ -31,7 +31,7 @@ export function MetricListField({ name, label }: { name: string; label: string }
       name={name}
       label={label}
       itemLabel="metric"
-      newItem={() => ({ value: '[0]', label: '[What it measures]' })}
+      newItem={() => ({ value: '[Your stat]', label: '[Your metric label]' })}
       renderItem={(path) => (
         <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
           <TextField name={`${path}.value`} label="Value" />

@@ -3,6 +3,7 @@
  * section's AC1 (the reference seed validates) and AC2 (the invalid payloads its spec lists, each
  * reported at its path).
  */
+import { hasPlaceholder } from '@portfolio/contracts';
 import { describe, expect, it } from 'vitest';
 import type { ZodType } from 'zod';
 
@@ -41,7 +42,7 @@ describe('section-engine.CT01 — every definition', () => {
   it.each(definitions)('$type: defaults satisfy the schema, flags are booleans, placeholders are bracketed', (definition) => {
     expect(definition.schema.safeParse(definition.defaults()).success).toBe(true);
     for (const flag of [definition.orderable, definition.hideable, definition.inNav]) expect(typeof flag).toBe('boolean');
-    expect(JSON.stringify(definition.defaults())).toMatch(/\[[^\]]+\]/);
+    expect(hasPlaceholder(JSON.stringify(definition.defaults()))).toBe(true);
   });
 
   it('registers all six without conflict; only hero is fixed', () => {

@@ -24,7 +24,7 @@
 | publish-pipeline.IT17 | Edge | Start in production mode without `WEB_REVALIDATE_URL` | Startup fails naming the variable |
 | publish-pipeline.IT18 | Edge | Development mode without `WEB_REVALIDATE_URL` | Publish → `revalidation: "ok"`; no HTTP call made |
 | publish-pipeline.IT19 | AC2 | Call validate on a draft with errors; compare every collection before and after | Issues and draft hash returned; no document created or changed |
-| publish-pipeline.IT20 | AC14 | Enumerate `ISnapshotRepository` members; attempt to change `content` through `updateDelivery` | Only insert / read / update-delivery exist; content, hash and version are unchanged in the DB |
+| publish-pipeline.IT20 | AC14 | Enumerate `ISnapshotRepository` members; attempt to change `content` through `updateDelivery`; prune with the live version outside the window | Only insert / reads / update-delivery / prune exist; content, hash and version are unchanged in the DB; the live snapshot survives |
 
 ## Contract suites
 | Test ID | Interface | Asserts |

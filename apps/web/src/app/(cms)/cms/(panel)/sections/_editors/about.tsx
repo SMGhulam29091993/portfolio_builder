@@ -29,7 +29,7 @@ function AboutEditor() {
           name="process.steps"
           label="Steps"
           itemLabel="step"
-          newItem={() => ({ title: '[Step]', description: '[What happens in this step.]' })}
+          newItem={() => ({ title: '[Your step]', description: '[Your description of this step.]' })}
           renderItem={(path) => (
             <div className="flex flex-col gap-3">
               <TextField name={`${path}.title`} label="Title" />

@@ -94,10 +94,10 @@ export function identityTemplate({ displayName, email }: IdentityAccount): Ident
     roleTitle: '[Your role]',
     email,
     location: { label: '[Your city, country]' },
-    availability: { enabled: false, label: '[Open to new roles]' },
+    availability: { enabled: false, label: '[Your availability]' },
     socials: [],
     resume: { assetId: null, label: 'Résumé' },
     footer: { copyrightName: displayName, builtWith: [] },
-    seo: { title: `${displayName} — [Your role]`.slice(0, 70), description: '[One sentence about what you do]', ogImageAssetId: null },
+    seo: { title: `${displayName} — [Your role]`.slice(0, 70), description: '[Your one-line description]', ogImageAssetId: null },
   };
 }

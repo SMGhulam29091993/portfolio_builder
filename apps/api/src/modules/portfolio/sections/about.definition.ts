@@ -14,20 +14,20 @@ export class AboutSectionDefinition implements ISectionDefinition<AboutSection> 
   defaults(): AboutSection {
     return {
       meta: { eyebrow: 'About', navLabel: 'About', showInNav: true },
-      heading: { lead: '[What you do,]', emphasis: '[how you do it.]' },
-      bio: '[A short paragraph about your experience and what you care about.]',
+      heading: { lead: '[Your lead,]', emphasis: '[Your emphasis.]' },
+      bio: '[Your bio: your experience and what you care about.]',
       currently: { enabled: true, label: 'Currently', text: '[Your current role]' },
       stats: [
-        { value: '[0+]', label: '[What this number measures]' },
-        { value: '[0+]', label: '[What this number measures]' },
+        { value: '[Your stat]', label: '[Your metric label]' },
+        { value: '[Your stat]', label: '[Your metric label]' },
       ],
       process: {
         enabled: true,
         eyebrow: 'How I work',
-        title: '[How you work, in one line.]',
+        title: '[Your way of working, in one line.]',
         steps: [
-          { title: '[Step one]', description: '[What happens in this step.]' },
-          { title: '[Step two]', description: '[What happens in this step.]' },
+          { title: '[Your step one]', description: '[Your description of this step.]' },
+          { title: '[Your step two]', description: '[Your description of this step.]' },
         ],
       },
     };

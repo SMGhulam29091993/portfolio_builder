@@ -46,7 +46,7 @@ function ExperienceEditor() {
         name="entries"
         label="Roles"
         itemLabel="role"
-        newItem={() => ({ company: '[Company]', role: '[Role]', start: { year: new Date().getFullYear(), month: 1 }, end: null, highlights: ['[What you did.]'] })}
+        newItem={() => ({ company: '[Your company]', role: '[Your role]', start: { year: new Date().getFullYear(), month: 1 }, end: null, highlights: ['[Your achievement.]'] })}
         renderItem={(path) => (
           <div className="flex flex-col gap-3">
             <TextField name={`${path}.company`} label="Company" />

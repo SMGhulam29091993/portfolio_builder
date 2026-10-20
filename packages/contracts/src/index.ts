@@ -12,4 +12,5 @@ export * from './common/index.js';
 export * from './design/index.js';
 export * from './health/index.js';
 export * from './identity/index.js';
+export * from './publishing/index.js';
 export * from './sections/index.js';

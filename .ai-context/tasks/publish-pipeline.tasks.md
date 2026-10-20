@@ -2,7 +2,7 @@
 ## Derived From
 .ai-context/plans/publish-pipeline.plan.md
 ## Sequence
-- [ ] publish-pipeline.T01 — `packages/contracts/src/publishing` (`PublishedContent`, `PublishIssue`, request/response schemas); `snapshots` model with indexes; `SnapshotRepository` exposing insert / read / update-delivery only — Acceptance: AC14
+- [x] publish-pipeline.T01 — `packages/contracts/src/publishing` (`PublishedContent`, `PublishIssue`, request/response schemas); `snapshots` model with indexes; `SnapshotRepository` exposing insert / read / update-delivery only — Acceptance: AC14
 - [ ] publish-pipeline.T02 — `IDraftContributor`, `IPublishedPointerWriter`, `IPublishedPointerReader` interfaces; `SectionsDraftContributor` + `PublishedPointer` in `portfolio`, `IdentityDraftContributor` in `identity`, `DesignDraftContributor` in `design`; update the dependency map if any edge differs — Acceptance: AC9, AC11
 - [ ] publish-pipeline.T03 — `ICanonicalHasher` (sorted-key JSON + SHA-256), `SnapshotBuilder`, `DraftAssembler` — Acceptance: AC9, AC10
 - [ ] publish-pipeline.T04 — `IPublishRule`, `PublishRuleRegistry`, and the nine rules in the rules table, each with a passing and a failing fixture — Acceptance: AC4, AC5, AC6, AC17

@@ -15,11 +15,11 @@ export class StackSectionDefinition implements ISectionDefinition<StackSection> 
     return {
       meta: { eyebrow: 'Stack', navLabel: 'Stack', showInNav: true },
       heading: { lead: 'The tools', emphasis: 'I reach for.' },
-      groups: [{ label: '[Group]', items: ['[Tool]', '[Tool two]'] }],
+      groups: [{ label: '[Your group]', items: ['[Your tool]', '[Your tool two]'] }],
       education: {
         enabled: true,
         label: 'Education & training',
-        entries: [{ title: '[Degree or course]', institution: '[Institution]', startYear: 2020, endYear: 2024 }],
+        entries: [{ title: '[Your degree or course]', institution: '[Your institution]', startYear: 2020, endYear: 2024 }],
       },
       certifications: { enabled: false, label: 'Certifications', entries: [] },
     };

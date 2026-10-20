@@ -15,7 +15,7 @@ export class ContactSectionDefinition implements ISectionDefinition<ContactSecti
     return {
       meta: { eyebrow: 'Contact', navLabel: 'Contact', showInNav: true },
       heading: { lead: 'Have something to build?', emphasis: "Let's talk." },
-      body: '[What kind of work or roles you are open to.]',
+      body: '[Your note on the work you are open to.]',
       emailCta: { label: 'Email me' },
       showCopyEmail: true,
       showSocialLinks: true,

@@ -10,18 +10,18 @@ Module `apps/api/src/modules/publishing/`, module file pattern plus `rules/`, `s
 | `DraftAssembler` | Service | `IDraftAssembler` | `IDraftContributor[]`, `ISnapshotBuilder` |
 | `SnapshotBuilder` | **Builder** | `ISnapshotBuilder` | `IAssetLookup`, `ICanonicalHasher` |
 | `PublishPipeline` | **Pipeline** | `IPublishPipeline` | `IPublishStep[]` (ordered, constructor) |
-| `ValidateStep`, `PersistSnapshotStep`, `ActivateStep`, `EmitPublishedStep` | Steps | `IPublishStep` | their own narrow dependencies |
+| `ValidateStep`, `PersistSnapshotStep`, `ActivateStep`, `PruneSnapshotsStep`, `EmitPublishedStep` | Steps | `IPublishStep` | their own narrow dependencies (prune added 2026-10-21 for ADR-0004 retention, AC20) |
 | `PublishRuleRegistry` + nine rule classes | **Strategy + Registry** | `IPublishRule` | `IDesignValidator`, `IAssetLookup` where needed |
-| `SnapshotRepository` | Repository | `ISnapshotRepository` (insert / read / update delivery only) | Mongoose model |
+| `SnapshotRepository` | Repository | `ISnapshotRepository` (insert / reads / update delivery / retention prune) | Mongoose model |
 | `SiteRevalidationListener` | **Observer** | `IEventHandler` (`core/events`) | `IRevalidationClient`, `ISnapshotRepository` |
 | `HttpRevalidationClient`, `NoopRevalidationClient` | Adapters | `IRevalidationClient` | `Env` |
 | `SnapshotAssetReferenceProvider` | Adapter | `IAssetReferenceProvider` (owned by `assets`) | `ISnapshotRepository` |
 
 ```typescript
-interface IDraftContributor {                 // owned here; implemented by content modules
-  readonly key: 'sections' | 'identity' | 'design';
-  collect(portfolioId: string): Promise<unknown>;
-}
+interface IDraftContributor<K extends DraftPartKey> {   // owned here; implemented by content modules
+  readonly key: K;                                       // 'sections' | 'identity' | 'design'
+  collect(scope: DraftScope): Promise<DraftParts[K]>;    // scope = { portfolioId, userId }:
+}                                                        // the identity template needs the account
 interface IPublishRule {
   readonly id: string;
   readonly severity: 'error' | 'warning';
@@ -58,7 +58,6 @@ No seed data — a fresh install is unpublished.
 - [ ] Snapshot + pointer-swap model — pending acceptance of ADR-0004
 ## Explicitly Deferred
 - Restore-to-draft from a snapshot — open at BRD stage.
-- Snapshot pruning — volume is negligible for one owner.
 - A durable outbox for the published event — an in-process bus plus the manual retry (API06) and
   the site's time-based fallback are sufficient at this scale.
 ## Sequencing

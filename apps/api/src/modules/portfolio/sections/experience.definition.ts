@@ -18,12 +18,12 @@ export class ExperienceSectionDefinition implements ISectionDefinition<Experienc
       presentLabel: 'Present',
       entries: [
         {
-          company: '[Company]',
+          company: '[Your company]',
           role: '[Your role]',
-          location: '[City]',
+          location: '[Your city]',
           start: { year: 2024, month: 1 },
           end: null,
-          highlights: ['[Something you built or achieved there.]'],
+          highlights: ['[Your achievement there.]'],
         },
       ],
     };

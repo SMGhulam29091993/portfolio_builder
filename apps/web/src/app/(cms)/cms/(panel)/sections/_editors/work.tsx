@@ -49,7 +49,7 @@ function WorkEditor() {
         name="projects"
         label="Projects"
         itemLabel="project"
-        newItem={() => ({ title: '[Project]', category: '[Category]', description: '[What it does.]', featured: false, metrics: [], tags: [], link: null })}
+        newItem={() => ({ title: '[Your project]', category: '[Your category]', description: '[Your description.]', featured: false, metrics: [], tags: [], link: null })}
         renderItem={(path, index) => (
           <div className="flex flex-col gap-3">
             <FeaturedSwitch index={index} />
@@ -61,7 +61,7 @@ function WorkEditor() {
               name={`${path}.metrics`}
               label="Metrics"
               itemLabel="metric"
-              newItem={() => ({ value: '[0]', label: '[What it measures]' })}
+              newItem={() => ({ value: '[Your stat]', label: '[Your metric label]' })}
               renderItem={(metricPath) => (
                 <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
                   <TextField name={`${metricPath}.value`} label="Value" />
