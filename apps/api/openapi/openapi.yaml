@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.10.0
+  version: 0.11.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -39,6 +39,9 @@ tags:
   - name: design
     description: >-
       The portfolio's look as data (design-theme): theme tokens and one layout variant per section, validated against the catalogue, the font allow-list and the contrast rule. One per portfolio; the reference design until the first save.
+  - name: publishing
+    description: >-
+      Publish pipeline (publish-pipeline): check the draft against the publish rules, freeze it into an immutable snapshot, switch the live pointer, and roll back to an earlier version. Every route acts on the signed-in user's portfolio.
 
 paths:
   /api/v1/health:
@@ -1031,6 +1034,162 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/publishing/status:
+    get:
+      tags: [publishing]
+      operationId: publish-pipeline.API01
+      x-spec-id: publish-pipeline.API01
+      summary: Publishing status
+      description: >-
+        The live version (null before the first publish), the draft's content hash, whether the
+        draft differs from what is live, and the last revalidation outcome.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingStatusEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/publishing/validate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API02
+      x-spec-id: publish-pipeline.API02
+      summary: Check the draft
+      description: >-
+        Runs every publish rule on the draft and returns every issue with the draft's hash,
+        which the publish call must echo. Writes nothing. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The issues.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReportEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+  /api/v1/cms/publishing/publish:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API03
+      x-spec-id: publish-pipeline.API03
+      summary: Publish the draft
+      description: >-
+        Validates, inserts the next snapshot, switches the live pointer in one conditional
+        write, prunes snapshots outside the newest 20 (never the live one) and asks the site to
+        revalidate. A revalidation failure is reported, never rolled back. Requires the web
+        app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishRequest'
+      responses:
+        '201':
+          description: Published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishResultEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/PublishConflict'
+        '422':
+          $ref: '#/components/responses/PublishBlocked'
+  /api/v1/cms/publishing/snapshots:
+    get:
+      tags: [publishing]
+      operationId: publish-pipeline.API04
+      x-spec-id: publish-pipeline.API04
+      summary: Version history
+      description: >-
+        Snapshots newest first, without content. Continue with nextCursor.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, required: false, description: The version to continue below., schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: One page of the history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotPageEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/publishing/snapshots/{version}/activate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API05
+      x-spec-id: publish-pipeline.API05
+      summary: Make a version live
+      description: >-
+        Switches the live pointer to an existing snapshot (rollback). No snapshot and no draft
+        document changes. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: The version is live.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivationEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ActivationConflict'
+  /api/v1/cms/publishing/revalidate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API06
+      x-spec-id: publish-pipeline.API06
+      summary: Retry site revalidation
+      description: >-
+        Asks the site again to re-render the live version and records the outcome. Requires the
+        web app's Origin.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevalidationEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/NothingPublished'
 
 components:
   securitySchemes:
@@ -1458,6 +1617,136 @@ components:
                 catalogue:
                   type: object
                   description: The variant catalogue and font allow-list (API01 only).
+    PublishIssue:
+      type: object
+      required: [rule, severity, path, message]
+      properties:
+        rule: { type: string, example: no-placeholder-text }
+        severity: { type: string, enum: [error, warning] }
+        path: { type: string, example: 'sections.work.projects[3].description' }
+        message: { type: string }
+    PublishRequest:
+      type: object
+      required: [expectedDraftHash]
+      properties:
+        expectedDraftHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+        note: { type: string, maxLength: 200 }
+    PublishingStatusEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [published, draft, hasUnpublishedChanges, revalidation]
+              properties:
+                published:
+                  type: [object, 'null']
+                  required: [version, publishedAt, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    publishedAt: { type: string, format: date-time }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                draft:
+                  type: object
+                  required: [contentHash]
+                  properties:
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                hasUnpublishedChanges: { type: boolean }
+                revalidation:
+                  type: [object, 'null']
+                  required: [status, at]
+                  properties:
+                    status: { type: string, enum: [ok, failed, pending] }
+                    at: { type: string, format: date-time }
+    ValidationReportEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [publishable, draftContentHash, issues]
+              properties:
+                publishable: { type: boolean }
+                draftContentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                issues:
+                  type: array
+                  items: { $ref: '#/components/schemas/PublishIssue' }
+    PublishResultEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshot, warnings, revalidation]
+              properties:
+                snapshot:
+                  type: object
+                  required: [version, publishedAt, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    publishedAt: { type: string, format: date-time }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                warnings:
+                  type: array
+                  items: { $ref: '#/components/schemas/PublishIssue' }
+                revalidation: { type: string, enum: [ok, failed] }
+    SnapshotPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshots, nextCursor]
+              properties:
+                snapshots:
+                  type: array
+                  items:
+                    type: object
+                    required: [version, publishedAt, note, contentHash, isCurrent, revalidation]
+                    properties:
+                      version: { type: integer, minimum: 1 }
+                      publishedAt: { type: string, format: date-time }
+                      note: { type: [string, 'null'] }
+                      contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                      isCurrent: { type: boolean }
+                      revalidation: { type: string, enum: [ok, failed, pending] }
+                nextCursor: { type: [string, 'null'] }
+    ActivationEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshot, revalidation]
+              properties:
+                snapshot:
+                  type: object
+                  required: [version, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                revalidation: { type: string, enum: [ok, failed] }
+    RevalidationEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [revalidation]
+              properties:
+                revalidation: { type: string, enum: [ok, failed] }
   responses:
     ValidationFailed:
       description: The request failed its schema.
@@ -1893,3 +2182,83 @@ components:
             success: false
             message: This file is in use and cannot be deleted
             data: { code: ASSET_IN_USE }
+    PublishConflict:
+      description: >-
+        The draft changed since it was checked (with draftContentHash), it is already live, or another publish switched the live version first.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [DRAFT_CHANGED, NOTHING_TO_PUBLISH, PUBLISH_CONFLICT] }
+                      draftContentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+          example:
+            success: false
+            message: The draft changed since it was checked
+            data: { code: DRAFT_CHANGED }
+    PublishBlocked:
+      description: >-
+        At least one publish rule reported an error; every issue is listed.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: PUBLISH_BLOCKED }
+                      issues:
+                        type: array
+                        items: { $ref: '#/components/schemas/PublishIssue' }
+          example:
+            success: false
+            message: Fix the listed problems before publishing
+            data: { code: PUBLISH_BLOCKED }
+    ActivationConflict:
+      description: >-
+        That version is already live, or another publish switched the live version first.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ALREADY_CURRENT, PUBLISH_CONFLICT] }
+          example:
+            success: false
+            message: That version is already live
+            data: { code: ALREADY_CURRENT }
+    NothingPublished:
+      description: >-
+        Nothing has been published yet.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: NOTHING_PUBLISHED }
+          example:
+            success: false
+            message: Nothing is published yet
+            data: { code: NOTHING_PUBLISHED }

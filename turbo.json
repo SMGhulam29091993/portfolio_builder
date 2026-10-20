@@ -73,6 +73,8 @@
         "GOOGLE_CLIENT_SECRET",
         "GOOGLE_REDIRECT_URL",
         "GOOGLE_ISSUER",
+        "WEB_REVALIDATE_URL",
+        "REVALIDATE_SECRET",
         "API_INTERNAL_URL"
       ]
     },

@@ -118,6 +118,18 @@ const envSchema = z.object({
    * no provider URL is a code literal; tests point it at a local issuer.
    */
   GOOGLE_ISSUER: z.url().default('https://accounts.google.com'),
+  /**
+   * The web app's revalidate endpoint (`publish-pipeline.AC12`; `public-site-rendering.API03`),
+   * called after every pointer switch. Unset outside production, revalidation is a no-op that
+   * reports `ok`; production refuses to start without it (dev-bypass guard, checked in the
+   * container so the seeders do not need it).
+   */
+  WEB_REVALIDATE_URL: optional(z.url({ protocol: /^https?$/ })),
+  /**
+   * Shared with the web app; sent as `x-revalidate-secret`. Required whenever
+   * `WEB_REVALIDATE_URL` is set. A secret: never logged.
+   */
+  REVALIDATE_SECRET: optional(z.string().min(32).max(200)),
 });
 
 /** The three variables that switch Google sign-in on together (`google-sign-in.AC9`). */

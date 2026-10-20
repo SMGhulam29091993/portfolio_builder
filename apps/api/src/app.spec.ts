@@ -117,6 +117,12 @@ describe('app with MongoDB reachable', () => {
       { method: 'get', path: '/api/v1/cms/design' },
       { method: 'put', path: '/api/v1/cms/design' },
       { method: 'post', path: '/api/v1/cms/design/reset' },
+      { method: 'get', path: '/api/v1/cms/publishing/status' },
+      { method: 'post', path: '/api/v1/cms/publishing/validate' },
+      { method: 'post', path: '/api/v1/cms/publishing/publish' },
+      { method: 'get', path: '/api/v1/cms/publishing/snapshots' },
+      { method: 'post', path: '/api/v1/cms/publishing/snapshots/:version/activate' },
+      { method: 'post', path: '/api/v1/cms/publishing/revalidate' },
     ]);
   });
 

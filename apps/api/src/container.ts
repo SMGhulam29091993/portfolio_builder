@@ -11,8 +11,9 @@ import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 import { API_PREFIX } from './app.js';
-import type { Env } from './config/env.js';
+import { EnvValidationError, type Env } from './config/env.js';
 import type { IMongoConnectionProvider } from './core/db/database-connection.interface.js';
+import { InProcessEventBus } from './core/events/index.js';
 import {
   OriginAllowListMiddleware,
   RateLimiterFactory,
@@ -61,6 +62,8 @@ import { AssetService } from './modules/assets/asset.service.js';
 import type { IAssetReferenceProvider, IFileStorage } from './modules/assets/index.js';
 import { GridFsFileStorage } from './modules/assets/storage/gridfs-file-storage.js';
 import { DesignController } from './modules/design/design.controller.js';
+import { DesignDraftContributor } from './modules/design/design-draft.contributor.js';
+import { DesignPublishCheck } from './modules/design/design-publish.check.js';
 import { DesignRepository } from './modules/design/design.repository.js';
 import { createDesignRouter } from './modules/design/design.routes.js';
 import { DesignService } from './modules/design/design.service.js';
@@ -68,6 +71,7 @@ import { DesignValidator } from './modules/design/design.validator.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { IdentityAssetReferenceProvider } from './modules/identity/identity-asset-reference.provider.js';
 import { IdentityController } from './modules/identity/identity.controller.js';
+import { IdentityDraftContributor } from './modules/identity/identity-draft.contributor.js';
 import { IdentityRepository } from './modules/identity/identity.repository.js';
 import { createIdentityRouter } from './modules/identity/identity.routes.js';
 import { IdentityService } from './modules/identity/identity.service.js';
@@ -82,11 +86,42 @@ import { StackSectionDefinition } from './modules/portfolio/sections/stack.defin
 import { WorkSectionDefinition } from './modules/portfolio/sections/work.definition.js';
 import { PortfolioProvisioner } from './modules/portfolio/portfolio.provisioner.js';
 import { PortfolioRepository } from './modules/portfolio/portfolio.repository.js';
+import { PublishedPointerStore } from './modules/portfolio/published-pointer.store.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
 import { ResolvePortfolioMiddleware } from './modules/portfolio/resolve-portfolio.middleware.js';
 import { SectionRegistry } from './modules/portfolio/section.registry.js';
 import { SectionRepository } from './modules/portfolio/section.repository.js';
 import { SectionService } from './modules/portfolio/section.service.js';
+import { SectionsDraftContributor } from './modules/portfolio/sections-draft.contributor.js';
+import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
+import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
+import { CanonicalHasher } from './modules/publishing/canonical-hasher.js';
+import { DraftAssembler } from './modules/publishing/draft.assembler.js';
+import type { PublishingEvents } from './modules/publishing/index.js';
+import { SiteRevalidationListener } from './modules/publishing/listeners/site-revalidation.listener.js';
+import { PublishRuleRegistry } from './modules/publishing/publish-rule.registry.js';
+import { PublishPipeline } from './modules/publishing/publish.pipeline.js';
+import { PublishingController } from './modules/publishing/publishing.controller.js';
+import type { IRevalidationClient } from './modules/publishing/publishing.interface.js';
+import { createPublishingRouter } from './modules/publishing/publishing.routes.js';
+import { PublishingService } from './modules/publishing/publishing.service.js';
+import { AssetsResolveRule } from './modules/publishing/rules/assets-resolve.rule.js';
+import { DesignValidRule } from './modules/publishing/rules/design-valid.rule.js';
+import { FillerTextRule } from './modules/publishing/rules/filler-text.rule.js';
+import { InternalLinksResolveRule } from './modules/publishing/rules/internal-links-resolve.rule.js';
+import { LinksValidRule } from './modules/publishing/rules/links-valid.rule.js';
+import { NoPlaceholderTextRule } from './modules/publishing/rules/no-placeholder-text.rule.js';
+import { ResumeMissingRule } from './modules/publishing/rules/resume-missing.rule.js';
+import { SectionsAllHiddenRule } from './modules/publishing/rules/sections-all-hidden.rule.js';
+import { SeoIncompleteRule } from './modules/publishing/rules/seo-incomplete.rule.js';
+import { SnapshotAssetReferenceProvider } from './modules/publishing/snapshot-asset-reference.provider.js';
+import { SnapshotBuilder } from './modules/publishing/snapshot.builder.js';
+import { SnapshotRepository } from './modules/publishing/snapshot.repository.js';
+import { ActivateStep } from './modules/publishing/steps/activate.step.js';
+import { EmitPublishedStep } from './modules/publishing/steps/emit-published.step.js';
+import { PersistSnapshotStep } from './modules/publishing/steps/persist-snapshot.step.js';
+import { PruneSnapshotsStep } from './modules/publishing/steps/prune-snapshots.step.js';
+import { ValidateStep } from './modules/publishing/steps/validate.step.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { createHealthRouter } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
@@ -201,6 +236,12 @@ const SECTION_DEFINITIONS: readonly ISectionDefinition[] = [
   new ContactSectionDefinition(),
 ];
 
+/** Snapshots kept per portfolio besides the live one (ADR-0004 retention; `publish-pipeline.AC20`). */
+const SNAPSHOT_RETENTION = 20;
+
+/** Upper bound on one call to the web app's revalidate route (`publish-pipeline.AC12`). */
+const REVALIDATION_TIMEOUT_MS = 5_000;
+
 /** What the container needs from the startup sequence. */
 export interface ContainerDependencies {
   /** Validated configuration; consumed by later modules (auth, AI, publishing). */
@@ -234,6 +275,8 @@ export interface ContainerDependencies {
   readonly extraAssetReferenceProviders?: readonly IAssetReferenceProvider[];
   /** Replaces GridFS; production omits it. */
   readonly fileStorage?: IFileStorage;
+  /** Replaces the configured revalidation client; production omits it. */
+  readonly revalidationClient?: IRevalidationClient;
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -273,6 +316,7 @@ export function buildContainer({
   sectionDefinitions = SECTION_DEFINITIONS,
   extraAssetReferenceProviders = [],
   fileStorage,
+  revalidationClient,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -411,12 +455,15 @@ export function buildContainer({
   // assets (`media-assets`): bytes in GridFS; the reference providers are the modules that
   // store asset ids (identity, publishing), each added by its own spec.
   const identityRepository = new IdentityRepository(mongo);
+  const snapshotRepository = new SnapshotRepository(mongo);
+  const assetRepository = new AssetRepository(mongo);
   const assetReferenceProviders: IAssetReferenceProvider[] = [
     new IdentityAssetReferenceProvider(identityRepository),
+    new SnapshotAssetReferenceProvider(snapshotRepository),
     ...extraAssetReferenceProviders,
   ];
   const assetService = new AssetService(
-    new AssetRepository(mongo),
+    assetRepository,
     fileStorage ?? new GridFsFileStorage(mongo),
     new MagicByteContentTypeDetector(),
     assetReferenceProviders,
@@ -437,6 +484,53 @@ export function buildContainer({
   const designService = new DesignService(new DesignRepository(mongo), new DesignValidator());
   const designRouter = createDesignRouter(new DesignController(designService), authGuard, resolvePortfolio);
 
+  // publishing (`publish-pipeline`, ADR-0004/0013): the content modules contribute the draft and
+  // move the pointer through ports `publishing` owns. A rule, step or contributor is one line here.
+  const events = new InProcessEventBus<PublishingEvents>(logger, () => clock.now());
+  const pointerStore = new PublishedPointerStore(mongo);
+  const publishRules = new PublishRuleRegistry(
+    [
+      new NoPlaceholderTextRule(),
+      new LinksValidRule(),
+      new InternalLinksResolveRule(),
+      new AssetsResolveRule(),
+      new DesignValidRule(new DesignPublishCheck()),
+      new FillerTextRule(),
+      new ResumeMissingRule(),
+      new SeoIncompleteRule(),
+      new SectionsAllHiddenRule(),
+    ],
+    logger,
+  );
+  const publishingService = new PublishingService(
+    snapshotRepository,
+    new DraftAssembler(
+      [
+        new SectionsDraftContributor(portfolioRepository, sectionRepository, sectionRegistry),
+        new IdentityDraftContributor(identityService),
+        new DesignDraftContributor(designService),
+      ],
+      new SnapshotBuilder(assetRepository),
+      new CanonicalHasher(),
+    ),
+    publishRules,
+    new PublishPipeline([
+      new ValidateStep(publishRules),
+      new PersistSnapshotStep(snapshotRepository, clock),
+      new ActivateStep(pointerStore),
+      new PruneSnapshotsStep(snapshotRepository, logger, SNAPSHOT_RETENTION),
+      new EmitPublishedStep(events),
+    ]),
+    pointerStore,
+    events,
+    clock,
+  );
+  events.subscribe(
+    'portfolio.published',
+    new SiteRevalidationListener(revalidationClient ?? buildRevalidationClient(env), snapshotRepository, clock, logger),
+  );
+  const publishingRouter = createPublishingRouter(new PublishingController(publishingService), authGuard, resolvePortfolio);
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
@@ -445,7 +539,16 @@ export function buildContainer({
   return {
     logger,
     originAllowList,
-    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter, identityRouter, designRouter],
+    apiRouters: [
+      healthRouter,
+      authRouter,
+      googleRouter,
+      portfolioRouter,
+      assetRouter,
+      identityRouter,
+      designRouter,
+      publishingRouter,
+    ],
     authGuard,
   };
 }
@@ -527,6 +630,21 @@ function buildOidcProvider(env: Env): IOidcProvider {
     clientSecret: GOOGLE_CLIENT_SECRET,
     redirectUrl: GOOGLE_REDIRECT_URL,
   });
+}
+
+/**
+ * The site revalidation client (`publish-pipeline.T07`), under the dev-bypass guard: HTTP when
+ * `WEB_REVALIDATE_URL` is set (it then needs `REVALIDATE_SECRET`); the no-op only outside
+ * production. Production without the URL fails startup naming it (`publish-pipeline.IT17`).
+ */
+function buildRevalidationClient(env: Env): IRevalidationClient {
+  const { WEB_REVALIDATE_URL, REVALIDATE_SECRET, NODE_ENV } = env;
+  if (WEB_REVALIDATE_URL) {
+    if (!REVALIDATE_SECRET) throw new EnvValidationError(['REVALIDATE_SECRET']);
+    return new HttpRevalidationClient({ url: WEB_REVALIDATE_URL, secret: REVALIDATE_SECRET, timeoutMs: REVALIDATION_TIMEOUT_MS });
+  }
+  if (NODE_ENV === 'production') throw new EnvValidationError(['WEB_REVALIDATE_URL']);
+  return new NoopRevalidationClient();
 }
 
 /**

@@ -127,6 +127,12 @@ describe('readDocumentedOperations', () => {
       { method: 'get', path: '/api/v1/cms/design', specId: 'design-theme.API01' },
       { method: 'put', path: '/api/v1/cms/design', specId: 'design-theme.API02' },
       { method: 'post', path: '/api/v1/cms/design/reset', specId: 'design-theme.API03' },
+      { method: 'get', path: '/api/v1/cms/publishing/status', specId: 'publish-pipeline.API01' },
+      { method: 'post', path: '/api/v1/cms/publishing/validate', specId: 'publish-pipeline.API02' },
+      { method: 'post', path: '/api/v1/cms/publishing/publish', specId: 'publish-pipeline.API03' },
+      { method: 'get', path: '/api/v1/cms/publishing/snapshots', specId: 'publish-pipeline.API04' },
+      { method: 'post', path: '/api/v1/cms/publishing/snapshots/{version}/activate', specId: 'publish-pipeline.API05' },
+      { method: 'post', path: '/api/v1/cms/publishing/revalidate', specId: 'publish-pipeline.API06' },
     ]);
   });
 });
