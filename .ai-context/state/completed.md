@@ -368,3 +368,11 @@
   construction so a bad default fails startup; implements reader, writer, validator ports for
   `ai-design`); controller, routes API01–API03 (catalogue in API01), OpenAPI 0.10.0; contracts
   envelopes. UT04, UT05, IT01–IT06, CT01 (validator vs HTTP on 13 designs).
+- design-theme.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `ThemeRoot` /
+  `themeStyle` in `packages/sections` (tokens as CSS custom properties through `style`,
+  `data-motion`); renderer registry falls back to each type's first registered variant (its
+  reference layout); `apps/web/src/lib/fonts.ts` (`next/font/google` loaders for all nine
+  allowed fonts, variables on `<html>`); `globals.css` Tailwind theme keys with neutral
+  placeholders, `@source` for `packages/sections`, motion gating for `motion: none` and
+  reduced motion; `portfolio/no-style-literals` lint rule + `@portfolio/eslint-config/sections`
+  config enabled for `packages/sections` (UT10 rule test), plugin types (`plugin/index.d.ts`).

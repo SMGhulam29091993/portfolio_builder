@@ -9,6 +9,7 @@
 export { rendererRegistry, SECTION_RENDERERS } from './catalog.js';
 export { composeSections, HERO_TYPE, type ComposableSection, type PlacedSection } from './compose.js';
 export { PortfolioPage, type PortfolioPageProps } from './portfolio-page.js';
+export { ThemeRoot, themeStyle, type ThemeRootProps } from './theme-root.js';
 export {
   DEFAULT_VARIANT,
   SectionRendererRegistry,

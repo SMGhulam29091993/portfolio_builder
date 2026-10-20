@@ -1,5 +1,45 @@
 /*
- * Global stylesheet: Tailwind v4 only. Theme values arrive later as CSS variables emitted from
- * `ThemeTokens` (`packages/design-tokens`); no colour, font or spacing value is defined here.
+ * Global stylesheet: Tailwind v4, the theme keys section renderers use, and motion gating.
+ *
+ * The keys below exist so Tailwind generates utilities (`bg-background`, `text-text-muted`,
+ * `bg-accent`, `font-display`, …) that read CSS variables. Their values here are neutral
+ * placeholders; the real values arrive at runtime from the portfolio's design, set on
+ * `ThemeRoot` (`packages/sections`; `design-theme.T06`). No design colour or font is written in
+ * this file (`int-standards.nextjs.md` → Styling).
  */
 @import 'tailwindcss';
+
+/* `packages/sections` holds renderers too; Tailwind must see their classes. */
+@source '../../../../packages/sections/src';
+
+@theme {
+  --color-background: transparent;
+  --color-surface: transparent;
+  --color-surface-raised: transparent;
+  --color-border: currentColor;
+  --color-text: currentColor;
+  --color-text-muted: currentColor;
+  --color-accent: currentColor;
+  --color-on-accent: currentColor;
+  --font-display: serif;
+}
+
+/* design-theme.AC9: motion "none" stops every animation and transition in the portfolio… */
+[data-motion='none'] *,
+[data-motion='none'] *::before,
+[data-motion='none'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* …and so does a visitor's reduced-motion preference, whatever the theme says. */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme-root] *,
+  [data-theme-root] *::before,
+  [data-theme-root] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

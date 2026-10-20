@@ -122,3 +122,19 @@ describe('PortfolioPage wrapSection', () => {
   });
 });
 
+describe('ThemeRoot (design-theme.AC7, AC9)', () => {
+  it('sets every token as a custom property and marks the motion setting', async () => {
+    const { DEFAULT_DESIGN } = await import('@portfolio/design-tokens');
+    const { ThemeRoot } = await import('./theme-root.js');
+    const html = renderToStaticMarkup(
+      <ThemeRoot theme={{ ...DEFAULT_DESIGN.theme, effects: { ...DEFAULT_DESIGN.theme.effects, motion: 'none' } }}>
+        <p>x</p>
+      </ThemeRoot>,
+    );
+
+    expect(html).toContain('data-motion="none"');
+    expect(html).toContain('--color-accent:#c0f83c');
+    expect(html).toContain('--font-display:var(--font-instrument-serif)');
+  });
+});
+

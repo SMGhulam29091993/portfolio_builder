@@ -16,6 +16,7 @@
   "dependencies": {
     "@hookform/resolvers": "5.9.1",
     "@portfolio/contracts": "workspace:*",
+    "@portfolio/design-tokens": "workspace:*",
     "@portfolio/sections": "workspace:*",
     "@tanstack/react-query": "5.104.1",
     "next": "16.4.2",

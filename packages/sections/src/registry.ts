@@ -4,13 +4,17 @@
  * ADR-0006 → Variant catalogue). Strategy + Registry on the web side: a section spec adds a
  * renderer by registering it, and the page composer is never edited.
  *
- * Every type registers a `default` variant — the reference design's layout — and may register
- * alternates (`design-theme`). A lookup for an unknown variant falls back to `default`, so a
+ * Each type registers its reference variant first, then its alternates (`design-theme` → Variant
+ * catalogue). A lookup for an unknown variant falls back to the first one registered, so a
  * stored design naming a variant this build no longer has still renders.
  */
 import type { ComponentType } from 'react';
 
-/** The id of the reference layout every type has. */
+/**
+ * Kept for callers that name no variant: a lookup with it, or with any unknown id, falls back
+ * to the type's first registered variant — its reference layout (`design-theme` → Variant
+ * catalogue: the first variant is the fallback).
+ */
 export const DEFAULT_VARIANT = 'default';
 
 /**
@@ -44,6 +48,8 @@ export interface SectionRendererEntry<Context = unknown> {
 
 export class SectionRendererRegistry<Context = unknown> {
   private readonly entries = new Map<string, SectionRendererEntry<Context>>();
+  /** The first variant registered per type: its reference layout and fallback. */
+  private readonly fallbacks = new Map<string, SectionRendererEntry<Context>>();
 
   /**
    * @throws {Error} A type/variant pair registered twice — a wiring bug, caught at module load.
@@ -55,20 +61,19 @@ export class SectionRendererRegistry<Context = unknown> {
         throw new Error(`Renderer for section "${entry.type}" variant "${entry.variant}" is registered twice`);
       }
       this.entries.set(key, entry);
+      if (!this.fallbacks.has(entry.type)) this.fallbacks.set(entry.type, entry);
     }
   }
 
-  /** The renderer for `type` in `variant`, falling back to `default`; `undefined` if neither. */
+  /** The renderer for `type` in `variant`, falling back to its first variant; `undefined` if none. */
   get(type: string, variant: string = DEFAULT_VARIANT): AnySectionRenderer<Context> | undefined {
-    return (this.entries.get(keyOf(type, variant)) ?? this.entries.get(keyOf(type, DEFAULT_VARIANT)))
-      ?.component;
+    return (this.entries.get(keyOf(type, variant)) ?? this.fallbacks.get(type))?.component;
   }
 
-  /** The variants registered for `type`, `default` first. */
+  /** The variants registered for `type`, in registration order (the reference first). */
   variantsOf(type: string): readonly { readonly variant: string; readonly label: string }[] {
     return [...this.entries.values()]
       .filter((entry) => entry.type === type)
-      .sort((a, b) => Number(b.variant === DEFAULT_VARIANT) - Number(a.variant === DEFAULT_VARIANT))
       .map(({ variant, label }) => ({ variant, label }));
   }
 }

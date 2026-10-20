@@ -108,6 +108,9 @@ importers:
       '@portfolio/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@portfolio/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@portfolio/sections':
         specifier: workspace:*
         version: link:../../packages/sections
@@ -243,6 +246,10 @@ importers:
         version: 6.0.3
 
   packages/sections:
+    dependencies:
+      '@portfolio/design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
     devDependencies:
       '@portfolio/eslint-config':
         specifier: workspace:*
