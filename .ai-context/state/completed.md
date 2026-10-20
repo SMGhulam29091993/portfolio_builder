@@ -395,3 +395,14 @@
   defaults, registered in `SECTION_DEFINITIONS`; reference seed data for all six (the Second
   Brain placeholder kept). CT01 over every definition, each AC1 and AC2 —
   `section-definitions.spec.ts` (22 tests).
+- Section renderers — hero-section.T02–T04, about-section.T02–T03, work-showcase.T02–T03,
+  experience-timeline.T02–T03, stack-credentials.T02–T03, contact-section.T02–T03 — 2026-10-20 —
+  DoD self-check: 2026-10-20, pass (gate). `packages/sections/src/shared` (`SectionContext`,
+  `SectionShell` / `SectionHeader` with derived numbers and `aria-labelledby`, emphasis heading,
+  `Card`, `Glow`, `DotGrid`, icons, availability badge, social rows, `CtaButton` moving focus to
+  the target heading, CSS `Marquee` with the duplicate half `aria-hidden`); twelve renderers (both
+  variants per section, registered in `catalog.ts`, reference first); `dates.ts`
+  (`orderEntries`, `formatMonth`, `machineMonth`); `CopyEmailChip` (clipboard, live region,
+  selection fallback); `mailtoHref`; marquee keyframes and effect switches in `globals.css`;
+  the CMS preview passes the identity. 28 renderer tests over static markup. Implementation
+  names differ from the task lines (e.g. `FeaturedCard`, `orderEntries`), same scope.

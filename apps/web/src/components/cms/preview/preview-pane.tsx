@@ -11,6 +11,7 @@ import { PortfolioPage, rendererRegistry, ThemeRoot } from '@portfolio/sections'
 import { useEffect, useRef, useState } from 'react';
 
 import { useDesign } from '../../../lib/api/design';
+import { useIdentity } from '../../../lib/api/identity';
 import { usePortfolioDraft, useSectionTypes } from '../../../lib/api/portfolio';
 import { buildPreviewModel } from '../../../lib/cms/preview-model';
 import { useCmsUi, type PreviewViewport } from '../../../lib/cms/ui-store';
@@ -27,6 +28,7 @@ const PREVIEW_DEBOUNCE_MS = 250;
 export function PreviewPane({ editing, design }: { editing?: { type: string; data: unknown }; design?: DesignSpec }) {
   const draft = usePortfolioDraft();
   const stored = useDesign();
+  const identity = useIdentity();
   // The design screen passes its unsaved design; every other screen previews the saved one.
   const shown = design ?? stored.data?.design ?? DEFAULT_DESIGN;
   const types = useSectionTypes();
@@ -86,7 +88,7 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
               sectionOrder={model.sectionOrder}
               registry={rendererRegistry}
               variants={shown.layout}
-              context={{}}
+              context={{ identity: identity.data?.data ?? null }}
               wrapSection={(type, node) => (
                 <SectionErrorBoundary label={labels.get(type) ?? type} resetKey={type === debounced?.type ? debounced.data : type}>
                   {node}

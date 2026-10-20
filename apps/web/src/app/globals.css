@@ -43,3 +43,19 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* hero-section.AC11: the marquee loop (two identical halves; moving one half's width loops). */
+@keyframes pb-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* design-theme: the glow and dot-grid effects follow the theme's switches (ThemeRoot data-*). */
+[data-glow='off'] [data-effect='glow'],
+[data-dot-grid='off'] [data-effect='dot-grid'] {
+  display: none;
+}

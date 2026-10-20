@@ -247,6 +247,9 @@ importers:
 
   packages/sections:
     dependencies:
+      '@portfolio/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@portfolio/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
