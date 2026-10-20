@@ -104,3 +104,21 @@ describe('SectionRendererRegistry', () => {
     ]);
   });
 });
+
+describe('PortfolioPage wrapSection', () => {
+  it('wraps each rendered section, e.g. in an error boundary', () => {
+    const html = renderToStaticMarkup(
+      <PortfolioPage
+        sections={sections}
+        sectionOrder={['work']}
+        registry={registry}
+        context={null}
+        wrapSection={(type, node) => <div data-wrapped={type}>{node}</div>}
+      />,
+    );
+
+    expect(html).toContain('<div data-wrapped="hero">');
+    expect(html).toContain('<div data-wrapped="work">');
+  });
+});
+

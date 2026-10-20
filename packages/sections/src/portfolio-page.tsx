@@ -7,7 +7,7 @@
  * reported through `onUnknownType` (the web app logs it in development only); the rest of the
  * page renders.
  */
-import type { ReactElement } from 'react';
+import { Fragment, type ReactElement, type ReactNode } from 'react';
 
 import { composeSections, type ComposableSection } from './compose.js';
 import type { SectionRendererRegistry } from './registry.js';
@@ -23,6 +23,11 @@ export interface PortfolioPageProps<Context = unknown> {
   readonly context: Context;
   /** Called once per section skipped for want of a renderer (AC14). */
   readonly onUnknownType?: (type: string) => void;
+  /**
+   * Wraps each rendered section — the CMS preview puts an error boundary around each, so one
+   * broken section names itself instead of blanking the page (`cms-panel-shell` → Edge Cases).
+   */
+  readonly wrapSection?: (type: string, section: ReactNode) => ReactNode;
 }
 
 export function PortfolioPage<Context>({
@@ -32,6 +37,7 @@ export function PortfolioPage<Context>({
   variants = {},
   context,
   onUnknownType,
+  wrapSection,
 }: PortfolioPageProps<Context>): ReactElement {
   const placed = composeSections(sections, sectionOrder);
   return (
@@ -42,15 +48,10 @@ export function PortfolioPage<Context>({
           onUnknownType?.(section.type);
           return null;
         }
-        return (
-          <Renderer
-            key={section.type}
-            data={section.data}
-            number={section.number}
-            position={section.position}
-            context={context}
-          />
+        const rendered = (
+          <Renderer data={section.data} number={section.number} position={section.position} context={context} />
         );
+        return <Fragment key={section.type}>{wrapSection ? wrapSection(section.type, rendered) : rendered}</Fragment>;
       })}
     </>
   );

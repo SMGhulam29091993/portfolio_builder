@@ -308,3 +308,11 @@
   first, no switch or arrows for it), visibility switch (`API04`), Move up / Move down and drag
   reorder (`API05`), loading / error with Retry; conflicts refetch the draft and say so.
   `lib/cms/order.ts` (`moveBy`, `moveTo`) unit-tested.
+- cms-panel-shell.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PreviewPane`
+  (draft + this section's unsaved values via `buildPreviewModel`, debounced 250 ms; renders
+  `PortfolioPage` with the shared `rendererRegistry` from `packages/sections` — the new
+  `catalog.ts` the section specs fill; 1440 / 390 frames scaled to the pane with a
+  `ResizeObserver`; hidden behind a toggle below 1280 px), `SectionErrorBoundary` (the one class
+  component, which React requires for boundaries; resets when the data changes),
+  `useDebouncedValue`; `PortfolioPage` gained `wrapSection`. UT06; preview E2E (E2E08) runs with
+  `about-section`.

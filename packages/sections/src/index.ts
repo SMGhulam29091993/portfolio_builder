@@ -6,6 +6,7 @@
  * composer and registry arrived with `section-engine.T07`; renderers arrive with each section
  * spec.
  */
+export { rendererRegistry, SECTION_RENDERERS } from './catalog.js';
 export { composeSections, HERO_TYPE, type ComposableSection, type PlacedSection } from './compose.js';
 export { PortfolioPage, type PortfolioPageProps } from './portfolio-page.js';
 export {
