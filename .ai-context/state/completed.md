@@ -287,3 +287,10 @@
   (filled by `publish-pipeline`), `Toasts` (polite live region), mount points for identity,
   design, assets, AI, publish; `lib/cms/ui-store.ts` (Zustand: toasts, dirty registry, preview
   viewport). `noindex` stays on the `/cms` layout (AC12).
+- cms-panel-shell.T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Form kit in
+  `components/cms/form/`: `TextField`, `TextAreaField` (counters from the schema),
+  `SwitchField`, `ListField` (add, confirmed remove, drag and Move up / Move down, Add/Remove
+  disabled at the schema's max/min), `EmphasisHeadingField`, `MetricListField`,
+  `TagListField`, `LinkTargetField`; `FormSchemaProvider` / `useFieldLimits` over
+  `lib/cms/schema-limits.ts` (`fieldLimits` reads zod v4 limits through `plainText` pipes, so
+  the CMS never restates a number). UT07, UT12.
