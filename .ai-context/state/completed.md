@@ -294,3 +294,11 @@
   `TagListField`, `LinkTargetField`; `FormSchemaProvider` / `useFieldLimits` over
   `lib/cms/schema-limits.ts` (`fieldLimits` reads zod v4 limits through `plainText` pipes, so
   the CMS never restates a number). UT07, UT12.
+- cms-panel-shell.T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Editor registry
+  (`createEditorRegistry`, empty `SECTION_EDITORS` in `sections/_editors/registry.ts` until the
+  section specs), `SectionEditorHost` (loading / error / missing / no-editor states; form with
+  the section's contract schema; Save only when dirty and valid; save with `expectedRevision`;
+  reset to the stored data with server ids; success toast; 400 mapped onto fields with focus on
+  the first; 409 `ConflictDialog` with Load latest / Overwrite with mine / Keep editing; network
+  failure with Retry; dirty state registered for the guard), `/cms/sections/[type]`. UT04, UT05.
+  The editing E2E (E2E05–E2E07) runs with `about-section`, the first registered editor.

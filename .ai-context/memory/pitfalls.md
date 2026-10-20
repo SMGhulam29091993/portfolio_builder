@@ -94,3 +94,12 @@ newest first, before rethrowing.
 **Fix:** ...
 **Regression test:** <slug>.<test id>
 -->
+
+### 2026-10-20 — web typecheck raced `next build` over `.next/types` (cms-panel-shell.T04, T05)
+**Symptom:** `TS6053 File '.next/types/routes.d.ts' not found` from `@portfolio/web#typecheck`,
+only when the web build actually re-ran (not when it was a cache hit).
+**Root cause:** `apps/web/tsconfig.json` includes `.next/types/**/*.ts`; turbo ran
+`typecheck` and `build` for the same package in parallel, and `next build` deletes and rewrites
+`.next/types` while `tsc` has already listed the files.
+**Fix:** `turbo.json` makes `@portfolio/web#typecheck` and `#lint` depend on
+`@portfolio/web#build`, so they always read a complete `.next/types`.
