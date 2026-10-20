@@ -7,7 +7,12 @@ export { MongoTestHarness, type MongoTestHarnessOptions } from './mongo-test-har
 export { RecordingLogger, type RecordedLogEntry } from './recording-logger.js';
 export { RedisTestHarness, type RedisTestHarnessOptions } from './redis-test-harness.js';
 export { AuthSessionFactory, NewUserFactory, OtpIssueFactory } from './auth/auth-fixtures.js';
-export { InMemoryOtpReferenceStore, InMemorySessionStore, type Clock } from './auth/in-memory-stores.js';
+export {
+  InMemoryOAuthStateStore,
+  InMemoryOtpReferenceStore,
+  InMemorySessionStore,
+  type Clock,
+} from './auth/in-memory-stores.js';
 export { InMemoryOtpRepository } from './auth/in-memory-otp-repository.js';
 export { InMemoryUserRepository } from './auth/in-memory-user-repository.js';
 export { RecordingMailSender } from './auth/recording-mail-sender.js';

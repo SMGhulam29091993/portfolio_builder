@@ -16,6 +16,7 @@ import {
   NewUserFactory,
 } from '../../testing/index.js';
 import type {
+  IGoogleLinker,
   IOwnerLookup,
   IUserCreator,
   IUserPasswordWriter,
@@ -25,7 +26,12 @@ import type {
 import { userModel } from './user.model.js';
 import { UserRepository } from './user.repository.js';
 
-type UserPorts = IUserReader & IUserCreator & IUserPasswordWriter & IUserRegistrar & IOwnerLookup;
+type UserPorts = IUserReader &
+  IUserCreator &
+  IUserPasswordWriter &
+  IUserRegistrar &
+  IOwnerLookup &
+  IGoogleLinker;
 
 interface ContractSubject {
   readonly name: string;
@@ -201,5 +207,46 @@ describe.each(subjects)('owner-auth.CT10 — user repository contract — $name'
       users.markEmailVerified(new Types.ObjectId().toString(), first),
     ).resolves.toBe(false);
     await expect(users.markEmailVerified('nope', first)).resolves.toBe(false);
+  });
+
+  it('google-sign-in.AC2 — creates a passwordless account linked to a Google subject', async () => {
+    const users = subject.create();
+
+    const created = await users.create({
+      email: 'google.user@example.test',
+      displayName: 'G User',
+      googleSub: 'google-sub-1',
+      emailVerifiedAt: new Date('2026-10-20T08:00:00.000Z'),
+    });
+
+    expect(created.passwordHash).toBeUndefined();
+    await expect(users.findByGoogleSub('google-sub-1')).resolves.toEqual(created);
+    await expect(users.findByGoogleSub('unknown-sub')).resolves.toBeNull();
+  });
+
+  it('google-sign-in.AC3 — linkGoogle() links once and verifies an unverified email', async () => {
+    const users = subject.create();
+    const created = await users.create(newUsers.build());
+    const at = new Date('2026-10-20T09:00:00.000Z');
+
+    await expect(users.linkGoogle(created.id, 'google-sub-2', at)).resolves.toBe(true);
+
+    await expect(users.findById(created.id)).resolves.toMatchObject({
+      googleSub: 'google-sub-2',
+      emailVerifiedAt: at,
+      role: 'member',
+    });
+  });
+
+  it('google-sign-in.AC8 — linkGoogle() never replaces a link or reuses a subject', async () => {
+    const users = subject.create();
+    const first = await users.create(newUsers.build());
+    const second = await users.create(newUsers.build());
+    await users.linkGoogle(first.id, 'sub-a', new Date());
+
+    await expect(users.linkGoogle(first.id, 'sub-b', new Date())).resolves.toBe(false);
+    await expect(users.linkGoogle(second.id, 'sub-a', new Date())).resolves.toBe(false);
+    await expect(users.linkGoogle('not-an-id', 'sub-c', new Date())).resolves.toBe(false);
+    await expect(users.findById(first.id)).resolves.toMatchObject({ googleSub: 'sub-a' });
   });
 });

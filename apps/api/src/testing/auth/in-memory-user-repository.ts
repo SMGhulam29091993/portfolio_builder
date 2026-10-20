@@ -6,12 +6,14 @@
  * (`modules/auth/user-repository.contract.spec.ts`, `owner-auth.CT10`), so a service test that
  * uses it proves what the real repository would do. `IUserPasswordWriter` joined with the
  * password reset (`owner-auth.T08`); `IUserRegistrar` and `IOwnerLookup`, with the one-owner
- * rule of the `one_owner` index, with `account-registration.T01`.
+ * rule of the `one_owner` index, with `account-registration.T01`; `IGoogleLinker` with
+ * `google-sign-in.T01`.
  */
 import { Types } from 'mongoose';
 
 import { ConflictError } from '../../core/errors/index.js';
 import type {
+  IGoogleLinker,
   IOwnerLookup,
   IUserCreator,
   IUserPasswordWriter,
@@ -23,7 +25,13 @@ import type {
 } from '../../modules/auth/index.js';
 
 export class InMemoryUserRepository
-  implements IUserReader, IUserCreator, IUserPasswordWriter, IUserRegistrar, IOwnerLookup
+  implements
+    IUserReader,
+    IUserCreator,
+    IUserPasswordWriter,
+    IUserRegistrar,
+    IOwnerLookup,
+    IGoogleLinker
 {
   /** Users by id. */
   private readonly users = new Map<string, User>();
@@ -49,14 +57,19 @@ export class InMemoryUserRepository
     }
     const role = user.role ?? 'member';
     this.assertOwnerSlot(role);
+    // Same rule as the unique sparse index on `users.googleSub`.
+    if (user.googleSub && (await this.findByGoogleSub(user.googleSub))) {
+      throw new ConflictError('USER_EXISTS', {}, 'A user with this Google account already exists');
+    }
     const at = this.now();
     // An ObjectId string, so ids have the shape the real repository returns.
     const created: User = {
       id: new Types.ObjectId().toString(),
       email,
-      passwordHash: user.passwordHash,
+      ...(user.passwordHash ? { passwordHash: user.passwordHash } : {}),
       displayName: user.displayName,
       role,
+      ...(user.googleSub ? { googleSub: user.googleSub } : {}),
       ...(user.emailVerifiedAt ? { emailVerifiedAt: user.emailVerifiedAt } : {}),
       createdAt: at,
       updatedAt: at,
@@ -96,6 +109,24 @@ export class InMemoryUserRepository
       this.users.set(id, { ...user, emailVerifiedAt: at, updatedAt: this.now() });
     }
     return Promise.resolve(true);
+  }
+
+  findByGoogleSub(sub: string): Promise<User | null> {
+    const found = [...this.users.values()].find((user) => user.googleSub === sub);
+    return Promise.resolve(found ?? null);
+  }
+
+  async linkGoogle(id: string, sub: string, verifiedAt: Date): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user || user.googleSub) return false;
+    if (await this.findByGoogleSub(sub)) return false;
+    this.users.set(id, {
+      ...user,
+      googleSub: sub,
+      emailVerifiedAt: user.emailVerifiedAt ?? verifiedAt,
+      updatedAt: this.now(),
+    });
+    return true;
   }
 
   ownerExists(): Promise<boolean> {

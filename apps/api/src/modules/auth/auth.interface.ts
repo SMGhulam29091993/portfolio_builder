@@ -24,6 +24,7 @@ import type {
   NewUser,
   OtpIssue,
   OtpIssuedResponse,
+  OAuthState,
   OtpRecord,
   PendingUserUpdate,
   RegisterRequest,
@@ -78,6 +79,30 @@ export interface IUserRegistrar {
    * @returns `false` when no user has this id.
    */
   markEmailVerified(id: string, at: Date): Promise<boolean>;
+}
+
+/** The Google link on `users` (`google-sign-in` → Resolving the user). */
+export interface IGoogleLinker {
+  /** The user linked to this Google subject id. */
+  findByGoogleSub(sub: string): Promise<User | null>;
+  /**
+   * Links the Google subject to an account that has no link yet, and sets `emailVerifiedAt`
+   * when it is unset — Google reported the email verified (`google-sign-in.AC3`).
+   *
+   * @returns `false` when no user has this id or it is already linked (to any subject).
+   */
+  linkGoogle(id: string, sub: string, verifiedAt: Date): Promise<boolean>;
+}
+
+/**
+ * The Google flow's state between its two requests (`google-sign-in` → Flow; ADR-0008: Redis
+ * for the `auth` module only).
+ */
+export interface IOAuthStateStore {
+  /** Stores `value` under `state` with the store's TTL. */
+  put(state: string, value: OAuthState): Promise<void>;
+  /** Returns and deletes the value in one step, so a callback can never be replayed. */
+  take(state: string): Promise<OAuthState | null>;
 }
 
 /** Whether the owner slot is taken (`account-registration` → Roles and the owner claim). */

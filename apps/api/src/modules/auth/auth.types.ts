@@ -39,8 +39,11 @@ export interface User {
   readonly id: string;
   /** Lower-cased; unique. */
   readonly email: string;
-  /** argon2id hash. Never logged, never returned over HTTP. */
-  readonly passwordHash: string;
+  /**
+   * argon2id hash. Never logged, never returned over HTTP. Absent on an account created through
+   * Google that has never set a password (`google-sign-in`); sign-in then answers 401.
+   */
+  readonly passwordHash?: string;
   readonly displayName: string;
   /**
    * `owner` for the one platform owner, `member` for everyone else (ADR-0010). A document
@@ -52,6 +55,8 @@ export interface User {
    * cannot sign in yet.
    */
   readonly emailVerifiedAt?: Date;
+  /** The Google subject id linked to this account (`google-sign-in`); unique when set. */
+  readonly googleSub?: string;
   /** When the password was last set by a reset; absent until the first reset. */
   readonly passwordChangedAt?: Date;
   readonly createdAt: Date;
@@ -61,8 +66,11 @@ export interface User {
 /** What creating a user needs; the repository assigns the id and timestamps. */
 export interface NewUser {
   readonly email: string;
-  readonly passwordHash: string;
+  /** Omitted for an account created through Google (`google-sign-in.AC2`). */
+  readonly passwordHash?: string;
   readonly displayName: string;
+  /** Set for an account created through Google. */
+  readonly googleSub?: string;
   /** Default `member`. */
   readonly role?: UserRole;
   /** Set for an account whose email is already proved (the development seeder). */
@@ -220,4 +228,15 @@ export interface MailMessage {
   readonly subject: string;
   /** The body. It holds a one-time code, so it is never logged either. */
   readonly text: string;
+}
+
+/**
+ * What the Google sign-in flow keeps between its two requests (`google-sign-in` → Flow),
+ * stored in Redis under the `state` value for 10 minutes and taken exactly once.
+ */
+export interface OAuthState {
+  /** The PKCE verifier whose S256 challenge went to the authorization endpoint. */
+  readonly codeVerifier: string;
+  /** The nonce the ID token must carry. */
+  readonly nonce: string;
 }

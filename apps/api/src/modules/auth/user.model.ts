@@ -13,8 +13,9 @@ import { USER_ROLES, type UserRole } from './auth.types.js';
 /** The stored shape. `_id`, `createdAt` and `updatedAt` are added by Mongoose. */
 export interface UserDocument {
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   displayName: string;
+  googleSub?: string;
   /** Absent on documents written before `account-registration`; read as `member`. */
   role?: UserRole;
   emailVerifiedAt?: Date;
@@ -28,8 +29,12 @@ const userSchema = new Schema<UserDocument>(
     // Unique and lower-cased: sign-in compares emails case-insensitively (spec → Edge Cases),
     // and `lowercase` keeps that true even for a write that skipped the contract schema.
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    // Optional: an account created through Google has no password until a reset sets one.
+    passwordHash: { type: String },
     displayName: { type: String, required: true },
+    // Unique among the accounts that have one (`google-sign-in`): one Google identity resolves
+    // to exactly one user (ADR-0011).
+    googleSub: { type: String, unique: true, sparse: true },
     role: { type: String, enum: USER_ROLES, default: 'member' },
     emailVerifiedAt: { type: Date },
     passwordChangedAt: { type: Date },

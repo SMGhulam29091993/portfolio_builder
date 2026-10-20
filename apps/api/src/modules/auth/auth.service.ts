@@ -74,9 +74,11 @@ export class AuthService implements IAuthService, ISessionStarter {
     const user = await this.users.findByEmail(email);
     // Verify even when there is no user, against the decoy, so the response time does not
     // reveal whether the email exists.
+    // A Google-only account has no password: it too is verified against the decoy, so it
+    // answers exactly like a wrong password (`google-sign-in.AC10`).
     const hash = user?.passwordHash ?? (await this.getDecoyHash());
     const matches = await this.passwords.verify(hash, password);
-    if (!user || !matches) throw new UnauthenticatedError(INVALID_CREDENTIALS_MESSAGE);
+    if (!user?.passwordHash || !matches) throw new UnauthenticatedError(INVALID_CREDENTIALS_MESSAGE);
     // Only after the password matched, so the 403 tells nothing to anyone without it
     // (`account-registration.AC9`).
     if (!user.emailVerifiedAt) throw new EmailNotVerifiedError();

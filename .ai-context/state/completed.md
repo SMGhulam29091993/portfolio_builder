@@ -192,3 +192,8 @@
   pinned route-table tests, `registration.routes.spec.ts` (IT01–IT15 against real mongod and
   Redis, recorded mail). With T03, `account-registration` is `Implemented`. CI not yet run on
   this branch.
+- google-sign-in.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck, lint,
+  API auth + seed 359 tests). `users.googleSub` (unique, sparse), optional `passwordHash`;
+  `IGoogleLinker` (`findByGoogleSub`, `linkGoogle`) on `UserRepository` and the fake, in CT10;
+  `IOAuthStateStore` → `RedisOAuthStateStore` (`GETDEL`) and `InMemoryOAuthStateStore` with
+  contract suite CT01; sign-in treats a passwordless account like a wrong password (AC10).

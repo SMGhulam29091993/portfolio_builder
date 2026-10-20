@@ -3,11 +3,18 @@
  * (`constitution.md` → Per-layer convention: services get constructor-injected fakes).
  *
  * Each fake passes the same contract suite as its Redis implementation
- * (`modules/auth/session-store.contract.spec.ts`, `otp-reference-store.contract.spec.ts`), so a
+ * (`modules/auth/session-store.contract.spec.ts`, `otp-reference-store.contract.spec.ts`,
+ * `oauth-state-store.contract.spec.ts`), so a
  * service test using one proves what the real store would do. TTLs follow an injected clock,
  * so a test advances time instead of sleeping.
  */
-import type { AuthSession, IOtpReferenceStore, ISessionStore } from '../../modules/auth/index.js';
+import type {
+  AuthSession,
+  IOAuthStateStore,
+  IOtpReferenceStore,
+  ISessionStore,
+  OAuthState,
+} from '../../modules/auth/index.js';
 
 /** Milliseconds since the epoch. Defaults to `Date.now`; tests pass a controllable one. */
 export type Clock = () => number;
@@ -83,6 +90,25 @@ export class InMemorySessionStore implements ISessionStore {
 }
 
 /** Fake of `RedisOtpReferenceStore`. */
+export class InMemoryOAuthStateStore implements IOAuthStateStore {
+  private readonly states: ExpiringMap<OAuthState>;
+
+  constructor(options: { readonly ttlSec: number }, now: Clock = Date.now) {
+    this.states = new ExpiringMap(options.ttlSec, now);
+  }
+
+  put(state: string, value: OAuthState): Promise<void> {
+    this.states.set(state, { ...value });
+    return Promise.resolve();
+  }
+
+  take(state: string): Promise<OAuthState | null> {
+    const value = this.states.get(state);
+    this.states.delete(state);
+    return Promise.resolve(value);
+  }
+}
+
 export class InMemoryOtpReferenceStore implements IOtpReferenceStore {
   private readonly references: ExpiringMap<string>;
 

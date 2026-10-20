@@ -157,6 +157,21 @@ describe('AuthService.login', () => {
     await expect(sessions.get(pending.id)).resolves.toBeNull();
   });
 
+  it('google-sign-in.AC10 — a Google-only account answers like a wrong password', async () => {
+    const googleOnly = await users.create({
+      email: 'google.only@example.test',
+      displayName: 'Google Only',
+      googleSub: 'sub-only',
+      emailVerifiedAt: new Date(),
+    });
+
+    const result = service.login({ email: googleOnly.email, password: PASSWORD });
+
+    await expect(result).rejects.toBeInstanceOf(UnauthenticatedError);
+    // Verified against the decoy, so the work matches a wrong password.
+    expect(hasher.verifyCalls).toBe(1);
+  });
+
   it('account-registration.AC7 — startFor() mints and stores a session like a sign-in', async () => {
     const signedIn = await service.startFor(owner);
 

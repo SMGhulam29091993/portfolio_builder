@@ -9,6 +9,7 @@ import { isValidObjectId } from 'mongoose';
 import type { IMongoConnectionProvider } from '../../core/db/database-connection.interface.js';
 import { ConflictError } from '../../core/errors/index.js';
 import type {
+  IGoogleLinker,
   IOwnerLookup,
   IUserCreator,
   IUserPasswordWriter,
@@ -25,7 +26,13 @@ const DUPLICATE_KEY = 11_000;
 type LeanUser = UserDocument & { _id: { toString(): string } };
 
 export class UserRepository
-  implements IUserReader, IUserCreator, IUserPasswordWriter, IUserRegistrar, IOwnerLookup
+  implements
+    IUserReader,
+    IUserCreator,
+    IUserPasswordWriter,
+    IUserRegistrar,
+    IOwnerLookup,
+    IGoogleLinker
 {
   constructor(private readonly connections: IMongoConnectionProvider) {}
 
@@ -93,6 +100,37 @@ export class UserRepository
     return (await this.model().exists({ _id: id }).exec()) !== null;
   }
 
+  async findByGoogleSub(sub: string): Promise<User | null> {
+    const found = await this.model().findOne({ googleSub: sub }).lean<LeanUser>().exec();
+    return found ? toUser(found) : null;
+  }
+
+  async linkGoogle(id: string, sub: string, verifiedAt: Date): Promise<boolean> {
+    if (!isValidObjectId(id)) return false;
+    try {
+      // Conditional on "no link yet", so an existing link is never replaced (`google-sign-in.AC8`).
+      const linked = await this.model()
+        .findOneAndUpdate(
+          { _id: id, googleSub: { $exists: false } },
+          { $set: { googleSub: sub } },
+          { new: true },
+        )
+        .lean<LeanUser>()
+        .exec();
+      if (!linked) return false;
+      if (!linked.emailVerifiedAt) {
+        await this.model()
+          .updateOne({ _id: id, emailVerifiedAt: { $exists: false } }, { $set: { emailVerifiedAt: verifiedAt } })
+          .exec();
+      }
+      return true;
+    } catch (error) {
+      // Another account holds this subject already: not linkable.
+      if (toConflict(error)) return false;
+      throw error;
+    }
+  }
+
   async ownerExists(): Promise<boolean> {
     return (await this.model().exists({ role: 'owner' }).exec()) !== null;
   }
@@ -108,11 +146,12 @@ function toUser(document: LeanUser): User {
   return {
     id: document._id.toString(),
     email: document.email,
-    passwordHash: document.passwordHash,
+    ...(document.passwordHash ? { passwordHash: document.passwordHash } : {}),
     displayName: document.displayName,
     // Documents from before `account-registration` carry no role: they are members.
     role: document.role ?? 'member',
     ...(document.emailVerifiedAt ? { emailVerifiedAt: document.emailVerifiedAt } : {}),
+    ...(document.googleSub ? { googleSub: document.googleSub } : {}),
     ...(document.passwordChangedAt ? { passwordChangedAt: document.passwordChangedAt } : {}),
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
