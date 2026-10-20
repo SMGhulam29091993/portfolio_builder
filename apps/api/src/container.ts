@@ -74,6 +74,12 @@ import { IdentityService } from './modules/identity/identity.service.js';
 import { CryptoIdGenerator } from './modules/portfolio/adapters/crypto-id-generator.js';
 import type { ISectionDefinition } from './modules/portfolio/index.js';
 import { PortfolioController } from './modules/portfolio/portfolio.controller.js';
+import { AboutSectionDefinition } from './modules/portfolio/sections/about.definition.js';
+import { ContactSectionDefinition } from './modules/portfolio/sections/contact.definition.js';
+import { ExperienceSectionDefinition } from './modules/portfolio/sections/experience.definition.js';
+import { HeroSectionDefinition } from './modules/portfolio/sections/hero.definition.js';
+import { StackSectionDefinition } from './modules/portfolio/sections/stack.definition.js';
+import { WorkSectionDefinition } from './modules/portfolio/sections/work.definition.js';
 import { PortfolioProvisioner } from './modules/portfolio/portfolio.provisioner.js';
 import { PortfolioRepository } from './modules/portfolio/portfolio.repository.js';
 import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
@@ -186,7 +192,14 @@ const MAIL_STRATEGIES: readonly MailStrategy[] = [
  * The registered section types (`section-engine`; ADR-0005), in page order. Each section spec
  * adds its definition here — one line — and nothing else in the engine changes (AC10).
  */
-const SECTION_DEFINITIONS: readonly ISectionDefinition[] = [];
+const SECTION_DEFINITIONS: readonly ISectionDefinition[] = [
+  new HeroSectionDefinition(),
+  new AboutSectionDefinition(),
+  new WorkSectionDefinition(),
+  new ExperienceSectionDefinition(),
+  new StackSectionDefinition(),
+  new ContactSectionDefinition(),
+];
 
 /** What the container needs from the startup sequence. */
 export interface ContainerDependencies {

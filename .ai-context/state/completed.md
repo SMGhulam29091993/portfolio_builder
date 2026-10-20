@@ -383,3 +383,15 @@
   `designResolver` (form validation through `validateDesign`), `lib/api/design.ts`; the preview
   pane renders through `ThemeRoot` with the saved design and its variants. E2E01, E2E02. With
   T07, `design-theme` is `Implemented`.
+- hero-section.T01, about-section.T01, work-showcase.T01, experience-timeline.T01,
+  stack-credentials.T01, contact-section.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass
+  (gate). The six specs revised together (ADR-0010 template defaults, ADR-0006 two variants,
+  identity through the page context, layout assertions instead of pixel baselines) and moved to
+  `Ready` / `In Progress` under the standing authorisation. Payload schemas in
+  `packages/contracts/src/sections/` (every array object a `listItem`; each rule on the
+  narrowest schema so all problems report together — found while testing about AC2, zod skips
+  an object's refinements once a field failed); `httpsUrlSchema`, `identifierSchema`,
+  `reportDuplicates` primitives; six `*SectionDefinition` classes with bracketed template
+  defaults, registered in `SECTION_DEFINITIONS`; reference seed data for all six (the Second
+  Brain placeholder kept). CT01 over every definition, each AC1 and AC2 —
+  `section-definitions.spec.ts` (22 tests).

@@ -26,6 +26,37 @@ export const safeUrlSchema = z
     'A mailto: link needs an email address',
   );
 
+/** An `https:` link only — project, certification and social links (`http:` and `mailto:` refused). */
+export const httpsUrlSchema = z
+  .url({ protocol: /^https$/, error: 'Links must start with https:' })
+  .max(URL_MAX_LENGTH);
+
+/**
+ * An identifier as code shows it (`hero` code card): a letter or underscore, then letters, digits
+ * or underscores, at most `max` characters.
+ */
+export function identifierSchema(max: number) {
+  return z
+    .string()
+    .max(max)
+    .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, 'Use letters, digits and underscores, starting with a letter');
+}
+
+/** Adds an issue at each repeated value of `values` (unique tags, keys, items). */
+export function reportDuplicates(
+  values: readonly string[],
+  context: z.RefinementCtx,
+  path: (index: number) => (string | number)[],
+  message = 'Listed twice',
+): void {
+  const seen = new Set<string>();
+  values.forEach((value, index) => {
+    const key = value.toLowerCase();
+    if (seen.has(key)) context.addIssue({ code: 'custom', path: path(index), message });
+    seen.add(key);
+  });
+}
+
 /** `EmphasisHeading` — a plain lead and an emphasis rendered in the italic serif accent. */
 export const emphasisHeadingSchema = z.object({
   lead: plainText(80),

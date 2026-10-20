@@ -112,3 +112,13 @@ registered. Playwright dismisses `beforeunload` dialogs by default, which cancel
 navigation, so `page.reload()` never finished.
 **Fix:** CMS forms expose `data-dirty` / `data-valid`; journeys wait for
 `data-dirty="false"` before navigating away after a save (`e2e/cms-identity.spec.ts`).
+
+### 2026-10-20 — zod skips an object's refinements once one of its fields failed (section specs T01)
+**Symptom:** `about-section.AC2` listed `bio` and `stats` but not `process.steps`, though the
+step-count rule was broken too.
+**Root cause:** the rule was a `superRefine` on the whole section object; zod 4 does not run an
+object's refinements when any of its fields already failed, so cross-field rules vanished from
+a 400 that also had a plain field error.
+**Fix:** each rule sits on the narrowest schema that owns its fields (the process card, a
+project, an entry, a group, an array); every rule now reports in the same response. Covered by
+`section-definitions.spec.ts`.

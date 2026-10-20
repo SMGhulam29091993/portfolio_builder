@@ -7,12 +7,9 @@ import { z } from 'zod';
 
 import { plainText } from '../common/plain-text.js';
 import { EMAIL_MAX_LENGTH } from '../auth/auth-contracts.js';
-import { listItem, tagSchema } from '../sections/primitives.js';
+import { httpsUrlSchema, listItem, tagSchema } from '../sections/primitives.js';
 
 export const SOCIAL_PLATFORMS = ['github', 'linkedin', 'x', 'website'] as const;
-
-/** Social links are `https:` only (stricter than section links, which also allow `mailto:`). */
-const httpsUrlSchema = z.url({ protocol: /^https$/, error: 'Links must start with https:' }).max(2_048);
 
 /** An asset id, or `null` for none. */
 const assetIdOrNull = z.string().min(1).max(64).nullable();
