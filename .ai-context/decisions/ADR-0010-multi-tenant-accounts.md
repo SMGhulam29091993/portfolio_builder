@@ -37,7 +37,7 @@ answered with a different product (2026-10-18):
 - **Seeder.** The `OWNER_EMAIL` / `OWNER_PASSWORD` seeder (`owner-auth.T09`) creates a local
   account for development and tests only and refuses to run when `NODE_ENV=production`.
 
-### Mechanics (*Proposed* — fixed by the `account-registration` spec, not here)
+### Mechanics (fixed by the `account-registration` spec, implemented 2026-10-20)
 - `users.role` (`owner` | `member`) and `users.emailVerifiedAt`; a unique partial index on
   `{ role: 1 }` where `role = "owner"`, so the database itself rejects a second owner when two
   registrations race.

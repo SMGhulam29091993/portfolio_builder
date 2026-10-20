@@ -10,6 +10,7 @@ owner moves a spec to `Ready`.
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
 | 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Implemented | BRD-002 | — |
 | 2a | `account-registration` | Registration, email verification, roles, the one-time owner claim | Implemented | BRD-009 | — |
+| 2b | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | Implemented | BRD-010 | — |
 | 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
@@ -30,7 +31,6 @@ owner moves a spec to `Ready`.
 ## Planned slugs — no spec written yet (ADR-0010, ADR-0011)
 | Slug | Title | BRD | Place in the build order |
 |---|---|---|---|
-| `google-sign-in` | Google OpenID Connect sign-in into a `users` record | BRD-010 | After `account-registration` |
 | `platform-admin` | The owner's admin area (list, suspend, re-enable members) and platform settings | BRD-009, BRD-011 | After `ai-design-studio` (added 2026-10-20, ADR-0010 → Owner answers) |
 | `credits-billing` | Buying credits through Stripe; spending them on AI generations and domains | BRD-011 | After `platform-admin` (ADR-0012) |
 | `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
@@ -51,6 +51,11 @@ owner moves a spec to `Ready`.
   `RegistrationService`, `AuthService` as session starter, login refuses unverified accounts,
   reset verifies the email and checks the code purpose, `OWNER_REGISTRATION_SECRET`, seeder),
   T03 (five routes, shared code-send limit, OpenAPI 0.5.0, route tests). `Implemented`.
+- `google-sign-in` written, moved to `Ready` under the standing authorisation, and implemented:
+  T01 (`googleSub`, optional password, `IGoogleLinker`, Redis OAuth state store), T02
+  (`OidcProvider` with `jose`, `LocalOidcIssuer` for tests), T03 (`GoogleSignInService`,
+  redirects-only controller, state cookie, Google variables all-or-nothing, `googleSignIn` in
+  registration options, OpenAPI 0.6.0). `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

@@ -197,6 +197,13 @@
   `IGoogleLinker` (`findByGoogleSub`, `linkGoogle`) on `UserRepository` and the fake, in CT10;
   `IOAuthStateStore` → `RedisOAuthStateStore` (`GETDEL`) and `InMemoryOAuthStateStore` with
   contract suite CT01; sign-in treats a passwordless account like a wrong password (AC10).
+- google-sign-in.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck, lint,
+  `oidc-provider.spec.ts` 13 tests against `LocalOidcIssuer`). `IOidcProvider` with
+  `OidcProvider` (discovery once per process, PKCE authorization URL, code exchange, `jose`
+  remote-JWKS verification of signature, `iss`, `aud`, expiry and nonce; every failure
+  `UPSTREAM_FAILED` provider `google`) and `DisabledOidcProvider` (503); test-only
+  `LocalOidcIssuer` with generated RS256 keys and fault injection. Recorded late (the records
+  step of the T02 commit stopped at a lint failure; fixed in the T03 records commit).
 - google-sign-in.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local:
   `pnpm turbo run build typecheck lint test drift` — 20 of 20). `GoogleSignInService` (state
   check, single-use stored state, user resolution: subject → verified email link → new verified

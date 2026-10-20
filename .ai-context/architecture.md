@@ -14,8 +14,9 @@ Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), 
 (T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
 code (T08) exist, and so does the development-only owner seeder with its `seed:owner` script
 (T09, ADR-0010). `account-registration` is implemented in the same module: registration, email
-verification by one-time code, roles and the one-time owner claim. Every other feature module is
-⬜ planned.
+verification by one-time code, roles and the one-time owner claim; and `google-sign-in`: the
+OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). Every other feature
+module is ⬜ planned.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -28,7 +29,8 @@ draft into an immutable snapshot; the public site renders only the current snaps
 ```
  Browser (user)  ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
                                                       │  └──► Redis (auth sessions, ADR-0008)
-                                                      └─────► Gmail SMTP (one-time codes, ADR-0009)
+                                                      ├─────► Gmail SMTP (one-time codes, ADR-0009)
+                                                      └─────► Google OpenID Connect (sign-in, ADR-0011)
  Browser (visitor) ─► apps/web (site) ─server fetch────► apps/api /public ─► snapshots
                           ▲                                   │
                           └── POST /api/revalidate ◄── portfolio.published event
@@ -81,7 +83,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code, registration, email verification and the one-time owner claim | `users`, `otps`; Redis `auth:*` keys | `owner-auth`, `account-registration` |
+| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code, registration, email verification and the one-time owner claim, Google sign-in | `users`, `otps`; Redis `auth:*` keys | `owner-auth`, `account-registration`, `google-sign-in` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -139,9 +141,9 @@ use and that may use no module.
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
 | Collection | Writer | Purpose |
 |---|---|---|
-| `users` | `auth` | User accounts: password hash, `role` (`owner` \| `member`; the `one_owner` partial unique index admits one owner), `emailVerifiedAt` (`account-registration`); the Google link arrives with `google-sign-in` (ADR-0011). The development seeder writes only through `auth`'s ports |
+| `users` | `auth` | User accounts: password hash, `role` (`owner` \| `member`; the `one_owner` partial unique index admits one owner), `emailVerifiedAt` (`account-registration`), `googleSub` (unique, sparse; `google-sign-in`, ADR-0011); `passwordHash` is absent on a Google-only account. The development seeder writes only through `auth`'s ports |
 | `otps` | `auth` | One-time codes (`password_reset`, `email_verification`): bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
-| Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
+| Redis `auth:session:*`, `auth:otp-ref:*`, `auth:google-state:*` | `auth` | The one session per user (`jti`, refresh-token hash), one-time-code references, and the Google flow's PKCE verifier and nonce (10 minutes, taken once), each with a TTL (ADR-0008) |
 | `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |

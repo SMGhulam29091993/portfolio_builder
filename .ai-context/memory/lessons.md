@@ -37,3 +37,11 @@ fields against the spec; any field without a source is an Open Question, raised 
 **What was actually true:** ...
 **Carry forward:** ...
 -->
+
+### 2026-10-20 — a multi-line shell step does not stop at a failed line
+Two commits on `feat/full-build` (account-registration.T02, google-sign-in.T02) went in with
+lint errors or missing records, because the failing command was one line of a multi-line
+step and only the first line was chained with `&&`; `set -e` did not stop an embedded
+`python3 -` heredoc either. Approach now: run the full gate script
+(`build typecheck lint test drift`) as its own step and commit only after it exits 0; record
+edits run in a script that exits non-zero on the first miss, followed by `|| exit 1`.

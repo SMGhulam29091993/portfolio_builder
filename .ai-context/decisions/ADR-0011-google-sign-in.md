@@ -18,7 +18,7 @@ and `constitution.md` → Infrastructure allows no external service without an A
 - A Google identity whose email Google reports as verified counts as a verified email for
   ADR-0010's verification rule.
 
-### Mechanics (*Proposed* — fixed by the `google-sign-in` spec, not here)
+### Mechanics (fixed by the `google-sign-in` spec, implemented 2026-10-20)
 - OpenID Connect authorization-code flow with PKCE and a `state` value, run by the API; the ID
   token is verified against Google's published keys with `jose` (already pinned, ADR-0007), so no
   new runtime dependency is needed.

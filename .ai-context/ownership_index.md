@@ -157,9 +157,9 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Last updated:** 2026-10-19
 
 ## Google sign-in boundary
-**Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the `google-sign-in` spec takes over the mechanics once written)
-**Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan
-**Last updated:** 2026-10-18
+**Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the rule); `.ai-context/specs/google-sign-in.spec.md` → Flow · Resolving the user (the mechanics)
+**Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan, `architecture.md` (Environment, Data ownership); code that restates it: `modules/auth/google-sign-in.service.ts`, `adapters/oidc-provider.ts`, `oauth-state-cookie.ts`, `container.ts` (`GOOGLE_STATE_TTL_SEC`, `GOOGLE_RATE_LIMIT`, `buildOidcProvider`), `config/env.ts` (all-or-nothing rule)
+**Last updated:** 2026-10-20
 
 ## Free-text cleaning (`plainText`)
 **Canonical definition:** `packages/contracts/src/common/plain-text.ts` (`plainText`, `cleanPlainText`)
