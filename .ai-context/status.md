@@ -15,7 +15,7 @@ owner moves a spec to `Ready`.
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview, sign-in and registration screens | Implemented | BRD-001 | — |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Implemented | BRD-001 | — (built after `media-assets`) |
 | 6 | `media-assets` | Résumé and image uploads | Implemented | BRD-006 | — (built before `site-identity`, which depends on it; swap recorded 2026-10-20) |
-| 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006; revise for ADR-0010 (one design per user's portfolio) |
+| 7 | `design-theme` | Theme tokens and layout variants | Implemented | BRD-003 | — |
 | 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
 | 9 | `about-section` | Bio, currently, stats, process | Draft | BRD-001 | — |
 | 10 | `work-showcase` | Featured project and project cards | Draft | BRD-001 | — (OQ1 Second Brain copy blocks the first publish, not `Ready`) |
@@ -72,6 +72,10 @@ owner moves a spec to `Ready`.
 - `site-identity` revised (per-portfolio identity, account template), OQ1/OQ2 answered, `Ready`
   under the standing authorisation, implemented T01–T07 (contracts, persistence, asset-checked
   service, reference provider, routes, OpenAPI 0.9.0, seed step, `/cms/identity`). `Implemented`.
+- `design-theme` revised (two variants per section; per-portfolio design with the default at
+  revision 0; fonts and colours from the owner), `Ready` under the standing authorisation,
+  implemented (design-tokens package, API module and OpenAPI 0.10.0, `ThemeRoot` and fonts,
+  literal-ban lint rule, `/cms/design` with live contrast and preview). `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

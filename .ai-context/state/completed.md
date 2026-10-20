@@ -376,3 +376,10 @@
   placeholders, `@source` for `packages/sections`, motion gating for `motion: none` and
   reduced motion; `portfolio/no-style-literals` lint rule + `@portfolio/eslint-config/sections`
   config enabled for `packages/sections` (UT10 rule test), plugin types (`plugin/index.d.ts`).
+- design-theme.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 15 passed).
+  `/cms/design`: colour pickers + hex fields, live contrast list with ratios (Save disabled
+  while any fails), font selects per role, radius / motion / effects, a variant select per
+  section, reset to reference (confirmed), conflict dialog, live preview in the edited design;
+  `designResolver` (form validation through `validateDesign`), `lib/api/design.ts`; the preview
+  pane renders through `ThemeRoot` with the saved design and its variants. E2E01, E2E02. With
+  T07, `design-theme` is `Implemented`.

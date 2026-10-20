@@ -8,4 +8,4 @@
 - [x] design-theme.T04 — `DesignController`, routes, container wiring, OpenAPI for API01–API03 — Acceptance: AC1, AC3
 - [x] design-theme.T05 — dropped 2026-10-20: no seeder; the default is served at revision 0 (spec Status)
 - [x] design-theme.T06 — `ThemeStyle` (CSS variables + `next/font` loaders), Tailwind mapping, motion gating, the variant-aware renderer registry, lint rule banning colour / font literals in `packages/sections` — Acceptance: AC7, AC8, AC9
-- [~] design-theme.T07 — `/cms/design` screen: token editors, live contrast badges, catalogue-bound selects, reset, live preview — Acceptance: AC10
+- [x] design-theme.T07 — `/cms/design` screen: token editors, live contrast badges, catalogue-bound selects, reset, live preview — Acceptance: AC10

@@ -185,3 +185,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/specs/site-identity.spec.md` → API Contract (shape) and Status (template); code `packages/contracts/src/identity/identity-contracts.ts`, `modules/identity/identity.service.ts` (`identityTemplate`)
 **Referenced by:** `hero-section`, `contact-section`, `public-site-rendering` (nav, footer, metadata), `publish-pipeline` (identity contributor); `apps/api/src/seed/data/identity.ts` (reference values)
 **Last updated:** 2026-10-20
+
+## DesignSpec, variant catalogue, font allow-list, contrast rule
+**Canonical definition:** `.ai-context/specs/design-theme.spec.md` → Design payload; code `packages/design-tokens/src/` (`VARIANT_CATALOGUE`, `FONT_ALLOW_LIST`, `CONTRAST_PAIRS`, `validateDesign`, `DEFAULT_DESIGN`)
+**Referenced by:** ADR-0006 (variant amendment), `ai-design-studio` (proposals validated by `IDesignValidator`), every section spec (two variants each), `public-site-rendering` (`ThemeRoot`); code: `modules/design/design.validator.ts`, `apps/web/src/lib/cms/design-resolver.ts`, `apps/web/src/lib/fonts.ts`, `apps/web/src/app/globals.css`
+**Last updated:** 2026-10-20

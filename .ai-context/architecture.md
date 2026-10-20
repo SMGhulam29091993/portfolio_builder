@@ -72,7 +72,7 @@ portfolio-builder/
 ├── packages/
 │   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅ · `common` (`plainText`) ✅ · `sections` (primitives, engine) ✅
 │   ├── sections/                 🚧 React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer ✅; renderers ⬜ the section specs
-│   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
+│   ├── design-tokens/            ✅ DesignSpec schema, variant catalogue, font allow-list, contrast maths, `validateDesign`, `toCssVariables`, `DEFAULT_DESIGN`
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)
 ├── docs/design-reference/        ✅ the two reference boards

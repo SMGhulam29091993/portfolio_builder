@@ -2,12 +2,15 @@
 /**
  * The live preview (`cms-panel-shell.T07`; AC9): the saved draft with this section's unsaved
  * values applied (debounced 300 ms), rendered by `packages/sections` — the same components as
- * the public site — inside a 1440- or 390-wide frame scaled to fit the pane. Each section sits in
+ * the public site — in the portfolio's design (`ThemeRoot`, its layout variants; the design
+ * screen passes its unsaved design, `design-theme.AC10`), inside a 1440- or 390-wide frame scaled to fit the pane. Each section sits in
  * an error boundary. Below 1024 px the pane hides behind a toggle so the form stays usable.
  */
-import { PortfolioPage, rendererRegistry } from '@portfolio/sections';
+import { DEFAULT_DESIGN, type DesignSpec } from '@portfolio/design-tokens';
+import { PortfolioPage, rendererRegistry, ThemeRoot } from '@portfolio/sections';
 import { useEffect, useRef, useState } from 'react';
 
+import { useDesign } from '../../../lib/api/design';
 import { usePortfolioDraft, useSectionTypes } from '../../../lib/api/portfolio';
 import { buildPreviewModel } from '../../../lib/cms/preview-model';
 import { useCmsUi, type PreviewViewport } from '../../../lib/cms/ui-store';
@@ -21,8 +24,11 @@ export const VIEWPORT_WIDTHS: Readonly<Record<PreviewViewport, number>> = { desk
 /** How long the preview waits after the last keystroke (AC9: within 300 ms). */
 const PREVIEW_DEBOUNCE_MS = 250;
 
-export function PreviewPane({ editing }: { editing?: { type: string; data: unknown } }) {
+export function PreviewPane({ editing, design }: { editing?: { type: string; data: unknown }; design?: DesignSpec }) {
   const draft = usePortfolioDraft();
+  const stored = useDesign();
+  // The design screen passes its unsaved design; every other screen previews the saved one.
+  const shown = design ?? stored.data?.design ?? DEFAULT_DESIGN;
   const types = useSectionTypes();
   const viewport = useCmsUi((state) => state.viewport);
   const setViewport = useCmsUi((state) => state.setViewport);
@@ -74,17 +80,20 @@ export function PreviewPane({ editing }: { editing?: { type: string; data: unkno
           data-viewport-width={width}
           style={{ width, transform: `scale(${String(scale)})`, transformOrigin: 'top left', height: `${String(100 / scale)}%` }}
         >
-          <PortfolioPage
-            sections={model.sections}
-            sectionOrder={model.sectionOrder}
-            registry={rendererRegistry}
-            context={{}}
-            wrapSection={(type, node) => (
-              <SectionErrorBoundary label={labels.get(type) ?? type} resetKey={type === debounced?.type ? debounced.data : type}>
-                {node}
-              </SectionErrorBoundary>
-            )}
-          />
+          <ThemeRoot theme={shown.theme}>
+            <PortfolioPage
+              sections={model.sections}
+              sectionOrder={model.sectionOrder}
+              registry={rendererRegistry}
+              variants={shown.layout}
+              context={{}}
+              wrapSection={(type, node) => (
+                <SectionErrorBoundary label={labels.get(type) ?? type} resetKey={type === debounced?.type ? debounced.data : type}>
+                  {node}
+                </SectionErrorBoundary>
+              )}
+            />
+          </ThemeRoot>
         </div>
       </div>
     </aside>

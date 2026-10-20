@@ -2,7 +2,9 @@
 ## Spec ID
 design-theme
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-20: T01–T04, T06, T07 completed (T05 dropped, see
+  below), each with a DoD self-check line in `state/completed.md`.
 - `Ready → In Progress` on 2026-10-20 with `design-theme.T01` started.
 - DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`). ADR-0006 accepted (with the variant
