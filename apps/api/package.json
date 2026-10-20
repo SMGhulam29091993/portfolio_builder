@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test": "vitest run --coverage",
     "drift": "tsx src/openapi/check-drift.ts",
-    "seed:owner": "tsx --env-file-if-exists=.env src/seed/seed-owner.ts"
+    "seed:owner": "tsx --env-file-if-exists=.env src/seed/seed-owner.ts",
+    "seed:all": "tsx --env-file-if-exists=.env src/seed/seed-all.ts"
   },
   "dependencies": {
     "@portfolio/contracts": "workspace:*",

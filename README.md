@@ -60,6 +60,7 @@ Check it end to end: `curl http://localhost:3000/api/v1/health` goes through the
 | `pnpm test:e2e` | Playwright end-to-end specs (boots its own API and MongoDB; uses the compose Redis) |
 | `pnpm drift` | Fails when `apps/api/openapi/openapi.yaml` and the mounted routes disagree |
 | `pnpm seed:owner` | Creates one local account from `OWNER_EMAIL` / `OWNER_PASSWORD` in `apps/api/.env` (12–200 characters; display name `Owner`). Running it again changes nothing; it refuses with `NODE_ENV=production`. Needs the compose MongoDB and a `.env` that also passes the API's own checks |
+| `pnpm seed:all` | Runs every development seeder in order: the account above (created verified, and as the platform owner while none exists), its portfolio at `/ghulam`, and its sections with the reference content (template placeholders for any type without seed data). Idempotent and insert-only, so CMS edits survive a re-run; refuses with `NODE_ENV=production` |
 
 ## Where to start
 | You want to | Read |

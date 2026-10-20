@@ -247,3 +247,10 @@
   module edge), OpenAPI 0.7.0 (portfolio tag, six operations, `RevisionConflict`,
   `SectionConflict`, `SlugConflict`, `NotFound`), `portfolio.routes.spec.ts` (IT02–IT10,
   IT12, IT14–IT17 incl. tenant isolation between two signed-in users).
+- section-engine.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PortfolioSeeder`
+  (the development account's portfolio, slug from `seed/data/portfolio.ts`), `SectionSeeder`
+  (reference content from `seed/data/sections/index.ts`, validated against each schema and
+  required to carry fixed item ids, template defaults for the rest, insert-only), `SeedAll`
+  orchestrator, `SeedDataError`, `buildSeeders().all`, `seed-all.ts` and `pnpm seed:all` (API
+  and root), README. Both seeders refuse in production. IT11 and AC12 in
+  `content-seeders.spec.ts`.

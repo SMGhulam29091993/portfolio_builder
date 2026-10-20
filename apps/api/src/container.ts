@@ -66,7 +66,11 @@ import { SectionService } from './modules/portfolio/section.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { createHealthRouter } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { REFERENCE_SECTIONS } from './seed/data/sections/index.js';
 import { OwnerSeeder } from './seed/owner.seeder.js';
+import { PortfolioSeeder } from './seed/portfolio.seeder.js';
+import { SeedAll } from './seed/seed-all.seeder.js';
+import { SectionSeeder } from './seed/section.seeder.js';
 import type { ISeeder } from './seed/seeder.interface.js';
 
 /**
@@ -375,12 +379,20 @@ export function buildContainer({
 export interface SeederDependencies {
   readonly env: Env;
   readonly mongo: IMongoConnectionProvider;
+  /** Test-only replacements for the section definitions and the reference content. */
+  readonly sectionDefinitions?: readonly ISectionDefinition[];
+  readonly referenceContent?: Readonly<Record<string, unknown>>;
 }
 
 /** The seeders a script can run. */
 export interface Seeders {
   /** The development-only account (`owner-auth.T09`); refuses in production (AC23). */
   readonly owner: ISeeder;
+  /**
+   * Every development seeder in order (`section-engine.T06`): account → portfolio → sections.
+   * Later specs append their own steps here.
+   */
+  readonly all: SeedAll;
 }
 
 /**
@@ -388,19 +400,40 @@ export interface Seeders {
  * builds no mail strategy, limiter or router — and so production's mail fail-fast cannot
  * pre-empt the seeder's own, clearer production refusal. Performs no I/O.
  */
-export function buildSeeders({ env, mongo }: SeederDependencies): Seeders {
+export function buildSeeders({
+  env,
+  mongo,
+  sectionDefinitions = SECTION_DEFINITIONS,
+  referenceContent = REFERENCE_SECTIONS,
+}: SeederDependencies): Seeders {
   const users = new UserRepository(mongo);
-  return {
-    owner: new OwnerSeeder(
-      users,
-      users,
-      new Argon2PasswordHasher(),
-      env,
-      users,
-      users,
-      new SystemClock(),
-    ),
-  };
+  const owner = new OwnerSeeder(
+    users,
+    users,
+    new Argon2PasswordHasher(),
+    env,
+    users,
+    users,
+    new SystemClock(),
+  );
+  const registry = new SectionRegistry(sectionDefinitions);
+  const portfolios = new PortfolioRepository(mongo);
+  const all = new SeedAll([
+    { name: 'owner', seeder: owner },
+    { name: 'portfolio', seeder: new PortfolioSeeder(users, portfolios, registry, env) },
+    {
+      name: 'sections',
+      seeder: new SectionSeeder(
+        users,
+        portfolios,
+        new SectionRepository(mongo),
+        registry,
+        referenceContent,
+        env,
+      ),
+    },
+  ]);
+  return { owner, all };
 }
 
 /** The configured Google provider, or the disabled one when the variables are unset. */
