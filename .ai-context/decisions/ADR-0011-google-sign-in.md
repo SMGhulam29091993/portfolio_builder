@@ -28,8 +28,12 @@ and `constitution.md` → Infrastructure allows no external service without an A
 - `users` gains the Google subject id (`googleSub`, unique, sparse). Linking a Google identity to
   an existing password account with the same email happens only when Google reports the email
   verified.
-- Whether the owner claim (ADR-0010) can be made through Google, or only through the
-  registration form, is decided by that spec.
+- The owner claim is never made through Google (owner, 2026-10-20; below).
+
+### Owner answer, 2026-10-20
+The owner claim is never made through Google: a Google sign-in that creates an account always
+creates a `member` (ADR-0010 → Owner answers). The owner may link Google to their account
+afterwards by signing in with Google using the same, Google-verified email.
 
 ## Consequences
 - `constitution.md` → Infrastructure lists Google OpenID Connect as an approved integration for

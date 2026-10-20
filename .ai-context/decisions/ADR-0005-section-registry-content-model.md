@@ -1,5 +1,6 @@
 # ADR-0005: Typed sections behind a registry, one document per section
-**Status:** Proposed — needs owner confirmation before `section-engine` becomes `Ready`
+**Status:** Accepted — owner, 2026-10-20, as written. Under ADR-0010 "per portfolio" means per
+user's portfolio: every user has their own `sections` documents.
 
 ## Context
 The reference page has six content sections with very different shapes. The CMS needs to edit

@@ -63,8 +63,8 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
 `section-engine` → `cms-panel-shell` → `site-identity` → `media-assets` → `design-theme` →
 `hero-section` · `about-section` · `work-showcase` · `experience-timeline` ·
 `stack-credentials` · `contact-section` → `publish-pipeline` → `public-site-rendering` →
-`ai-design-studio` → `credits-billing` → `custom-domains` (the four added 2026-10-18 have no
-spec yet)
+`ai-design-studio` → `platform-admin` → `credits-billing` → `custom-domains` (the slugs added
+2026-10-18 and 2026-10-20 have no spec yet)
 
 ### State (`state/`)
 - `current.md` · `completed.md` · `next.md` · `blockers.md` · `prompt_history.md`
@@ -72,11 +72,13 @@ spec yet)
 ### Decisions (`decisions/`)
 - ADR-0001 no review gates (Accepted) · ADR-0002 root context in Turborepo (Accepted) ·
   ADR-0003 AI provider port (Accepted / mechanics Proposed) · ADR-0004 snapshot publishing
-  (Proposed) · ADR-0005 section registry (Proposed) · ADR-0006 AI output is constrained data
-  (Proposed) · ADR-0007 tooling baseline (Accepted, amended 2026-10-17) · ADR-0008 Redis
-  session store (Accepted) · ADR-0009 mail delivery (Accepted, amended 2026-10-18) · ADR-0010 multi-tenant accounts and
-  the owner claim (Accepted / mechanics Proposed) · ADR-0011 Google sign-in (Accepted /
-  mechanics Proposed)
+  (Accepted 2026-10-20, retention amendment) · ADR-0005 section registry (Accepted 2026-10-20) ·
+  ADR-0006 AI output is constrained data (Accepted 2026-10-20, variant amendment) · ADR-0007
+  tooling baseline (Accepted, amended 2026-10-17) · ADR-0008 Redis session store (Accepted) ·
+  ADR-0009 mail delivery (Accepted, amended 2026-10-18) · ADR-0010 multi-tenant accounts and
+  the owner claim (Accepted / mechanics Proposed; owner answers 2026-10-20) · ADR-0011 Google
+  sign-in (Accepted / mechanics Proposed; owner answer 2026-10-20) · ADR-0012 Stripe payments
+  (Accepted) · ADR-0013 `publishing` owns its ports (Accepted)
 
 ### Memory (`memory/`)
 - `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;

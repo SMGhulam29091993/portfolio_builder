@@ -48,6 +48,20 @@ answered with a different product (2026-10-18):
 - Registration answers identically for a new and an already-registered email (no enumeration),
   behind the Origin allow-list and a rate limiter.
 
+### Owner answers, 2026-10-20 (close the questions this ADR left open)
+- **What the owner role may do.** Three things a member may not: (1) an admin area that lists
+  every account and suspends or re-enables a member — a suspended member cannot sign in and
+  their published portfolio stops being served; (2) unlimited credits — the owner is never
+  charged for a custom domain or an AI generation; (3) platform settings — the owner edits the
+  platform-wide values (credit packs, prices, allowances) that would otherwise be constants.
+- **The owner claim** is made only through the registration form with the secret key. Google
+  sign-in never creates the owner (ADR-0011).
+- **A free portfolio's address** is a path on the platform's domain: `<platform>/<slug>`, where
+  `slug` is the portfolio's unique slug. The platform's own origin is configuration.
+- **Template.** Every new user's portfolio starts from the reference design (theme and layout)
+  with empty placeholder content; the reference content is seed data for the owner's
+  development account only.
+
 ## Consequences
 - BRD-001 and BRD-002 are revised; BRD-009 (registration), BRD-010 (Google sign-in) and BRD-011
   (credits and custom domains) are added.

@@ -90,7 +90,7 @@ portfolio-builder/
 
 ¹ `publishing` does not touch the `portfolios` collection directly. It calls
 `IPublishedPointerWriter` / `IPublishedPointerReader`, interfaces it owns and `portfolio`
-implements, so `portfolio` remains the collection's single writer.
+implements, so `portfolio` remains the collection's single writer (ADR-0013).
 
 ## Module dependency map (allowed edges only)
 An arrow reads "depends on an interface exported by". Anything not listed is forbidden.
@@ -103,16 +103,19 @@ assets      → core
 design      → core
 ai-design   → core, design (IDesignReader, IDesignWriter, IDesignValidator),
               portfolio (ISectionTypeLister — read-only list of visible section types)
-publishing  → core, portfolio (IPublishedPointerWriter, IPublishedPointerReader), assets (IAssetLookup; implements
-              assets' IAssetReferenceProvider), design (IDesignValidator)
-portfolio, identity, design → publishing's IDraftContributor (each implements it; the
-              interface is owned by publishing and injected as a list by the container)
+publishing  → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
+portfolio   → publishing (implements IDraftContributor, IPublishedPointerWriter,
+              IPublishedPointerReader)
+identity    → publishing (implements IDraftContributor)
+design      → publishing (implements IDraftContributor, IPublishDesignCheck)
 public-site → core, publishing (ISnapshotReader), assets (IAssetReader)
 every /cms router → auth (requireOwner) and portfolio (resolvePortfolio) middleware,
                     both injected by the container
 ```
-`IDraftContributor`, `IPublishRule`, `IPublishStep` are owned by `publishing`;
-`IAssetReferenceProvider` by `assets`. The consuming module owns the interface it depends on.
+`IDraftContributor`, `IPublishedPointerWriter`, `IPublishedPointerReader`,
+`IPublishDesignCheck`, `IPublishRule` and `IPublishStep` are owned by `publishing`, which
+imports none of the modules that implement them (ADR-0013); `IAssetReferenceProvider` is owned
+by `assets`. The consuming module owns the interface it depends on.
 
 ## Boundary enforcement
 The constitution's module and layer rules are checked mechanically on every `pnpm lint` and

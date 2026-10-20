@@ -10,11 +10,18 @@ are run by the author and the agent as self-checks, and CI is the only independe
 - **Author of record and owner:** S M Ghulam Ghaus Faiyaz. Every spec and diff produced at his
   instruction is authored by him. He alone moves a spec from `Draft` to `Ready`.
 
+## Standing authorisation to move specs to `Ready` (owner, 2026-10-20)
+The owner authorised the agent to move any spec `Draft → Ready` once it has been revised to the
+owner's recorded answers and its Definition of Ready self-check passes, so the remaining build
+runs without a stop per spec. The agent records each such move as "by the agent under the
+owner's standing authorisation of 2026-10-20". A new question only the owner can answer still
+stops the build; it is never answered by the agent.
+
 ## Spec lifecycle
 `Draft → Ready → In Progress → Implemented → Released` (and `Deprecated`).
 | Transition | Who | Condition |
 |---|---|---|
-| Draft → Ready | Owner says so; agent records it | Definition of Ready passes; no unresolved Open Question; every ADR the spec depends on is `Accepted` |
+| Draft → Ready | Owner says so, or the agent under the standing authorisation above; agent records it | Definition of Ready passes; no unresolved Open Question; every ADR the spec depends on is `Accepted` |
 | Ready → In Progress | Agent | First task marked `inprogress` |
 | In Progress → Implemented | Agent | Every task `completed`, each with a DoD self-check line |
 | Implemented → Released | Owner | Deployed |

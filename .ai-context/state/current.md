@@ -1,28 +1,11 @@
 # current.md
 ## In progress right now
-- Nothing is `inprogress`. `owner-auth` is `Implemented` (2026-10-19): T09, the
-  development-only `OwnerSeeder` and `pnpm seed:owner`, was done on
-  `feat/owner-auth-t09-dev-seeder`, cut from `master` after the PR #16 merge; check
-  `git log` / `git branch -a` for whether it has been merged.
-- Since T09, `apps/api/.env` may set `OWNER_EMAIL` and `OWNER_PASSWORD` (12–200 characters);
-  `pnpm seed:owner` then creates that local account with the display name `Owner`. Blank, the
-  API still starts and only the seeder refuses. The seeder never runs in production.
-- Since T08, `POST /api/v1/auth/password/forgot`, `/resend` and `/reset` are live. With the
-  Gmail variables blank they answer 503 for every address; sign-in is unaffected.
-- Since T07, `NODE_ENV=production` refuses to start without `GMAIL_USER` and
-  `GMAIL_APP_PASSWORD`. Locally they may stay blank: mail is then disabled and only password
-  reset is affected.
-- Since T06 the API also needs `WEB_ORIGIN` (a bare origin, `http://localhost:3000` for
-  `pnpm dev`) in `apps/api/.env`, or it refuses to start; every non-GET to `/auth` and `/cms`
-  must send exactly that `Origin`.
-- Since T05 the API also needs `JWT_ACCESS_SECRET` (32+ characters) in `apps/api/.env`, or it
-  refuses to start.
-- T00–T03 reached `master` through PR #10, T05 through PR #12, T07 through PR #14 and T08
-  through PR #15. The three older stacked branches (`feat/auth-t00-spec-revision`,
-  `feat/auth-t01-redis-infra`, `feat/auth-t02-models-stores`) are kept locally until the owner
-  decides to delete them.
-- Since T01, `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose Redis
-  (`docker compose -f docker-compose.dev.yml up -d --wait redis`), and `apps/api/.env` needs
-  `REDIS_URL`.
-- `monorepo-foundation` is `Implemented` (T01–T10 merged, PR #1–#9). The owner pushes and merges
-  each branch — check `git log` / `git branch -a` before relying on any branch state.
+- 2026-10-20: the owner asked for the rest of the project to be built on one branch,
+  `feat/full-build` (cut from `master` after PR #17), one task after another in the build order
+  of `project_context.md`, stopping only when a decision needs the owner. Every open question
+  was answered first (`state/blockers.md` → Resolved 2026-10-20). Next up: the
+  `account-registration` spec. Check `git log feat/full-build` for how far the build has got.
+- Local environment notes carried from `owner-auth`: `apps/api/.env` needs `WEB_ORIGIN`,
+  `JWT_ACCESS_SECRET`, `REDIS_URL`; `pnpm test`, `pnpm test:e2e` and `pnpm dev` need the compose
+  Redis (`docker compose -f docker-compose.dev.yml up -d --wait redis`); mail variables may stay
+  blank locally (password reset then answers 503).

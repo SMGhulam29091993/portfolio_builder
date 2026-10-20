@@ -145,8 +145,9 @@ is real — no interface with a single trivial implementation and no second impl
   `auth` module's sessions and one-time-code references only (ADR-0008). Gemini, OpenRouter and
   Ollama for design generation. Gmail SMTP through nodemailer for mail, behind `IMailSender`
   (ADR-0009). Google OpenID Connect for sign-in only (ADR-0011). No other datastore, queue,
-  cache or external service without an ADR — that includes any other use of Redis, S3 and any
-  payment provider (BRD-011).
+  cache or external service without an ADR — that includes any other use of Redis and S3.
+  Stripe, through Checkout and a signature-verified webhook, for buying credits only
+  (ADR-0012).
 
 ## Non-Functional Baselines
 - **Status:** any target still unset reads "not yet defined" rather than a soft adjective.

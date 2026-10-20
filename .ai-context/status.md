@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-19_
+_Last updated: 2026-10-20_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -31,10 +31,20 @@ owner moves a spec to `Ready`.
 |---|---|---|---|
 | `account-registration` | Registration, email verification, roles, the one-time owner claim | BRD-009 | After `owner-auth` |
 | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | BRD-010 | After `account-registration` |
-| `credits-billing` | Buying credits; payment provider | BRD-011 | After `public-site-rendering`; needs a payment-provider ADR |
+| `platform-admin` | The owner's admin area (list, suspend, re-enable members) and platform settings | BRD-009, BRD-011 | After `ai-design-studio` (added 2026-10-20, ADR-0010 → Owner answers) |
+| `credits-billing` | Buying credits through Stripe; spending them on AI generations and domains | BRD-011 | After `platform-admin` (ADR-0012) |
 | `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
 
 ## Daily Execution Log
+### 2026-10-20
+- The owner answered every open question in one session and asked for the rest of the project
+  to be built on one branch (`feat/full-build`), stopping only for a new decision. Recorded:
+  ADR-0004 (retention amendment), ADR-0005 and ADR-0006 (variant amendment) accepted; ADR-0012
+  (Stripe) and ADR-0013 (`publishing` owns its ports, which removes the map's two cycles)
+  accepted; owner answers appended to ADR-0010 and ADR-0011; BRD-001, -003, -004, -009, -010,
+  -011 updated; `design_reference.md` → Unknowns answered; standing authorisation to move specs
+  to `Ready` recorded in `governance.md`; new planned slug `platform-admin`. Build output and
+  symlinks untracked from git.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.
