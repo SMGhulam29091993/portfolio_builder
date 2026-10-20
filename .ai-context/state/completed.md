@@ -333,3 +333,9 @@
   delete failing closed, `IAssetLookup`, `IAssetReader`); `AssetController` with `busboy`,
   routes API01–API04, container wiring (empty provider list + test-only extras), OpenAPI 0.8.0.
   UT01–UT08, IT01–IT11, AC13. No `FileStorageFactory` (one backend; recorded in the task).
+- media-assets.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 12 passed).
+  `/cms/assets`: one upload control per kind with its rule text from `ASSET_RULES`, progress
+  through `XMLHttpRequest` (refresh-and-retry once on 401 via the shared client), 413 / 415
+  explained with the limit / accepted types, file list, Delete disabled with its reason while in
+  use; `lib/api/assets.ts`, `lib/cms/assets.ts` (unit-tested), `e2e/cms-assets.spec.ts` (E2E01,
+  E2E02). With T06, `media-assets` is `Implemented`.

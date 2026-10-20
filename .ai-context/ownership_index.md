@@ -175,3 +175,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/specs/section-engine.spec.md` → Shared payload primitives; code `packages/contracts/src/sections/primitives.ts`
 **Referenced by:** the six section specs, `site-identity`, `publish-pipeline` (URL re-check), `modules/portfolio/section.service.ts` (item-id assignment), `seed/section.seeder.ts` (fixed ids)
 **Last updated:** 2026-10-20
+
+## Asset reference, kinds and limits
+**Canonical definition:** `.ai-context/specs/media-assets.spec.md` → Asset reference; code `packages/contracts/src/assets/assets-contracts.ts` (`ASSET_RULES`)
+**Referenced by:** `site-identity` (résumé and OG image ids), `publish-pipeline` (snapshot references), `public-site-rendering` (public delivery); code: `modules/assets/asset.service.ts`, `apps/web/src/lib/cms/assets.ts` (screen text from the same limits)
+**Last updated:** 2026-10-20

@@ -1,6 +1,6 @@
-/** `/cms/assets` — mount point (`cms-panel-shell` → Screens), filled by its own spec. */
-import { AreaPlaceholder } from '../../../../../components/cms/panel/area-placeholder';
+/** `/cms/assets` (`media-assets.T06`). */
+import { AssetsScreen } from '../../../../../components/cms/assets/assets-screen';
 
-export default function Page() {
-  return <AreaPlaceholder title="Assets" note="This area is not available yet." />;
+export default function AssetsPage() {
+  return <AssetsScreen />;
 }
