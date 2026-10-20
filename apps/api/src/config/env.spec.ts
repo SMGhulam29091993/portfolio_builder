@@ -199,6 +199,18 @@ describe('loadEnv', () => {
     expect(env).toMatchObject({ OWNER_EMAIL: 'owner@portfolio.example', OWNER_PASSWORD: '  short  ' });
   });
 
+  it('account-registration.T02 — OWNER_REGISTRATION_SECRET is optional and 32–200 characters', () => {
+    expect(loadEnv({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: '' }).OWNER_REGISTRATION_SECRET).toBeUndefined();
+    expect(
+      loadEnv({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: 's'.repeat(32) }).OWNER_REGISTRATION_SECRET,
+    ).toBe('s'.repeat(32));
+    for (const value of ['s'.repeat(31), 's'.repeat(201)]) {
+      const error = captureEnvError({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: value });
+      expect(error.variables).toEqual(['OWNER_REGISTRATION_SECRET']);
+      expect(error.message).not.toContain(value);
+    }
+  });
+
   it('owner-auth.T09 — rejects an OWNER_EMAIL that is not an email address, without echoing it', () => {
     const error = captureEnvError({ ...VALID_SOURCE, OWNER_EMAIL: 'not-an-address' });
 

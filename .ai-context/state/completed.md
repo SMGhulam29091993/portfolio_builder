@@ -174,3 +174,13 @@
   index; `IUserRegistrar`, `IOwnerLookup` on `UserRepository` and the in-memory fake, both in
   CT10 (AC3, AC6 cases). Self-review finding fixed: the fake threw synchronously on a refused
   owner slot instead of rejecting (`memory/review-findings.md`, 2026-10-20).
+- account-registration.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck,
+  lint, API auth + seed 327 tests). `OwnerClaimPolicy` (constant-time compare via
+  `core/crypto` `constantTimeEquals`), `RegistrationService`, `AuthService` as `ISessionStarter`
+  with the `EMAIL_NOT_VERIFIED` check, `EmailNotVerifiedError` / `OwnerClaimRefusedError`;
+  `PasswordResetService` verifies the email on reset and refuses another purpose's reference
+  (found while designing AC12: before this, a verification reference would have completed a
+  reset — `memory/review-findings.md`, 2026-10-20); `OWNER_REGISTRATION_SECRET` in `env.ts`,
+  `.env.example`, `turbo.json`, `architecture.md`; seeder creates a verified owner (or member)
+  and verifies an existing unverified account (`updated` outcome). Deviation from the plan:
+  no separate `SessionStarter` class — the plan was corrected.

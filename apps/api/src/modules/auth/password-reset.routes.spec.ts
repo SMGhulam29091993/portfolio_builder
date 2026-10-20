@@ -94,6 +94,7 @@ beforeEach(async () => {
     email: OWNER_EMAIL,
     passwordHash: await new Argon2PasswordHasher().hash(OLD_PASSWORD),
     displayName: 'Owner',
+    emailVerifiedAt: new Date(),
   });
   ownerId = owner.id;
 });
@@ -239,6 +240,7 @@ describe('POST /api/v1/auth/password/forgot (owner-auth.API05)', () => {
       email: OWNER_EMAIL,
       passwordHash: await new Argon2PasswordHasher().hash(OLD_PASSWORD),
       displayName: 'Owner',
+      emailVerifiedAt: new Date(),
     });
     const sentBefore = mail.sent.length;
 

@@ -121,6 +121,7 @@ beforeAll(async () => {
     email: OWNER_EMAIL,
     passwordHash: await new Argon2PasswordHasher().hash(OWNER_PASSWORD),
     displayName: 'Owner',
+    emailVerifiedAt: new Date(),
   });
   const signedIn = await login();
   expect(signedIn.status).toBe(200);

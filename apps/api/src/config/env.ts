@@ -87,6 +87,12 @@ const envSchema = z.object({
    * API from starting — `OwnerSeeder` enforces the 12-character floor (`owner-auth.AC14`).
    */
   OWNER_PASSWORD: optional(z.string()),
+  /**
+   * The owner secret key (`account-registration`, ADR-0010): a registration carrying exactly
+   * this value while no owner exists becomes the platform owner. Optional — unset, the claim is
+   * closed. A secret: compared in constant time, never logged or stored.
+   */
+  OWNER_REGISTRATION_SECRET: optional(z.string().min(32).max(200)),
 });
 
 /** The validated, read-only configuration object. */

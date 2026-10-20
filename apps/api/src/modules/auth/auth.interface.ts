@@ -26,6 +26,8 @@ import type {
   OtpIssuedResponse,
   OtpRecord,
   PendingUserUpdate,
+  RegisterRequest,
+  RegistrationOptionsResponse,
   ResendOtpRequest,
   ResetPasswordRequest,
   SessionCookies,
@@ -33,6 +35,10 @@ import type {
   SessionTokens,
   SignedInSession,
   User,
+  UserRole,
+  VerificationCodeRequest,
+  VerificationResendRequest,
+  VerifyEmailRequest,
 } from './auth.types.js';
 
 /** Looks users up. Used by sign-in, refresh, `me` and the password-reset request. */
@@ -292,6 +298,63 @@ export interface IAuthService {
    * @throws {UnauthenticatedError} The user no longer exists.
    */
   me(userId: string): Promise<AuthUser>;
+}
+
+/**
+ * Starts the one session a user may hold, exactly as a sign-in does (three new values, the
+ * Redis session replaced). Implemented by `AuthService`, whose `login` uses it, so a verified
+ * registration signs in through the same code path (`account-registration.AC7`).
+ */
+export interface ISessionStarter {
+  startFor(user: User): Promise<SignedInSession>;
+}
+
+/** The owner claim rule (`account-registration` spec → Roles and the owner claim). */
+export interface IOwnerClaimPolicy {
+  /** `true` while no owner exists and a secret is configured. */
+  isOpen(): Promise<boolean>;
+  /**
+   * The role a registration gets: `member` when no secret was given; `owner` when the claim is
+   * open and the secret matches.
+   *
+   * @throws {OwnerClaimRefusedError} A secret was given and the claim is closed or it differs.
+   */
+  decide(ownerSecret: string | undefined): Promise<UserRole>;
+}
+
+/**
+ * Registration and email verification (`account-registration.API01`–`API05`). Business rules
+ * only; the controller sets the cookies of the session `verify` starts.
+ */
+export interface IRegistrationService {
+  options(): Promise<RegistrationOptionsResponse>;
+  /**
+   * Creates or refreshes an unverified account and emails a code; a decoy for a verified
+   * address (`account-registration.AC1`–`AC5`).
+   *
+   * @throws {OwnerClaimRefusedError} The owner secret was refused (403).
+   * @throws {ConflictError} `OWNER_EXISTS` — the claim lost a race (409).
+   * @throws {UpstreamError} The mail provider refused the send (502).
+   * @throws {ServiceUnavailableError} Mail disabled outside production, or Redis down (503).
+   */
+  register(request: RegisterRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Proves the email and signs the user in (`account-registration.AC7`, `AC8`).
+   *
+   * @throws {OtpInvalidError} Unknown reference, wrong purpose, attempts used up or wrong code.
+   * @throws {OtpExpiredError} The code has expired.
+   */
+  verify(request: VerifyEmailRequest): Promise<SignedInSession>;
+  /** A fresh code for an unverified address; a decoy otherwise (`account-registration.AC10`). */
+  requestCode(request: VerificationCodeRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Replaces the code a reference names (`account-registration.AC11`).
+   *
+   * @throws {OtpInvalidError} The reference names no verification code, or the account is
+   *   already verified.
+   * @throws {RateLimitedError} Less than 60 seconds since the last send.
+   */
+  resend(request: VerificationResendRequest): Promise<OtpIssuedResponse>;
 }
 
 /**

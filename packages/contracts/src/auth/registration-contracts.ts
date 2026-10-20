@@ -32,11 +32,10 @@ export const registerRequestSchema = z.object({
    * The owner secret key. An empty string means "not given", so a form that always sends the
    * field still registers members once the claim is closed (spec → Edge Cases).
    */
-  ownerSecret: z
-    .string()
-    .max(OWNER_SECRET_MAX_LENGTH)
-    .optional()
-    .transform((value) => (value === '' ? undefined : value)),
+  ownerSecret: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().max(OWNER_SECRET_MAX_LENGTH).optional(),
+  ),
 });
 
 const referenceSchema = z.string().min(1).max(OTP_REFERENCE_MAX_LENGTH);

@@ -7,13 +7,15 @@
  * (`owner-auth.T05`). Clearing cookies on a 401 is likewise the HTTP layer's job.
  *
  * Every `jti` check goes through the injected `ISessionAuthorizer`, so this class holds no copy
- * of that rule.
+ * of that rule. It is also the `ISessionStarter` registration signs a verified user in with
+ * (`account-registration.T02`), so a session is minted in exactly one place.
  */
 import { sha256Hex } from '../../core/crypto/sha256.js';
 import { UnauthenticatedError } from '../../core/errors/index.js';
-import { SessionExpiredError } from './auth.errors.js';
+import { EmailNotVerifiedError, SessionExpiredError } from './auth.errors.js';
 import type {
   IAuthService,
+  ISessionStarter,
   IClock,
   IPasswordHasher,
   ISecureRandom,
@@ -50,7 +52,7 @@ interface MintedSession {
   readonly tokens: SignedInSession['tokens'];
 }
 
-export class AuthService implements IAuthService {
+export class AuthService implements IAuthService, ISessionStarter {
   /**
    * A real hash of a random password, verified against when the email is unknown so sign-in
    * does the same work either way (`owner-auth.AC2`). Made on first need and reused; only that
@@ -75,7 +77,14 @@ export class AuthService implements IAuthService {
     const hash = user?.passwordHash ?? (await this.getDecoyHash());
     const matches = await this.passwords.verify(hash, password);
     if (!user || !matches) throw new UnauthenticatedError(INVALID_CREDENTIALS_MESSAGE);
+    // Only after the password matched, so the 403 tells nothing to anyone without it
+    // (`account-registration.AC9`).
+    if (!user.emailVerifiedAt) throw new EmailNotVerifiedError();
 
+    return this.startFor(user);
+  }
+
+  async startFor(user: User): Promise<SignedInSession> {
     const minted = await this.mint(user.id);
     // Unconditional: one session per user, so this sign-in ends any other browser's
     // (`owner-auth.AC7`).

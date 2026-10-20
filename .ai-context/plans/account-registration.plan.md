@@ -6,15 +6,18 @@ All of it lives in the existing `auth` module: `users` and `otps` have one write
 (`architecture.md` → Data ownership). No new module, no new dependency edge.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
-| `RegistrationService` | Service | `IRegistrationService` (options, register, verify, requestCode, resend) | `IUserReader`, `IUserRegistrar`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `IMailSender`, `ISecureRandom`, `IClock`, `IOwnerClaimPolicy`, `ISessionStarter` |
+| `RegistrationService` | Service | `IRegistrationService` (options, register, verify, requestCode, resend) | `IUserReader`, `IUserRegistrar`, `IOtpRepository`, `IOtpReferenceStore`, `IOtpHasher`, `IPasswordHasher`, `IMailSender`, `ISecureRandom`, `IClock`, `IOwnerClaimPolicy`, `ISessionStarter` (`AuthService`) |
 | `OwnerClaimPolicy` | Service | `IOwnerClaimPolicy` (isOpen, decide) | `IOwnerLookup`, the configured secret (constructor option) |
-| `SessionStarter` | Service | `ISessionStarter` (start a session for a user: mint `jti` + tokens, replace the Redis session) — extracted from `AuthService.login`, which now delegates to it | `ISessionStore`, `ITokenIssuer`, `ISecureRandom`, `IClock` |
 | `UserRepository` | Repository | adds `IUserRegistrar` (createPending, updatePending, markEmailVerified) and `IOwnerLookup` (ownerExists) | `users` model |
 | `AuthController` | Controller | gains five handlers | `IRegistrationService` |
-- `AuthService.login` checks `emailVerifiedAt` after a successful password verify and throws
-  `EmailNotVerifiedError` (403); session minting moves to `SessionStarter` so registration's
-  verify signs in through the same code path.
-- `PasswordResetService.reset` calls `IUserRegistrar.markEmailVerified` after the password write.
+- `AuthService` also implements `ISessionStarter` (`startFor(user)`), which its own `login`
+  calls after a successful password verify and the `emailVerifiedAt` check
+  (`EmailNotVerifiedError`, 403); registration's verify signs in through the same method, so a
+  session is minted in one place (decided in T02 instead of a separate class: the minting and
+  the store it writes are already `AuthService`'s).
+- `PasswordResetService.reset` calls `IUserRegistrar.markEmailVerified` after the password write,
+  and its reference lookup refuses a code of another purpose (AC12).
+- The development seeder (`OwnerSeeder`) gains `IUserRegistrar`, `IOwnerLookup` and `IClock`.
 - The code mint/save/send steps repeat `PasswordResetService`'s with another purpose; named in
   `memory/patterns.md` (one-time code issuance) instead of refactoring tested T08 code.
 - Errors: `EmailNotVerifiedError` (403 `EMAIL_NOT_VERIFIED`), `OwnerClaimRefusedError` (403

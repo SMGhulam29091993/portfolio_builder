@@ -13,8 +13,10 @@ export type {
   IMailSender,
   IOtpHasher,
   IOtpReferenceStore,
+  IOwnerClaimPolicy,
   IOtpRepository,
   IPasswordResetService,
+  IRegistrationService,
   ISessionStore,
   IOwnerLookup,
   IUserCreator,
@@ -25,6 +27,7 @@ export type {
   ISecureRandom,
   ISessionAuthorizer,
   ISessionCookieWriter,
+  ISessionStarter,
   ITokenIssuer,
   VerifyAccessTokenOptions,
 } from './auth.interface.js';

@@ -123,3 +123,11 @@ the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in 
   the contract suite's `rejects` assertion caught it. Fixed by making the method `async`. Rule:
   a fake method that can fail is `async`, so failure is always a rejected promise like the real
   adapter's.
+
+### 2026-10-20 — account-registration.T02
+- **One-time-code lookups did not check the purpose.** `PasswordResetService.findRecord`
+  accepted any `otps` document a reference resolved to. Harmless while `password_reset` was the
+  only purpose; with `email_verification` added, a verification reference (whose code reached
+  the same inbox) could have completed a password reset or been resent as a reset code. Both
+  services now refuse a record of another purpose with `OTP_INVALID`; covered by AC12 tests in
+  both service specs.

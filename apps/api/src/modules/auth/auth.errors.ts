@@ -45,3 +45,29 @@ export class OtpExpiredError extends AppError {
     super('OTP_EXPIRED', message);
   }
 }
+
+/**
+ * 403 `EMAIL_NOT_VERIFIED` — the password was right but the account's email has not been
+ * proved yet (`account-registration.AC9`). Thrown only after a successful password check, so
+ * it tells nothing to anyone without the password.
+ */
+export class EmailNotVerifiedError extends AppError {
+  readonly status = 403;
+
+  constructor(message = 'Verify your email address before signing in') {
+    super('EMAIL_NOT_VERIFIED', message);
+  }
+}
+
+/**
+ * 403 `OWNER_CLAIM_REFUSED` — a registration carried an owner secret while the claim is
+ * closed (an owner exists, or no secret is configured) or the value differs
+ * (`account-registration.AC5`). One error for all three, so a caller cannot tell them apart.
+ */
+export class OwnerClaimRefusedError extends AppError {
+  readonly status = 403;
+
+  constructor(message = 'The owner key was not accepted') {
+    super('OWNER_CLAIM_REFUSED', message);
+  }
+}

@@ -40,6 +40,7 @@
         "MAIL_FROM",
         "OWNER_EMAIL",
         "OWNER_PASSWORD",
+        "OWNER_REGISTRATION_SECRET",
         "API_INTERNAL_URL"
       ]
     }

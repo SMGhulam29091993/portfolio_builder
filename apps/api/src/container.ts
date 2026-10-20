@@ -235,6 +235,7 @@ export function buildContainer({
     mail,
     secureRandom,
     clock,
+    users,
   );
   const sessionCookies = new SessionCookieWriter(env, {
     apiPath: API_PREFIX,
@@ -278,7 +279,17 @@ export interface Seeders {
  */
 export function buildSeeders({ env, mongo }: SeederDependencies): Seeders {
   const users = new UserRepository(mongo);
-  return { owner: new OwnerSeeder(users, users, new Argon2PasswordHasher(), env) };
+  return {
+    owner: new OwnerSeeder(
+      users,
+      users,
+      new Argon2PasswordHasher(),
+      env,
+      users,
+      users,
+      new SystemClock(),
+    ),
+  };
 }
 
 /**
