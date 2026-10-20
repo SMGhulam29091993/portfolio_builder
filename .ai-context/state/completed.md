@@ -269,3 +269,13 @@
   refreshes, `/auth/**` never refreshes), `lib/api/context.tsx`, `auth.ts` and `portfolio.ts`
   hooks, `lib/cms/navigation.ts` (`safeNext`, `loginUrl`), CMS providers in the `/cms` layout.
   UT01, UT02, UT03, UT08 — 33 web unit tests.
+- cms-panel-shell.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate incl. `next build`).
+  `/cms/login` (generic error, 429 countdown, `EMAIL_NOT_VERIFIED` → send code → code entry,
+  Google button and `?error=` notices, `?notice=` messages, sanitised `next`), `/cms/register`
+  (owner key only while the claim is open, inline `OWNER_CLAIM_REFUSED` / `OWNER_EXISTS`),
+  `/cms/verify`, `/cms/forgot-password`; shared `VerifyCodeStep`, `GoogleButton`, CMS UI kit
+  (`TextInput`, `Button`, `Notice`, `TextLink`), `useCountdown`, `lib/cms/messages.ts`
+  (UT11). Deviation: no `proxy.ts` — the session cookies' `Path=/api/v1` keeps them off `/cms`
+  page requests, so AC1's redirect is client-side (spec Status). Found and fixed: the client
+  must refresh on `/auth/me`. `ownerSecret`'s contract changed to a transform inside
+  `optional()` so its input type is a string (behaviour unchanged, 81 contract tests).

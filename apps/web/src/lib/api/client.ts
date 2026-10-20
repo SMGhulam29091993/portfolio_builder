@@ -193,9 +193,13 @@ function isUnauthenticated(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401 && error.code === 'UNAUTHENTICATED';
 }
 
-/** `/auth/**` answers 401 for its own reasons (a wrong password); never refresh on them. */
+/**
+ * The auth routes that answer 401 for their own reasons (a wrong password, no session to
+ * refresh) — never refreshed on. `/auth/me` is guarded like any `/cms` route, so an expired
+ * access token there is refreshed.
+ */
 function isAuthPath(path: string): boolean {
-  return path.startsWith('/auth/');
+  return path.startsWith('/auth/') && path !== '/auth/me';
 }
 
 function globalLocks(): LockLike | undefined {

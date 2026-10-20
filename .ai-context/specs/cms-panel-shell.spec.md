@@ -14,6 +14,11 @@ In Progress
   `publish-pipeline` fills it (recorded there). E2E for editing flows (E2E05–E2E09) needs a
   registered section type with an editor, so it runs from the first section spec
   (`about-section`), which reuses this spec's harness.
+- Deviation found in T02 (2026-10-20): the plan's `middleware.ts` / `proxy.ts` cookie check
+  cannot work — the session cookies are `Path=/api/v1` (`owner-auth` → Session contract), so a
+  `/cms` page request never carries them. AC1's redirect is done client-side instead: the panel
+  layout loads `owner-auth.API04` (refreshing once if needed) and sends a 401 to
+  `/cms/login?next=…`. The API stays the only authority either way.
 ## Linked BRD
 .ai-context/BRD.md#BRD-001
 ## Intent

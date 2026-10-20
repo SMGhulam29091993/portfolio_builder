@@ -133,6 +133,13 @@ describe('ApiClient', () => {
     expect(losses).toEqual([]);
   });
 
+  it('refreshes for /auth/me, which is guarded like a /cms route', async () => {
+    const { api, calls } = client([fail(401, 'UNAUTHENTICATED'), fail(401, 'UNAUTHENTICATED'), ok({}), ok({ user: { id: '1' } })]);
+
+    await expect(api.request('/auth/me')).resolves.toEqual({ user: { id: '1' } });
+    expect(calls.map((call) => call.url)).toContain('/api/v1/auth/refresh');
+  });
+
   it('maps a network failure and a non-JSON body to stable codes', async () => {
     const network = new ApiClient({ fetch: (() => Promise.reject(new TypeError('offline'))) });
     await expect(network.request('/x')).rejects.toMatchObject({ status: 0, code: 'NETWORK_ERROR' });
