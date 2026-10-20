@@ -302,3 +302,9 @@
   the first; 409 `ConflictDialog` with Load latest / Overwrite with mine / Keep editing; network
   failure with Retry; dirty state registered for the guard), `/cms/sections/[type]`. UT04, UT05.
   The editing E2E (E2E05–E2E07) runs with `about-section`, the first registered editor.
+- cms-panel-shell.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Overview:
+  `AddressCard` (public address from the CMS's own origin + slug; slug change with the contract
+  schema, inline `SLUG_TAKEN`, conflict notice), section list in page order (non-orderable
+  first, no switch or arrows for it), visibility switch (`API04`), Move up / Move down and drag
+  reorder (`API05`), loading / error with Retry; conflicts refetch the draft and say so.
+  `lib/cms/order.ts` (`moveBy`, `moveTo`) unit-tested.
