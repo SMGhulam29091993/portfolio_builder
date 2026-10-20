@@ -13,7 +13,7 @@ owner moves a spec to `Ready`.
 | 2b | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | Implemented | BRD-010 | — |
 | 3 | `section-engine` | Section registry, draft content engine, per-user portfolio | Implemented | BRD-001 | — |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview, sign-in and registration screens | Implemented | BRD-001 | — |
-| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
+| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Implemented | BRD-001 | — (built after `media-assets`) |
 | 6 | `media-assets` | Résumé and image uploads | Implemented | BRD-006 | — (built before `site-identity`, which depends on it; swap recorded 2026-10-20) |
 | 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006; revise for ADR-0010 (one design per user's portfolio) |
 | 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
@@ -69,6 +69,9 @@ owner moves a spec to `Ready`.
   per-portfolio assets, `Ready` under the standing authorisation, implemented T01–T06 (GridFS
   storage, sniffed types, streaming caps, provider-gated delete, `busboy`, OpenAPI 0.8.0,
   `/cms/assets` with progress). `Implemented`.
+- `site-identity` revised (per-portfolio identity, account template), OQ1/OQ2 answered, `Ready`
+  under the standing authorisation, implemented T01–T07 (contracts, persistence, asset-checked
+  service, reference provider, routes, OpenAPI 0.9.0, seed step, `/cms/identity`). `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

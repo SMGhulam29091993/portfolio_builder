@@ -1,6 +1,6 @@
-/** `/cms/identity` — mount point (`cms-panel-shell` → Screens), filled by its own spec. */
-import { AreaPlaceholder } from '../../../../../components/cms/panel/area-placeholder';
+/** `/cms/identity` (`site-identity.T07`). */
+import { IdentityScreen } from '../../../../../components/cms/identity/identity-screen';
 
-export default function Page() {
-  return <AreaPlaceholder title="Identity" note="This area is not available yet." />;
+export default function IdentityPage() {
+  return <IdentityScreen />;
 }

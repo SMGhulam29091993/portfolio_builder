@@ -172,7 +172,14 @@ function EditorForm({
         ) : null}
         <FormProvider {...form}>
           <FormSchemaProvider schema={schema}>
-            <form id="section-editor" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-6">
+            <form
+              id="section-editor"
+              data-dirty={formState.isDirty}
+              data-valid={formState.isValid}
+              onSubmit={(event) => void onSubmit(event)}
+              noValidate
+              className="flex flex-col gap-6"
+            >
               <Editor sectionTypes={sectionTypes} />
             </form>
           </FormSchemaProvider>

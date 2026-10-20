@@ -8,4 +8,4 @@
 - [x] site-identity.T04 — `IdentityController`, routes, container wiring, OpenAPI for API01–API02 — Acceptance: AC1, AC4, AC11
 - [x] site-identity.T05 — `IdentityAssetReferenceProvider` registered with the `assets` module — Acceptance: AC8
 - [x] site-identity.T06 — `IdentitySeeder` + `seed/data/identity.ts` in `seed:all` — Acceptance: AC1, AC9
-- [~] site-identity.T07 — `/cms/identity` screen with asset selects — Acceptance: AC10
+- [x] site-identity.T07 — `/cms/identity` screen with asset selects — Acceptance: AC10

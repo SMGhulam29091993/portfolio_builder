@@ -3,3 +3,4 @@ export { EmphasisHeadingField, LinkTargetField, MetricListField, TagListField } 
 export { SwitchField, TextAreaField, TextField } from './fields';
 export { FormSchemaProvider, useFieldLimits } from './form-schema';
 export { ListField, type ListFieldProps } from './list-field';
+export { SelectField, type SelectOption } from './select-field';

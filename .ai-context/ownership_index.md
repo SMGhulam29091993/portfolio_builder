@@ -180,3 +180,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `.ai-context/specs/media-assets.spec.md` → Asset reference; code `packages/contracts/src/assets/assets-contracts.ts` (`ASSET_RULES`)
 **Referenced by:** `site-identity` (résumé and OG image ids), `publish-pipeline` (snapshot references), `public-site-rendering` (public delivery); code: `modules/assets/asset.service.ts`, `apps/web/src/lib/cms/assets.ts` (screen text from the same limits)
 **Last updated:** 2026-10-20
+
+## Identity shape and the identity template
+**Canonical definition:** `.ai-context/specs/site-identity.spec.md` → API Contract (shape) and Status (template); code `packages/contracts/src/identity/identity-contracts.ts`, `modules/identity/identity.service.ts` (`identityTemplate`)
+**Referenced by:** `hero-section`, `contact-section`, `public-site-rendering` (nav, footer, metadata), `publish-pipeline` (identity contributor); `apps/api/src/seed/data/identity.ts` (reference values)
+**Last updated:** 2026-10-20

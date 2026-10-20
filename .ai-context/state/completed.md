@@ -348,3 +348,10 @@
   `IdentityAssetReferenceProvider` registered with `assets` (deleting the résumé in use → 409
   `draft identity`); controller, routes API01–API02, OpenAPI 0.9.0; `IdentitySeeder` +
   `seed/data/identity.ts` as a `seed:all` step. UT01–UT07, IT02–IT08, AC11 isolation.
+- site-identity.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 13 passed).
+  `/cms/identity`: one form over the identity with the contract schema, socials list with
+  platform select, availability switch, footer tags, SEO fields, résumé and social-image selects
+  listing only uploaded assets of that kind (`SelectField`, new in the form kit), template notice
+  at revision 0, the shell's save / 400 / 409 behaviour; `lib/api/identity.ts`;
+  `e2e/cms-identity.spec.ts` (E2E01). CMS forms expose `data-dirty` / `data-valid` (pitfall
+  recorded). With T07, `site-identity` is `Implemented`.

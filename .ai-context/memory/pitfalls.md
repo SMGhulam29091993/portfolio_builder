@@ -103,3 +103,12 @@ only when the web build actually re-ran (not when it was a cache hit).
 `.next/types` while `tsc` has already listed the files.
 **Fix:** `turbo.json` makes `@portfolio/web#typecheck` and `#lint` depend on
 `@portfolio/web#build`, so they always read a complete `.next/types`.
+
+### 2026-10-20 — reload right after a save hung an E2E journey (site-identity.T07)
+**Symptom:** `site-identity.E2E01` hit the 60 s test timeout with no failing step named.
+**Root cause:** the test reloaded immediately after the "saved" toast; React had not yet
+re-rendered the reset form, so the panel's `beforeunload` guard (any dirty editor) was still
+registered. Playwright dismisses `beforeunload` dialogs by default, which cancels the
+navigation, so `page.reload()` never finished.
+**Fix:** CMS forms expose `data-dirty` / `data-valid`; journeys wait for
+`data-dirty="false"` before navigating away after a save (`e2e/cms-identity.spec.ts`).
