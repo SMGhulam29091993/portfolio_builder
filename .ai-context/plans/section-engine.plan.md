@@ -7,10 +7,12 @@ Module `apps/api/src/modules/portfolio/`.
 |---|---|---|---|
 | `PortfolioController` | Controller | — | `ISectionService` |
 | `SectionService` | Service | `ISectionService` | `IPortfolioRepository`, `ISectionRepository`, `ISectionRegistry`, `IIdGenerator` |
+| `PortfolioProvisioner` | Service | `IPortfolioProvisioner` (get or create the user's portfolio and its sections; slug choice; slug change) | `IPortfolioRepository`, `ISectionRepository`, `ISectionRegistry`, `IUserDirectory` (display name, from `auth`) |
 | `PortfolioRepository`, `SectionRepository` | Repository | their interfaces | Mongoose models |
 | `SectionRegistry` | Strategy registry | `ISectionRegistry` | `ISectionDefinition[]` (constructor) |
 | `<Type>SectionDefinition` × 6 | Strategy | `ISectionDefinition` | contract schema — **added by each section spec, not here** |
-| `ResolvePortfolioMiddleware` | HTTP | `IPortfolioResolver` | `IPortfolioRepository` |
+| `ResolvePortfolioMiddleware` | HTTP | its `handle` is the `resolvePortfolio` handler | `IPortfolioProvisioner` |
+| `CryptoIdGenerator` | Adapter | `IIdGenerator` | — (Node `crypto`, 9 random bytes → 12 base64url characters; no `nanoid` dependency) |
 | `PortfolioSeeder`, `SectionSeeder` | Seed | `ISeeder` (since `owner-auth.T09`; built in `container.ts` → `buildSeeders`) | repositories, `ISectionRegistry`, seed-data loader |
 
 ```typescript
@@ -33,21 +35,26 @@ interface ISectionDefinition<T = unknown> {
   by the section specs.
 - `IIdGenerator` (nanoid adapter) is injected so item-id assignment is testable.
 ## Data Model
-**`portfolios`** — `_id`, `ownerId` (unique index), `slug` (unique index), `sectionOrder:
-string[]`, `revision`, `createdAt`, `updatedAt`. (`publishedSnapshotId`, `publishedVersion` are
+**`portfolios`** — `_id`, `userId` (unique index; ADR-0010), `slug` (unique index),
+`sectionOrder: string[]`, `revision`, `createdAt`, `updatedAt`. (`publishedSnapshotId`, `publishedVersion` are
 added by `publish-pipeline`.)
 **`sections`** — `_id`, `portfolioId`, `type`, `visible`, `revision`, `data` (validated by the
 type's schema, stored as a sub-document), `updatedAt`. Unique compound index
 `{ portfolioId, type }`.
-**Seed:** `apps/api/src/seed/data/sections/<type>.json`, one file per type, each transcribed from
-`design_reference.md` by its section spec. Seeders insert only when the document is absent.
+**Seed:** `apps/api/src/seed/data/sections/<type>.ts`, one file per type, each transcribed from
+`design_reference.md` by its section spec, holding the owner's reference content. `seed:all`
+runs the owner seeder, then the portfolio seeder (the development account's portfolio with slug
+from `seed/data/portfolio.ts`), then the section seeder; each inserts only when absent.
+- Module edge: `portfolio → auth` (`IUserDirectory`, read-only display name) — already allowed
+  by the map (every `/cms` module may depend on `auth`).
 ## Constitution Check
 - [x] No new datastore introduced without ADR
 - [x] One writer per collection (`portfolio` → `portfolios`, `sections`)
 - [x] Open/Closed via registry; AC10 tests it
 - [x] Free text sanitised through the shared `plainText` helper
 - [x] Reference content is seed data, not literals in services or components
-- [ ] Section model — pending acceptance of ADR-0005
+- [x] Section model — ADR-0005 accepted 2026-10-20
+- [x] Tenant isolation: every query filters by the resolved `portfolioId`; no route takes one
 ## Explicitly Deferred
 - Multiple instances of one section type — would re-key sections by id (ADR-0005 consequence).
 - Draft history / undo — snapshots cover published history only.

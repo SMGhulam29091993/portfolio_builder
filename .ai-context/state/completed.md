@@ -214,3 +214,10 @@
   `google-sign-in.service.spec.ts` and `google-sign-in.routes.spec.ts` against the real
   provider and `LocalOidcIssuer`. Spec deviation recorded in the spec: the limiter answers a
   JSON 429 like every limiter, not a redirect. With T03, `google-sign-in` is `Implemented`.
+- section-engine.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate: build, typecheck,
+  lint, test, drift). Spec revised for ADR-0010 before it was ever `Ready` (provisioning, slug,
+  tenant isolation, AC15–AC18, API06), DoR passed, `Ready` under the standing authorisation.
+  `packages/contracts/src/sections`: primitives (`safeUrlSchema` https/mailto only,
+  `emphasisHeadingSchema`, `sectionMetaSchema`, `metricSchema`, `tagSchema`, `itemIdSchema`,
+  `listItem`, `linkTargetSchema`) and engine schemas for API01–API06 with the slug rules and
+  reserved list; 27 new schema tests.

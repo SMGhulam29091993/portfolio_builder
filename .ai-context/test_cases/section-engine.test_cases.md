@@ -21,6 +21,9 @@ independently of the six real section types.
 | section-engine.IT12 | Auth | Every route with no cookie | 401 |
 | section-engine.IT13 | Edge | Register a type after seeding, call API01 | Returned with defaults, `revision: 0`, `visible: false`; first PUT creates it |
 | section-engine.IT14 | Edge | Payload with unknown extra keys | 200; extra keys absent from the DB |
+| section-engine.IT15 | AC15 | First API01 for a new user; then again; then two in parallel for another user | One portfolio each, all types provisioned visible, slug from display name |
+| section-engine.IT16 | AC16 | Users A and B; A edits, hides, reorders, renames slug | B's documents byte-for-byte unchanged |
+| section-engine.IT17 | AC17 | Slug: valid, reserved, taken, malformed, stale revision | 200; 409 `SLUG_TAKEN`; 409; 400; 409 `REVISION_CONFLICT` |
 
 ## Contract suites
 | Test ID | Interface | Asserts |
@@ -31,7 +34,7 @@ independently of the six real section types.
 ## Component
 | Test ID | Maps to | Scenario | Expected |
 |---|---|---|---|
-| section-engine.UT13 | AC13 | Composer with all hideable sections hidden | Only hero rendered; no numbering artefacts |
+| section-engine.UT17 | AC13 | Composer with all hideable sections hidden | Only hero rendered; no numbering artefacts |
 
 ## Data variations
 - Strings at exactly the limit, one over, empty, whitespace only, emoji, right-to-left text.

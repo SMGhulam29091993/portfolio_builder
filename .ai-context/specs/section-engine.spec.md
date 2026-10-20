@@ -2,12 +2,21 @@
 ## Spec ID
 section-engine
 ## Status
-Draft
+In Progress
+- `Ready → In Progress` on 2026-10-20 with `section-engine.T01` started.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`); ADR-0005 accepted 2026-10-20.
+- Revised 2026-10-20, before the spec was ever `Ready` (no `⚠️ REVISED` marker needed), for
+  ADR-0010 and its owner answers: one portfolio per user, provisioned on the user's first CMS
+  request from the reference template (design kept, content replaced by placeholders); tenant
+  isolation; the portfolio slug (a free portfolio is served at `<platform>/<slug>`); item ids
+  from Node's `crypto` (no new dependency). Added: Portfolio provisioning, Slug rules, API06,
+  AC15–AC18, UT13–UT16.
 ## Linked BRD
 .ai-context/BRD.md#BRD-001
 ## Intent
-Give the CMS one generic way to read, edit, hide and reorder the portfolio's page sections, and
-give the codebase one way to add a section type. Each type plugs a definition (schema, defaults,
+Give each signed-in user one portfolio of their own, and the CMS one generic way to read, edit,
+hide and reorder its page sections; give the codebase one way to add a section type. Each type plugs a definition (schema, defaults,
 flags) into a registry on the API and a renderer into a registry on the web; the engine, its
 endpoints and the page composer never change when a type is added. This spec owns the engine
 and the payload primitives every section shares; each section's own payload is owned by its own
@@ -29,8 +38,38 @@ Canonical owner (`ownership_index.md`). Defined once in `packages/contracts/src/
 | `LinkTarget` | `{ kind: "section", sectionType }` \| `{ kind: "url", url }` | `url` is `https:` or `mailto:`, ≤ 2048 |
 | `ItemId` | string | Server-assigned when absent; unique within its list; never changes |
 Section numbers (`01`, `02`, …) are **not** stored — they are derived from visible order.
+
+`ItemId` assignment is generic: every object inside an array in a section's `data` is a list
+item. Its schema declares `id` through the shared `listItem({...})` helper (optional on input);
+after validation the engine assigns a 12-character URL-safe random id (72 bits, Node `crypto`)
+to each item without one and rejects duplicates within the same array. Arrays of strings
+(`Tag[]`) are not items.
+
+## Portfolio provisioning (ADR-0010)
+- Every user has exactly one portfolio (`portfolios.userId` unique). The first `/api/v1/cms`
+  request after the guard that finds none creates it: `resolvePortfolio` creates the portfolio
+  and one `sections` document per registered type, from each definition's `defaults()`, all
+  `visible: true`, `sectionOrder` = the orderable types in registration order.
+- `defaults()` is the reference template: the reference design's structure with **placeholder
+  content** in square brackets (`[Your headline]`), never the owner's own content. The
+  placeholders satisfy the schema, so the CMS can render and edit them at once, and
+  `publish-pipeline`'s placeholder rule blocks publishing until each is replaced.
+- The owner's reference content is seed data for the development account only (`seed:all`).
+- Provisioning is idempotent under races: the unique indexes on `portfolios.userId` and
+  `{ portfolioId, type }` decide; a request that loses the race reads the winner's documents.
+
+## Slug rules
+| Rule | Value |
+|---|---|
+| Shape | `^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$` — 3..40 characters, lower-case letters, digits, single inner hyphens |
+| Unique | Across all portfolios (unique index) |
+| Reserved | `api`, `cms`, `admin`, `login`, `register`, `_next`, `static`, `assets`, `favicon.ico`, `robots.txt`, `sitemap.xml`, `health`, `public`, `www`, `app`, `help`, `about`, `pricing`, `terms`, `privacy` |
+| Initial | From the display name: lower-cased, non-alphanumerics → `-`, trimmed to 32; empty or reserved → `portfolio`; taken → suffixed `-2`, `-3`, … |
 ## API Contract
-All routes require the owner session and resolve the owner's portfolio.
+All routes require a signed-in session (`requireOwner`, `owner-auth`) and act only on the
+signed-in user's own portfolio, resolved (or provisioned) by `resolvePortfolio`. No route takes
+a portfolio id: another user's portfolio cannot be named, let alone read (`constitution.md` →
+Tenant isolation).
 ### section-engine.API01 — GET /api/v1/cms/portfolio
 **Success response (200):**
 ```json
@@ -63,6 +102,8 @@ All routes require the owner session and resolve the owner's portfolio.
 | 403 | `Origin` not allowed | `ORIGIN_NOT_ALLOWED` |
 | 404 | `:type` is not registered | `NOT_FOUND` |
 | 409 | `expectedRevision` is stale | `REVISION_CONFLICT`, `currentRevision` |
+
+For a type with no stored document (AC18), `expectedRevision: 0` creates it.
 ### section-engine.API04 — PATCH /api/v1/cms/portfolio/sections/:type/visibility
 **Request payload:** `{ "expectedRevision": 1, "visible": false }`
 **Success response (200):** `data: { "section": { … } }`
@@ -78,6 +119,16 @@ All routes require the owner session and resolve the owner's portfolio.
 |---|---|---|
 | 400 | `order` is not an exact permutation of the orderable types (missing, duplicate, unknown, or contains `hero`) | `VALIDATION_FAILED` |
 | 401 / 403 | As above | — |
+| 409 | Portfolio `expectedRevision` is stale | `REVISION_CONFLICT`, `currentRevision` |
+### section-engine.API06 — PUT /api/v1/cms/portfolio/slug
+**Request payload:** `{ "expectedRevision": 4, "slug": "ghulam" }`
+**Success response (200):** `data: { "portfolio": { "id", "slug", "revision": 5, "sectionOrder" } }`
+**Exceptions:**
+| Code | Condition | Response body |
+|---|---|---|
+| 400 | `slug` breaks the shape rule | `VALIDATION_FAILED` |
+| 401 / 403 | As above | — |
+| 409 | Reserved, or used by another portfolio | `SLUG_TAKEN` |
 | 409 | Portfolio `expectedRevision` is stale | `REVISION_CONFLICT`, `currentRevision` |
 ## Acceptance Criteria
 1. section-engine.AC1 — Given a seeded portfolio, when API01 is called, then it returns the six
@@ -118,6 +169,18 @@ All routes require the owner session and resolve the owner's portfolio.
 14. section-engine.AC14 — Given section data whose type has no registered renderer, when the
     page composer renders, then that section is skipped, a development-only warning is logged,
     and the rest of the page renders.
+15. section-engine.AC15 — Given a user with no portfolio, when they call API01, then one
+    portfolio is created for them with a slug from their display name, one section per
+    registered type holding that definition's defaults, all visible; a second call creates
+    nothing; two parallel first calls leave exactly one portfolio.
+16. section-engine.AC16 — Given users A and B with portfolios, when A calls API01 and API03–API06,
+    then only A's documents are read or written; B's revisions and data are unchanged.
+17. section-engine.AC17 — Given API06 with a valid unused slug and the current revision, then
+    the slug is replaced and the revision increments; a reserved or taken slug answers 409
+    `SLUG_TAKEN`; a malformed one 400.
+18. section-engine.AC18 — Given a registered type with no stored document for this portfolio,
+    when API01 is called, then it returns that type with the definition's defaults,
+    `visible: false` and `revision: 0`, and the first API03 creates the document.
 ## Edge Cases Covered
 - Two browser tabs editing the same section: the second save gets 409, never a silent overwrite.
 - Editing section A while section B is saved elsewhere: no conflict (per-section revisions).
@@ -145,11 +208,16 @@ All routes require the owner session and resolve the owner's portfolio.
 | section-engine.UT10 | AC11 | Register a duplicate type | Throws naming the type |
 | section-engine.UT11 | AC13 | Composer with one hidden section | Order correct; numbers consecutive, skipping none |
 | section-engine.UT12 | AC14 | Composer with an unknown type | Skipped; others rendered |
+| section-engine.UT13 | AC15 | `initialSlug` for names, empties, reserved and taken slugs | Rules of Slug rules |
+| section-engine.UT14 | AC15 | Provisioning on an empty fake store, then again | Created once |
+| section-engine.UT15 | AC17 | `changeSlug` with reserved, taken, valid | `SLUG_TAKEN`; `SLUG_TAKEN`; stored |
+| section-engine.UT16 | AC18 | `readDraft` with a missing section document | Defaults, hidden, revision 0 |
 ## Explicitly Out of Scope
 - Each section's payload schema, editor and renderer — the six section specs.
 - Identity and design data — `site-identity`, `design-theme`.
 - Publishing, snapshots, "unpublished changes" — `publish-pipeline`.
-- More than one instance of a section type; more than one portfolio per owner.
+- More than one instance of a section type; more than one portfolio per user.
+- Deleting a portfolio or an account.
 - Draft history / undo.
 ## Non-Functional Constraints (from constitution.md)
 - Open/Closed is the acceptance bar: AC10 is tested by adding a type without editing the engine.

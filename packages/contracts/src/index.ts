@@ -9,3 +9,4 @@
 export * from './auth/index.js';
 export * from './common/index.js';
 export * from './health/index.js';
+export * from './sections/index.js';
