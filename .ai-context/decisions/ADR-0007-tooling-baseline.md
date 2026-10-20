@@ -68,6 +68,11 @@ appends the tools it installs to this table in the same change.
 | smtp-server | 3.19.23 | `owner-auth.T07` | `apps/api` dev only; the local SMTP server the `IMailSender` contract suite (`owner-auth.CT06`) sends to, so no test sends real mail |
 | @types/smtp-server | 3.5.13 | `owner-auth.T07` | `apps/api` dev only; smtp-server ships no types |
 | react, react-dom, @types/react, @types/react-dom, vitest in `packages/sections` | same pins as `apps/web` (19.3.1, 19.3.0, 5.0.5) | `section-engine.T07` | React is a peer dependency of `packages/sections`; component tests render with `react-dom/server`, so no DOM testing library is added |
+| @tanstack/react-query | 5.104.1 | `cms-panel-shell.T01` | `apps/web`; CMS server state. Chosen as the newest release at least two weeks old on 2026-10-20 (supply-chain margin), as are the next four rows |
+| react-hook-form | 7.89.0 | `cms-panel-shell.T01` | `apps/web`; CMS forms |
+| @hookform/resolvers | 5.9.1 | `cms-panel-shell.T01` | `apps/web`; the zod resolver, so forms validate with the API's own contract schemas |
+| zustand | 5.0.15 | `cms-panel-shell.T01` | `apps/web`; cross-component CMS UI state only (preview viewport, unsaved-changes registry) |
+| @axe-core/playwright | 4.13.0 | `cms-panel-shell.T01` | `apps/web` dev only; accessibility checks in E2E (`cms-panel-shell.AC14`) |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but

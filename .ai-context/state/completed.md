@@ -260,3 +260,12 @@
   consecutive numbering, unlisted visible types appended), `PortfolioPage` (pure; unknown types
   skipped and reported through `onUnknownType`); React 19.3.1 as a peer; tests render with
   `react-dom/server` (UT11, UT12, UT17). With T07, `section-engine` is `Implemented`.
+- cms-panel-shell.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010/0011 before it was ever `Ready` (register, verify, Google, slug; AC16–AC20; AC11 data
+  and the editing E2E deferred to `publish-pipeline` / `about-section`, recorded in the spec),
+  `Ready` under the standing authorisation. Pinned and installed TanStack Query, react-hook-form,
+  @hookform/resolvers, Zustand, @axe-core/playwright (ADR-0007). `lib/api/client.ts`
+  (`ApiClient`, `ApiError`, in-lock retry → one refresh → one retry, `SESSION_EXPIRED` never
+  refreshes, `/auth/**` never refreshes), `lib/api/context.tsx`, `auth.ts` and `portfolio.ts`
+  hooks, `lib/cms/navigation.ts` (`safeNext`, `loginUrl`), CMS providers in the `/cms` layout.
+  UT01, UT02, UT03, UT08 — 33 web unit tests.
