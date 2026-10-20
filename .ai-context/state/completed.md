@@ -227,3 +227,15 @@
   `SLUG_TAKEN`, conditional `updateOrder` / `updateSlug`), `SectionRepository` (scoped by
   portfolio, conditional `update`, insert-only `createMissing` via `$setOnInsert` upserts);
   in-memory fakes; contract suite CT02 on both (AC2, AC3, AC9, AC12, AC15–AC17 at the store).
+- section-engine.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `ISectionDefinition`,
+  `ISectionRegistry`, `IIdGenerator`, `IUserDirectory`; `SectionRegistry` (duplicate, malformed
+  type id, defaults failing their schema, orderable-but-not-hideable all fail construction,
+  naming the type); `CryptoIdGenerator` (Node `crypto`, no `nanoid`); test-only
+  `FakeSectionDefinition` / `FakeHeroDefinition`. UT09, UT10.
+- section-engine.T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `SectionService`
+  (read draft with hidden defaults at revision 0 for a missing type, update with schema
+  validation paths relative to `data`, generic list-item id assignment and duplicate refusal,
+  visibility with `SECTION_NOT_HIDEABLE`, reorder as an exact permutation; every missed write
+  `REVISION_CONFLICT` with `currentRevision`), `PortfolioProvisioner` (get-or-create from the
+  template, `initialSlug`, suffix on a taken slug, race-safe, `changeSlug` with the reserved
+  list), `portfolio.mappers.ts`. UT01–UT08, UT13–UT16; 51 portfolio tests.

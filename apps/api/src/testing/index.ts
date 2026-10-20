@@ -32,3 +32,9 @@ export {
   InMemoryPortfolioRepository,
   InMemorySectionRepository,
 } from './portfolio/in-memory-portfolio-repositories.js';
+export {
+  FakeHeroDefinition,
+  FakeSectionDefinition,
+  fakeSectionSchema,
+  type FakeSection,
+} from './portfolio/fake-section-definitions.js';
