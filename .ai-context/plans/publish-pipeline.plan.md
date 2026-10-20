@@ -41,6 +41,11 @@ interface IPublishStep { run(ctx: PublishContext): Promise<PublishContext>; }
   `NODE_ENV !== 'production'` and `WEB_REVALIDATE_URL` is unset; production without it fails
   startup.
 - **Web:** `/cms/publish` — status, issues with deep links, publish confirmation, history.
+- **Implementation notes (2026-10-21):** the pointer class is `PublishedPointerStore`
+  (`portfolio/published-pointer.store.ts`) because `PublishedPointer` is the pointer's value type;
+  `design` implements `IPublishDesignCheck` as `DesignPublishCheck`; the builder reads asset
+  metadata through `IPublishedAssetSource` (the asset repository's `findById`, adapted in the
+  container); rules walk the content with `content-walker.ts`, so no rule lists fields.
 ## Data Model
 **`snapshots`** — `_id`, `portfolioId`, `version`, `contentHash`, `content` (PublishedContent),
 `note`, `publishedAt`, `publishedBy`, `delivery: { status, at, attempts }`. Indexes: unique

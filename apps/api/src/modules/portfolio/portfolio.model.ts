@@ -6,6 +6,8 @@
  * - `portfolios.userId` unique — one portfolio per user (ADR-0010); a provisioning race inserts
  *   one and the loser reads it (`section-engine.AC15`);
  * - `portfolios.slug` unique — the free portfolio's path;
+ * - `portfolios.published*` — the live snapshot pointer (`publish-pipeline`, ADR-0004), switched
+ *   by one conditional update, which is a publish's commit;
  * - `sections { portfolioId, type }` unique — one document per section type per portfolio
  *   (ADR-0005), and every section query is scoped by `portfolioId` (tenant isolation).
  */
@@ -16,6 +18,10 @@ export interface PortfolioDocument {
   slug: string;
   sectionOrder: string[];
   revision: number;
+  /** The live snapshot (`publish-pipeline`); `null` until the first publish. */
+  publishedSnapshotId: Types.ObjectId | null;
+  publishedVersion: number | null;
+  publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +42,11 @@ const portfolioSchema = new Schema<PortfolioDocument>(
     slug: { type: String, required: true, unique: true },
     sectionOrder: { type: [String], required: true, default: [] },
     revision: { type: Number, required: true, min: 1, default: 1 },
+    // Written only by `PublishedPointer`, with a compare-and-swap on `publishedSnapshotId`. Not
+    // part of `revision`: publishing never conflicts with an order or slug edit.
+    publishedSnapshotId: { type: Schema.Types.ObjectId, default: null },
+    publishedVersion: { type: Number, default: null },
+    publishedAt: { type: Date, default: null },
   },
   { collection: 'portfolios', timestamps: true, strict: 'throw' },
 );

@@ -45,3 +45,10 @@ export {
   InMemoryFileStorage,
 } from './assets/in-memory-assets.js';
 export { InMemoryIdentityRepository } from './identity/in-memory-identity-repository.js';
+export {
+  cleanContent,
+  REFERENCE_ORDER,
+  SEED_PLACEHOLDER,
+  sectionData,
+  seedContent,
+} from './publishing/publishing-fixtures.js';
