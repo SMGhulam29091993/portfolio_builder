@@ -47,8 +47,11 @@ export {
 export { InMemoryIdentityRepository } from './identity/in-memory-identity-repository.js';
 export {
   cleanContent,
+  publishableContent,
   REFERENCE_ORDER,
+  RESUME_ASSET,
   SEED_PLACEHOLDER,
   sectionData,
   seedContent,
 } from './publishing/publishing-fixtures.js';
+export { InMemoryPointerStore, InMemorySnapshotRepository } from './publishing/in-memory-publishing.js';

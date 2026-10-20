@@ -37,3 +37,21 @@ export function sectionData(content: PublishedContent, type: string): Record<str
   if (!section) throw new Error(`No ${type} section in the fixture`);
   return section.data as Record<string, unknown>;
 }
+
+/** A résumé asset as a snapshot lists it. */
+export const RESUME_ASSET = Object.freeze({
+  id: 'resume-1',
+  kind: 'resume' as const,
+  filename: 'cv.pdf',
+  mime: 'application/pdf',
+  sizeBytes: 1_024,
+  sha256: 'c'.repeat(64),
+});
+
+/** Clean content with a résumé — no issue from any of the nine rules. */
+export function publishableContent(): PublishedContent {
+  const content = cleanContent();
+  content.identity.resume.assetId = RESUME_ASSET.id;
+  content.assets = [{ ...RESUME_ASSET }];
+  return content;
+}

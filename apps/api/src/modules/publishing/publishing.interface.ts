@@ -168,7 +168,8 @@ export interface IPublishingService {
    * @throws {PublishBlockedError} At least one `error` issue (422).
    */
   publish(scope: DraftScope, request: PublishRequest, meta: PublishMeta): Promise<PublishResult>;
-  history(portfolioId: string, query: ListSnapshotsQuery): Promise<SnapshotPage & { currentVersion: number | null }>;
+  /** Newest first (`publish-pipeline.API04`). */
+  history(portfolioId: string, query: ListSnapshotsQuery): Promise<SnapshotPage>;
   /**
    * @throws {NotFoundError} No snapshot with that version.
    * @throws {ConflictError} `ALREADY_CURRENT` or `PUBLISH_CONFLICT`.

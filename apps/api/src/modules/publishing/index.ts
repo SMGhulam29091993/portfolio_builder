@@ -10,6 +10,7 @@ export type {
   IPublishedPointerReader,
   IPublishedPointerWriter,
   ISnapshotReader,
+  ISnapshotRepository,
 } from './publishing.interface.js';
 export type {
   DesignCheckIssue,
@@ -17,11 +18,14 @@ export type {
   DraftParts,
   DraftScope,
   DraftSection,
+  NewSnapshot,
   PointerState,
   PortfolioPublishedEvent,
   PublishedContent,
   PublishedPointer,
   PublishingEvents,
+  RevalidationStatus,
   SectionsDraft,
+  SnapshotHeader,
   StoredSnapshot,
 } from './publishing.types.js';

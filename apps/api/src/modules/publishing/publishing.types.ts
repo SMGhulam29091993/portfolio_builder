@@ -2,7 +2,7 @@
  * Domain types of the `publishing` module (`publish-pipeline` plan → Data Model). Published
  * content, issues and request payloads are owned by `packages/contracts` and re-exported here.
  */
-import type { Identity, PublishedContent, PublishIssue, RevalidationStatus } from '@portfolio/contracts';
+import type { Identity, PublishedContent, PublishIssue, RevalidationStatus, SnapshotSummary } from '@portfolio/contracts';
 
 export {
   hasPlaceholder,
@@ -148,7 +148,7 @@ export interface PublishingEvents {
 
 /** A page of the history (`publish-pipeline.API04`). */
 export interface SnapshotPage {
-  readonly snapshots: readonly SnapshotHeader[];
+  readonly snapshots: readonly SnapshotSummary[];
   readonly nextCursor: string | null;
 }
 
