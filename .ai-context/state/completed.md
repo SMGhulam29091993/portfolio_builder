@@ -406,3 +406,13 @@
   selection fallback); `mailtoHref`; marquee keyframes and effect switches in `globals.css`;
   the CMS preview passes the identity. 28 renderer tests over static markup. Implementation
   names differ from the task lines (e.g. `FeaturedCard`, `orderEntries`), same scope.
+- Section editors — hero-section.T05, about-section.T04, work-showcase.T04,
+  experience-timeline.T04, stack-credentials.T04, contact-section.T04 — 2026-10-21 — DoD
+  self-check: 2026-10-21, pass (gate; E2E 20 passed). Six editors registered in
+  `SECTION_EDITORS` (hero text/list switch per code-card value, optional secondary button; about
+  stats and steps; work exclusive featured switch and metric hint; experience month/year
+  pickers and "Current role"; stack groups, education and certifications; contact read-only
+  identity email with a link); form kit gains `StringListField`, `YearField`,
+  `MonthYearField`; `MetaFields`. `e2e/cms-editing.spec.ts` runs the editing journeys
+  E2E05–E2E09 handed on by `cms-panel-shell`. The layout tasks (hero T06, others T05) stay
+  in progress until the public site renders the page at real widths.
