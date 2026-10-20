@@ -11,7 +11,7 @@ owner moves a spec to `Ready`.
 | 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Implemented | BRD-002 | — |
 | 2a | `account-registration` | Registration, email verification, roles, the one-time owner claim | Implemented | BRD-009 | — |
 | 2b | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | Implemented | BRD-010 | — |
-| 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
+| 3 | `section-engine` | Section registry, draft content engine, per-user portfolio | Implemented | BRD-001 | — |
 | 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
 | 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
 | 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | Revise for ADR-0010 (serves bytes to the asset's own user, not "the owner") |
@@ -56,6 +56,11 @@ owner moves a spec to `Ready`.
   (`OidcProvider` with `jose`, `LocalOidcIssuer` for tests), T03 (`GoogleSignInService`,
   redirects-only controller, state cookie, Google variables all-or-nothing, `googleSignIn` in
   registration options, OpenAPI 0.6.0). `Implemented`.
+- `section-engine` revised for ADR-0010 (provisioning from the template, slug, tenant isolation),
+  `Ready` under the standing authorisation, and implemented T01–T07: contracts primitives,
+  persistence, registry, `SectionService` and `PortfolioProvisioner`, routes API01–API06 with
+  `resolvePortfolio` (OpenAPI 0.7.0), `seed:all`, and the composer in `packages/sections`.
+  `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

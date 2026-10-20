@@ -254,3 +254,9 @@
   orchestrator, `SeedDataError`, `buildSeeders().all`, `seed-all.ts` and `pnpm seed:all` (API
   and root), README. Both seeders refuse in production. IT11 and AC12 in
   `content-seeders.spec.ts`.
+- section-engine.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate).
+  `packages/sections`: `SectionRendererRegistry` (type + variant, `default` fallback,
+  duplicate refusal, `variantsOf`), `composeSections` (hero first, order, hidden dropped,
+  consecutive numbering, unlisted visible types appended), `PortfolioPage` (pure; unknown types
+  skipped and reported through `onUnknownType`); React 19.3.1 as a peer; tests render with
+  `react-dom/server` (UT11, UT12, UT17). With T07, `section-engine` is `Implemented`.

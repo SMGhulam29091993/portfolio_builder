@@ -165,3 +165,13 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Canonical definition:** `packages/contracts/src/common/plain-text.ts` (`plainText`, `cleanPlainText`)
 **Referenced by:** `int-standards.express.md` → Input validation, `constitution.md` → Plain text only, `account-registration` (`displayName`), every section payload schema
 **Last updated:** 2026-10-20
+
+## Portfolio provisioning, slug rules and the reference template
+**Canonical definition:** `.ai-context/specs/section-engine.spec.md` → Portfolio provisioning · Slug rules
+**Referenced by:** ADR-0010 (Owner answers: template, path address), `public-site-rendering` (serves `<platform>/<slug>`), `publish-pipeline` (the placeholder rule blocks unedited template content), every section spec (`defaults()` is the template); code: `packages/contracts/src/sections/engine.ts` (`SLUG_PATTERN`, `RESERVED_SLUGS`), `modules/portfolio/portfolio.provisioner.ts`, `resolve-portfolio.middleware.ts`
+**Last updated:** 2026-10-20
+
+## Section payload primitives (`listItem`, `safeUrlSchema`, …)
+**Canonical definition:** `.ai-context/specs/section-engine.spec.md` → Shared payload primitives; code `packages/contracts/src/sections/primitives.ts`
+**Referenced by:** the six section specs, `site-identity`, `publish-pipeline` (URL re-check), `modules/portfolio/section.service.ts` (item-id assignment), `seed/section.seeder.ts` (fixed ids)
+**Last updated:** 2026-10-20

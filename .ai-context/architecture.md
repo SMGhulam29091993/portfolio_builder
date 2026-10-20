@@ -15,8 +15,10 @@ Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), 
 code (T08) exist, and so does the development-only owner seeder with its `seed:owner` script
 (T09, ADR-0010). `account-registration` is implemented in the same module: registration, email
 verification by one-time code, roles and the one-time owner claim; and `google-sign-in`: the
-OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). Every other feature
-module is ⬜ planned.
+OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). `section-engine` is implemented: the `portfolio`
+module (one portfolio per user, provisioned on the first CMS request; the section registry and
+engine; `resolvePortfolio`), `seed:all`, and the composer in `packages/sections`. Every other
+feature module is ⬜ planned.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -64,8 +66,8 @@ portfolio-builder/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
 │           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
 ├── packages/
-│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅
-│   ├── sections/                 🚧 React section renderers + variant registry — skeleton
+│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅ · `common` (`plainText`) ✅ · `sections` (primitives, engine) ✅
+│   ├── sections/                 🚧 React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer ✅; renderers ⬜ the section specs
 │   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)
@@ -144,7 +146,7 @@ One writing module per collection. Field-level schemas live in the owning plan's
 | `users` | `auth` | User accounts: password hash, `role` (`owner` \| `member`; the `one_owner` partial unique index admits one owner), `emailVerifiedAt` (`account-registration`), `googleSub` (unique, sparse; `google-sign-in`, ADR-0011); `passwordHash` is absent on a Google-only account. The development seeder writes only through `auth`'s ports |
 | `otps` | `auth` | One-time codes (`password_reset`, `email_verification`): bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
 | Redis `auth:session:*`, `auth:otp-ref:*`, `auth:google-state:*` | `auth` | The one session per user (`jti`, refresh-token hash), one-time-code references, and the Google flow's PKCE verifier and nonce (10 minutes, taken once), each with a TTL (ADR-0008) |
-| `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
+| `portfolios` | `portfolio` | One per user (ADR-0010; `userId` unique), provisioned on the user's first CMS request: `slug` (unique; the free address `<platform>/<slug>`), `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |
 | `designs` | `design` | One per portfolio: `theme`, `layout`, `revision` |

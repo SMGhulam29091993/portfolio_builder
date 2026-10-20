@@ -8,4 +8,4 @@
 - [x] section-engine.T04 — `SectionService` (read draft with missing-document defaults, update with id assignment and revision check, visibility, reorder, list types) and `PortfolioProvisioner` (get-or-create, initial slug, slug change) — Acceptance: AC1–AC9, AC15, AC17, AC18
 - [x] section-engine.T05 — `PortfolioController`, `portfolio.routes.ts`, `ResolvePortfolioMiddleware`, `IUserDirectory` on `auth`; container wiring with an empty definition list; OpenAPI for API01–API06; route tests including tenant isolation — Acceptance: AC1, AC5, AC15, AC16
 - [x] section-engine.T06 — the `seed:all` orchestrator over `ISeeder` (ordered, idempotent), `PortfolioSeeder`, `SectionSeeder` reading `seed/data/sections/*.ts` — Acceptance: AC12
-- [~] section-engine.T07 — `packages/sections`: `SectionRendererRegistry`, `PortfolioPage` composer with ordering, hiding, derived numbering and unknown-type skipping — Acceptance: AC13, AC14
+- [x] section-engine.T07 — `packages/sections`: `SectionRendererRegistry`, `PortfolioPage` composer with ordering, hiding, derived numbering and unknown-type skipping — Acceptance: AC13, AC14

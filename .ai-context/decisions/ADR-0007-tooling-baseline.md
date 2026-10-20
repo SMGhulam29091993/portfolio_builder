@@ -67,6 +67,7 @@ appends the tools it installs to this table in the same change.
 | nodemailer | 10.1.2 | `owner-auth.T07` | `apps/api`; ships its own types; Gmail SMTP through its well-known `Gmail` service entry, plain text only (ADR-0009) |
 | smtp-server | 3.19.23 | `owner-auth.T07` | `apps/api` dev only; the local SMTP server the `IMailSender` contract suite (`owner-auth.CT06`) sends to, so no test sends real mail |
 | @types/smtp-server | 3.5.13 | `owner-auth.T07` | `apps/api` dev only; smtp-server ships no types |
+| react, react-dom, @types/react, @types/react-dom, vitest in `packages/sections` | same pins as `apps/web` (19.3.1, 19.3.0, 5.0.5) | `section-engine.T07` | React is a peer dependency of `packages/sections`; component tests render with `react-dom/server`, so no DOM testing library is added |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 
 **TypeScript is held at 6.0.x.** On 2026-10-15 the `latest` TypeScript was 7.0.2, but
