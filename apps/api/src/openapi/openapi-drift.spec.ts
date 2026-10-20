@@ -112,6 +112,12 @@ describe('readDocumentedOperations', () => {
       { method: 'post', path: '/api/v1/auth/verification/resend', specId: 'account-registration.API05' },
       { method: 'get', path: '/api/v1/auth/google/start', specId: 'google-sign-in.API01' },
       { method: 'get', path: '/api/v1/auth/google/callback', specId: 'google-sign-in.API02' },
+      { method: 'get', path: '/api/v1/cms/portfolio', specId: 'section-engine.API01' },
+      { method: 'get', path: '/api/v1/cms/portfolio/section-types', specId: 'section-engine.API02' },
+      { method: 'put', path: '/api/v1/cms/portfolio/sections/{type}', specId: 'section-engine.API03' },
+      { method: 'patch', path: '/api/v1/cms/portfolio/sections/{type}/visibility', specId: 'section-engine.API04' },
+      { method: 'put', path: '/api/v1/cms/portfolio/section-order', specId: 'section-engine.API05' },
+      { method: 'put', path: '/api/v1/cms/portfolio/slug', specId: 'section-engine.API06' },
     ]);
   });
 });

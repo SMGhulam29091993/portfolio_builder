@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.6.0
+  version: 0.7.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -27,6 +27,9 @@ tags:
       routes and their send limit by owner-auth.T08. Registration, email verification and the
       one-time owner claim by account-registration.T03. Google sign-in (two browser redirects)
       by google-sign-in.T03.
+  - name: portfolio
+    description: >-
+      The section engine (section-engine): the signed-in user's own portfolio, its sections, their order, visibility and the portfolio slug. Every route runs requireOwner then resolvePortfolio, which provisions the portfolio on first use; no route takes a portfolio id.
 
 paths:
   /api/v1/health:
@@ -582,6 +585,192 @@ paths:
               $ref: '#/components/headers/SetSessionCookies'
         '429':
           $ref: '#/components/responses/RateLimited'
+  /api/v1/cms/portfolio:
+    get:
+      tags: [portfolio]
+      operationId: section-engine.API01
+      x-spec-id: section-engine.API01
+      summary: The signed-in user's portfolio draft
+      description: >-
+        Every registered section type in registration order, with its stored data, visibility
+        and revision; a type with no stored document is returned with its defaults, visible
+        false and revision 0. Provisions the portfolio from the template on the user's first CMS
+        request.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The draft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioDraftEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/portfolio/section-types:
+    get:
+      tags: [portfolio]
+      operationId: section-engine.API02
+      x-spec-id: section-engine.API02
+      summary: The registered section types
+      description: >-
+        Type, label and flags of every registered section type.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionTypesEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/portfolio/sections/{type}:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API03
+      x-spec-id: section-engine.API03
+      summary: Save one section
+      description: >-
+        Validates data against the type's schema (free text cleaned; paths in errors are
+        relative to data), assigns ids to list items without one, and stores it when
+        expectedRevision matches. expectedRevision 0 creates a type that has no stored document
+        yet. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9-]*$', maxLength: 32 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSectionRequest'
+      responses:
+        '200':
+          description: The saved section.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/portfolio/sections/{type}/visibility:
+    patch:
+      tags: [portfolio]
+      operationId: section-engine.API04
+      x-spec-id: section-engine.API04
+      summary: Show or hide one section
+      description: >-
+        Sets visible when expectedRevision matches. hero cannot be hidden (409
+        SECTION_NOT_HIDEABLE). Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9-]*$', maxLength: 32 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetVisibilityRequest'
+      responses:
+        '200':
+          description: The section.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SectionConflict'
+
+  /api/v1/cms/portfolio/section-order:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API05
+      x-spec-id: section-engine.API05
+      summary: Reorder the sections
+      description: >-
+        Replaces sectionOrder in one conditional write when order is an exact permutation of the
+        orderable types (hero excluded) and expectedRevision matches the portfolio. Requires the
+        web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderSectionsRequest'
+      responses:
+        '200':
+          description: The portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/portfolio/slug:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API06
+      x-spec-id: section-engine.API06
+      summary: Change the portfolio address
+      description: >-
+        Replaces the slug (3 to 40 lower-case letters, digits and single inner hyphens) when it
+        is neither reserved nor used by another portfolio and expectedRevision matches. Requires
+        the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeSlugRequest'
+      responses:
+        '200':
+          description: The portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/SlugConflict'
 
 components:
   securitySchemes:
@@ -732,7 +921,102 @@ components:
         db: { const: up }
         version: { type: string, minLength: 1 }
         uptimeSec: { type: integer, minimum: 0 }
-
+    CmsPortfolio:
+      type: object
+      required: [id, slug, revision, sectionOrder]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        revision: { type: integer, minimum: 1 }
+        sectionOrder: { type: array, items: { type: string } }
+    CmsSection:
+      type: object
+      required: [type, visible, revision, data]
+      properties:
+        type: { type: string }
+        visible: { type: boolean }
+        revision: { type: integer, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        data:
+          description: The payload owned by that section type's spec.
+    SectionTypeInfo:
+      type: object
+      required: [type, label, orderable, hideable, inNav]
+      properties:
+        type: { type: string }
+        label: { type: string }
+        orderable: { type: boolean }
+        hideable: { type: boolean }
+        inNav: { type: boolean }
+    UpdateSectionRequest:
+      type: object
+      required: [expectedRevision, data]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        data: { description: The section type's payload. }
+    SetVisibilityRequest:
+      type: object
+      required: [expectedRevision, visible]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        visible: { type: boolean }
+    ReorderSectionsRequest:
+      type: object
+      required: [expectedRevision, order]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        order: { type: array, maxItems: 64, items: { type: string } }
+    ChangeSlugRequest:
+      type: object
+      required: [expectedRevision, slug]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        slug: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' }
+    PortfolioDraftEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolio, sections]
+              properties:
+                portfolio: { : '#/components/schemas/CmsPortfolio' }
+                sections: { type: array, items: { : '#/components/schemas/CmsSection' } }
+    SectionTypesEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [types]
+              properties:
+                types: { type: array, items: { : '#/components/schemas/SectionTypeInfo' } }
+    SectionEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [section]
+              properties:
+                section: { : '#/components/schemas/CmsSection' }
+    PortfolioEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolio]
+              properties:
+                portfolio: { : '#/components/schemas/CmsPortfolio' }
   responses:
     ValidationFailed:
       description: The request failed its schema.
@@ -1029,3 +1313,82 @@ components:
             success: false
             message: Mail delivery is not configured
             data: { code: SERVICE_UNAVAILABLE }
+    NotFound:
+      description: >-
+        The resource does not exist (for a section, the type is not registered).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: NOT_FOUND }
+          example:
+            success: false
+            message: Resource not found
+            data: { code: NOT_FOUND }
+    RevisionConflict:
+      description: >-
+        expectedRevision is stale; data.currentRevision holds the stored revision. Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: REVISION_CONFLICT }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: This was changed elsewhere. Reload to see the latest version
+            data: { code: REVISION_CONFLICT }
+    SectionConflict:
+      description: >-
+        REVISION_CONFLICT (with currentRevision) or SECTION_NOT_HIDEABLE (hero). Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [REVISION_CONFLICT, SECTION_NOT_HIDEABLE] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: This section cannot be hidden
+            data: { code: SECTION_NOT_HIDEABLE }
+    SlugConflict:
+      description: >-
+        SLUG_TAKEN (reserved, or used by another portfolio) or REVISION_CONFLICT (with currentRevision). Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [SLUG_TAKEN, REVISION_CONFLICT] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: That address is already taken
+            data: { code: SLUG_TAKEN }

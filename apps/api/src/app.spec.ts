@@ -102,6 +102,12 @@ describe('app with MongoDB reachable', () => {
       { method: 'post', path: '/api/v1/auth/verification/resend' },
       { method: 'get', path: '/api/v1/auth/google/start' },
       { method: 'get', path: '/api/v1/auth/google/callback' },
+      { method: 'get', path: '/api/v1/cms/portfolio' },
+      { method: 'get', path: '/api/v1/cms/portfolio/section-types' },
+      { method: 'put', path: '/api/v1/cms/portfolio/sections/:type' },
+      { method: 'patch', path: '/api/v1/cms/portfolio/sections/:type/visibility' },
+      { method: 'put', path: '/api/v1/cms/portfolio/section-order' },
+      { method: 'put', path: '/api/v1/cms/portfolio/slug' },
     ]);
   });
 

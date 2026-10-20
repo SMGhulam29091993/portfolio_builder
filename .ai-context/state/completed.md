@@ -239,3 +239,11 @@
   `REVISION_CONFLICT` with `currentRevision`), `PortfolioProvisioner` (get-or-create from the
   template, `initialSlug`, suffix on a taken slug, race-safe, `changeSlug` with the reserved
   list), `portfolio.mappers.ts`. UT01–UT08, UT13–UT16; 51 portfolio tests.
+- section-engine.T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PortfolioController`,
+  `portfolio.routes.ts` (API01–API06, each `requireOwner` → `resolvePortfolio`),
+  `ResolvePortfolioMiddleware` (sets `req.portfolio`; provisions on first use), container
+  wiring with `SECTION_DEFINITIONS` (empty until the section specs) and a test-only
+  `sectionDefinitions` override, the user directory adapted from `auth` in the container (no
+  module edge), OpenAPI 0.7.0 (portfolio tag, six operations, `RevisionConflict`,
+  `SectionConflict`, `SlugConflict`, `NotFound`), `portfolio.routes.spec.ts` (IT02–IT10,
+  IT12, IT14–IT17 incl. tenant isolation between two signed-in users).

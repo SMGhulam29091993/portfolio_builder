@@ -53,6 +53,16 @@ import { SessionCookieWriter } from './modules/auth/session-cookie-writer.js';
 import { RedisSessionStore } from './modules/auth/session.store.js';
 import { UserRepository } from './modules/auth/user.repository.js';
 import { HealthController } from './modules/health/health.controller.js';
+import { CryptoIdGenerator } from './modules/portfolio/adapters/crypto-id-generator.js';
+import type { ISectionDefinition } from './modules/portfolio/index.js';
+import { PortfolioController } from './modules/portfolio/portfolio.controller.js';
+import { PortfolioProvisioner } from './modules/portfolio/portfolio.provisioner.js';
+import { PortfolioRepository } from './modules/portfolio/portfolio.repository.js';
+import { createPortfolioRouter } from './modules/portfolio/portfolio.routes.js';
+import { ResolvePortfolioMiddleware } from './modules/portfolio/resolve-portfolio.middleware.js';
+import { SectionRegistry } from './modules/portfolio/section.registry.js';
+import { SectionRepository } from './modules/portfolio/section.repository.js';
+import { SectionService } from './modules/portfolio/section.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { createHealthRouter } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
@@ -141,6 +151,12 @@ const MAIL_STRATEGIES: readonly MailStrategy[] = [
   ),
 ];
 
+/**
+ * The registered section types (`section-engine`; ADR-0005), in page order. Each section spec
+ * adds its definition here — one line — and nothing else in the engine changes (AC10).
+ */
+const SECTION_DEFINITIONS: readonly ISectionDefinition[] = [];
+
 /** What the container needs from the startup sequence. */
 export interface ContainerDependencies {
   /** Validated configuration; consumed by later modules (auth, AI, publishing). */
@@ -165,6 +181,11 @@ export interface ContainerDependencies {
    * `OidcProvider` when the three Google variables are set, else `DisabledOidcProvider`.
    */
   readonly oidcProvider?: IOidcProvider;
+  /**
+   * Replaces the section definition list. The engine's route tests pass test-only definitions
+   * so the engine is proven without the six real types; production omits it.
+   */
+  readonly sectionDefinitions?: readonly ISectionDefinition[];
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -201,6 +222,7 @@ export function buildContainer({
   clock = new SystemClock(),
   mailSender,
   oidcProvider,
+  sectionDefinitions = SECTION_DEFINITIONS,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -317,6 +339,25 @@ export function buildContainer({
     rateLimiters.create(GOOGLE_RATE_LIMIT),
   );
 
+  // portfolio (`section-engine`): the registry is built here so a broken definition fails
+  // startup (AC11). The user directory adapts `auth`'s reader, so `portfolio` imports nothing
+  // from `auth` for the display name.
+  const sectionRegistry = new SectionRegistry(sectionDefinitions);
+  const portfolioRepository = new PortfolioRepository(mongo);
+  const sectionRepository = new SectionRepository(mongo);
+  const provisioner = new PortfolioProvisioner(portfolioRepository, sectionRepository, sectionRegistry, {
+    displayNameOf: async (userId) => (await users.findById(userId))?.displayName ?? null,
+  });
+  const resolvePortfolio = new ResolvePortfolioMiddleware(provisioner).handle;
+  const portfolioRouter = createPortfolioRouter(
+    new PortfolioController(
+      new SectionService(portfolioRepository, sectionRepository, sectionRegistry, new CryptoIdGenerator()),
+      provisioner,
+    ),
+    authGuard,
+    resolvePortfolio,
+  );
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
@@ -325,7 +366,7 @@ export function buildContainer({
   return {
     logger,
     originAllowList,
-    apiRouters: [healthRouter, authRouter, googleRouter],
+    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter],
     authGuard,
   };
 }
