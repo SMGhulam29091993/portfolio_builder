@@ -279,3 +279,11 @@
   page requests, so AC1's redirect is client-side (spec Status). Found and fixed: the client
   must refresh on `/auth/me`. `ownerSecret`'s contract changed to a transform inside
   `optional()` so its input type is a string (behaviour unchanged, 81 contract tests).
+- cms-panel-shell.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate incl. `next build`).
+  `(panel)` route group: `PanelShell` (loads `owner-auth.API04`; a dead session goes to sign-in
+  through the client's session-loss handler; loading and retryable error states; sign-out;
+  `beforeunload` guard while anything is dirty), `CmsNav` (Overview, sections in portfolio
+  order via `lib/cms/nav.ts`, fixed areas), `GuardedLink` (AC8 confirm), `PublishStatusSlot`
+  (filled by `publish-pipeline`), `Toasts` (polite live region), mount points for identity,
+  design, assets, AI, publish; `lib/cms/ui-store.ts` (Zustand: toasts, dirty registry, preview
+  viewport). `noindex` stays on the `/cms` layout (AC12).
