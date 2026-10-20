@@ -316,3 +316,10 @@
   component, which React requires for boundaries; resets when the data changes),
   `useDebouncedValue`; `PortfolioPage` gained `wrapSection`. UT06; preview E2E (E2E08) runs with
   `about-section`.
+- cms-panel-shell.T08 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; `pnpm test:e2e` 10
+  passed locally in Chromium). `SmtpMailSender` (`SMTP_URL`, ahead of Gmail; `GmailMailSender`
+  now a subclass; in CT06), `SMTP_URL` in `env.ts`, `.env.example`, `turbo.json`, architecture,
+  ADR-0009 amended; E2E harness: local SMTP server + mailbox endpoint, `seed:all` before the API,
+  one worker; `e2e/cms-auth.spec.ts` (E2E01–E2E03, E2E10–E2E12, E2E14, E2E15, registration);
+  CI installs Playwright Chromium. axe found contrast and colour-only-link issues on the overview
+  (fixed; `memory/review-findings.md`). With T08, `cms-panel-shell` is `Implemented`.

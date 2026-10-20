@@ -2,7 +2,10 @@
 ## Spec ID
 cms-panel-shell
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` on 2026-10-20: T01–T08 completed, each with a DoD self-check line
+  in `state/completed.md`. Handed on, as recorded below: AC11's data (`publish-pipeline`) and
+  the editing E2E05–E2E09 (`about-section`).
 - `Ready → In Progress` on 2026-10-20 with `cms-panel-shell.T01` started.
 - DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`).

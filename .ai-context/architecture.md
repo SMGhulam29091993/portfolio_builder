@@ -61,10 +61,13 @@ portfolio-builder/
 │   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
-│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API (Redis database 15)
+│       ├── e2e/                  ✅ Playwright (Chromium); `start-api.ts` boots a throwaway MongoDB, seeds the development account, runs a local SMTP server + mailbox for one-time codes, then the built API (Redis database 15)
 │       └── src/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
-│           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
+│           ├── lib/api/          ✅ `ApiClient` (envelope, cross-tab refresh rule) + TanStack Query hooks (`auth`, `portfolio`)
+│           ├── lib/cms/          ✅ pure CMS rules: `safeNext`, messages, nav order, reorder, preview model, schema limits; Zustand UI store
+│           ├── components/cms/   ✅ UI kit, form kit, panel frame, editor host + registry, overview, preview pane
+│           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ — `(auth)` login, register, verify, forgot-password; `(panel)` overview, `sections/[type]`, area mount points; noindex · `api/revalidate` ⬜
 ├── packages/
 │   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅ · `common` (`plainText`) ✅ · `sections` (primitives, engine) ✅
 │   ├── sections/                 🚧 React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer ✅; renderers ⬜ the section specs
@@ -258,7 +261,8 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
-| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
+| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER`; required by the SMTP strategy |
+| `SMTP_URL` | api | Generic SMTP mail strategy (ADR-0009, amended 2026-10-20): `smtp://` / `smtps://`, `user:pass@` for a login; with `MAIL_FROM`, it takes priority over Gmail. The E2E harness points it at a local SMTP server |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | `pnpm seed:owner` creates one local account from them (display name `Owner`); optional, so the API starts without them; the seeder refuses when either is unset, when the password is outside 12–200 characters, and always in production (ADR-0010) |
 | `OWNER_REGISTRATION_SECRET` | api | The owner secret key: a registration carrying it while no owner exists claims the owner account (`account-registration`, ADR-0010); optional, 32–200 characters; unset keeps the claim closed |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL` | api | Google sign-in (`google-sign-in`, ADR-0011): all three switch it on, none leaves it off (routes redirect with `google_unavailable`); some but not all fails startup |

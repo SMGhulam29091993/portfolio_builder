@@ -76,8 +76,12 @@ jobs:
       - name: Second run is fully cached
         run: node scripts/check-turbo-cache.mjs build typecheck lint test drift
 
-      # E2E01 uses Playwright's request fixture only, so no browser download is needed yet; add
-      # `pnpm --filter @portfolio/web exec playwright install --with-deps chromium` with the first
-      # browser-driven spec.
+      # The CMS journeys drive a real browser (`cms-panel-shell.T08`): install the Chromium build
+      # that the pinned @playwright/test expects, with its system libraries.
+      - name: Install Playwright Chromium
+        run: pnpm --filter @portfolio/web exec playwright install --with-deps chromium
+
+      # Runs the built API behind a throwaway MongoDB, the compose Redis service, a local SMTP
+      # server for one-time codes and `next dev` (`apps/web/e2e/start-api.ts`).
       - name: End-to-end tests
         run: pnpm test:e2e

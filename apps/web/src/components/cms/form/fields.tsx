@@ -28,7 +28,7 @@ function Counter({ name, max, id }: { name: string; max: number; id: string }) {
   const value: unknown = useWatch({ name });
   const length = typeof value === 'string' ? value.length : 0;
   return (
-    <span id={id} className={`text-xs ${length > max ? 'text-red-300' : 'text-neutral-500'}`}>
+    <span id={id} className={`text-xs ${length > max ? 'text-red-300' : 'text-neutral-400'}`}>
       {length}/{max}
     </span>
   );

@@ -65,6 +65,7 @@
         "GMAIL_USER",
         "GMAIL_APP_PASSWORD",
         "MAIL_FROM",
+        "SMTP_URL",
         "OWNER_EMAIL",
         "OWNER_PASSWORD",
         "OWNER_REGISTRATION_SECRET",

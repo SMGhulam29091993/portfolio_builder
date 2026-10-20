@@ -72,6 +72,8 @@ appends the tools it installs to this table in the same change.
 | react-hook-form | 7.89.0 | `cms-panel-shell.T01` | `apps/web`; CMS forms |
 | @hookform/resolvers | 5.9.1 | `cms-panel-shell.T01` | `apps/web`; the zod resolver, so forms validate with the API's own contract schemas |
 | zustand | 5.0.15 | `cms-panel-shell.T01` | `apps/web`; cross-component CMS UI state only (preview viewport, unsaved-changes registry) |
+| smtp-server, @types/smtp-server in `apps/web` | 3.19.23, 3.5.13 | `cms-panel-shell.T08` | dev only; the E2E harness's local SMTP server (same pins as `apps/api`) |
+| Playwright Chromium | the build @playwright/test 1.64.1 expects (headless shell v1248) | `cms-panel-shell.T08` | installed by `playwright install --with-deps chromium` in CI; locally once by hand |
 | @axe-core/playwright | 4.13.0 | `cms-panel-shell.T01` | `apps/web` dev only; accessibility checks in E2E (`cms-panel-shell.AC14`) |
 | redis (Docker image) | 8.10.2 (`sha256:2c2dff7`) | `owner-auth.T01` | `docker-compose.dev.yml` and the CI service container — the same digest in both, so tests run against one server version |
 

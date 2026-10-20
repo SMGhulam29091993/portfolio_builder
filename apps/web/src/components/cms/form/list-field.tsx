@@ -35,7 +35,7 @@ export function ListField({ name, label, itemLabel, newItem, renderItem }: ListF
     <fieldset className="flex flex-col gap-3 rounded-2xl border border-neutral-800 p-4">
       <legend className="px-1 text-sm font-medium text-neutral-200">
         {label}{' '}
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-neutral-400">
           ({fields.length}
           {Number.isFinite(maxItems) ? ` of at most ${String(maxItems)}` : ''})
         </span>
@@ -58,7 +58,7 @@ export function ListField({ name, label, itemLabel, newItem, renderItem }: ListF
             className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-950 p-3"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs uppercase tracking-widest text-neutral-500">
+              <span className="text-xs uppercase tracking-widest text-neutral-400">
                 {itemLabel} {index + 1}
               </span>
               <div className="flex gap-1">

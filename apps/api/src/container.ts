@@ -26,6 +26,7 @@ import { BcryptOtpHasher } from './modules/auth/adapters/bcrypt-otp-hasher.js';
 import { CryptoSecureRandom } from './modules/auth/adapters/crypto-secure-random.js';
 import { DisabledMailSender } from './modules/auth/adapters/disabled-mail-sender.js';
 import { GmailMailSender } from './modules/auth/adapters/gmail-mail-sender.js';
+import { SmtpMailSender, smtpUrlSettings } from './modules/auth/adapters/smtp-mail-sender.js';
 import { JwtTokenIssuer } from './modules/auth/adapters/jwt-token-issuer.js';
 import { DisabledOidcProvider, OidcProvider } from './modules/auth/adapters/oidc-provider.js';
 import {
@@ -141,9 +142,16 @@ const ORIGIN_CHECKED_PATHS = [AUTH_PATH, `${API_PREFIX}/cms`] as const;
 
 /**
  * Mail strategies in priority order (ADR-0009): the first whose variables are all set sends
- * every email. A new provider (Brevo) is one adapter class plus one entry placed ahead of Gmail.
+ * every email. A new provider (Brevo) is one adapter class plus one entry placed ahead of Gmail;
+ * the generic SMTP strategy (2026-10-20) already covers any provider with an SMTP relay.
  */
 const MAIL_STRATEGIES: readonly MailStrategy[] = [
+  // A generic SMTP server (a provider's relay; the E2E harness's local server). Needs its own
+  // sender address, so `MAIL_FROM` is part of the strategy.
+  MailSenderFactory.strategy(['SMTP_URL', 'MAIL_FROM'], ({ SMTP_URL, MAIL_FROM }) => {
+    const { endpoint, credentials } = smtpUrlSettings(SMTP_URL);
+    return new SmtpMailSender(endpoint, credentials, MAIL_FROM);
+  }),
   MailSenderFactory.strategy(
     ['GMAIL_USER', 'GMAIL_APP_PASSWORD'],
     ({ GMAIL_USER, GMAIL_APP_PASSWORD }, { MAIL_FROM }) =>

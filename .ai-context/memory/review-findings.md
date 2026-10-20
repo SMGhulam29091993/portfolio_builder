@@ -131,3 +131,10 @@ the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in 
   the same inbox) could have completed a password reset or been resent as a reset code. Both
   services now refuse a record of another purpose with `OTP_INVALID`; covered by AC12 tests in
   both service specs.
+
+### 2026-10-20 — cms-panel-shell.T08 (axe, first run)
+- **Contrast and colour-only links on the overview.** axe reported `color-contrast` (Tailwind
+  `text-neutral-500` on the CMS's near-black surfaces is about 4.2:1, under 4.5:1) and
+  `link-in-text-block` (the public-address link in a sentence was distinguishable by colour
+  only). Fixed: secondary text uses `text-neutral-400`; in-text links are always underlined.
+  The axe journey (E2E11) now guards every CMS screen.

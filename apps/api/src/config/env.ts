@@ -74,6 +74,13 @@ const envSchema = z.object({
   GMAIL_USER: optional(z.email()),
   /** A Gmail app password for `GMAIL_USER` — never the account password. A secret. */
   GMAIL_APP_PASSWORD: optional(z.string()),
+  /**
+   * The generic SMTP mail strategy (ADR-0009, amended 2026-10-20): `smtp://` or `smtps://`, with
+   * `user:pass@` when the server needs a login. With `MAIL_FROM` it selects that strategy, ahead
+   * of Gmail. Treated as a secret: it may carry a password. The E2E harness points it at a local
+   * SMTP server so codes can be read back without a test hook.
+   */
+  SMTP_URL: optional(z.url({ protocol: /^smtps?$/ })),
   /** The sender address on outgoing mail; the Gmail strategy falls back to `GMAIL_USER`. */
   MAIL_FROM: optional(z.email()),
   /**

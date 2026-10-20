@@ -33,7 +33,7 @@ export function CmsNav() {
     <nav aria-label="CMS" className="flex flex-col gap-6">
       <ul className="flex flex-col gap-1">{item({ href: '/cms', label: 'Overview' })}</ul>
       <div>
-        <h2 className="px-3 pb-2 text-xs font-medium uppercase tracking-widest text-neutral-500">Sections</h2>
+        <h2 className="px-3 pb-2 text-xs font-medium uppercase tracking-widest text-neutral-400">Sections</h2>
         {types.isError ? (
           <p className="px-3 text-sm text-red-300">Sections could not be loaded.</p>
         ) : (
@@ -41,7 +41,7 @@ export function CmsNav() {
         )}
       </div>
       <div>
-        <h2 className="px-3 pb-2 text-xs font-medium uppercase tracking-widest text-neutral-500">Site</h2>
+        <h2 className="px-3 pb-2 text-xs font-medium uppercase tracking-widest text-neutral-400">Site</h2>
         <ul className="flex flex-col gap-1">{FIXED_AREAS.map(item)}</ul>
       </div>
     </nav>

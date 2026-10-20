@@ -59,7 +59,7 @@ export function AddressCard({ slug, revision }: { slug: string; revision: number
       <h2 id="address-heading" className="text-lg font-semibold">Your address</h2>
       <p className="text-sm text-neutral-300">
         Your portfolio is served at{' '}
-        <a href={address} className="text-lime-300 underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+        <a href={address} className="text-lime-300 underline underline-offset-4" target="_blank" rel="noreferrer">
           {address}
         </a>{' '}
         once you publish it.

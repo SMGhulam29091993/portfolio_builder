@@ -130,7 +130,7 @@ function SectionList({
         <GuardedLink href={`/cms/sections/${type}`} className="min-w-32 flex-1 rounded font-medium hover:text-lime-300">
           {label}
         </GuardedLink>
-        {!section.visible ? <span className="text-xs uppercase tracking-widest text-neutral-500">Hidden</span> : null}
+        {!section.visible ? <span className="text-xs uppercase tracking-widest text-neutral-400">Hidden</span> : null}
         {entry.hideable ? (
           <label className="flex items-center gap-2 text-sm text-neutral-300">
             <input
