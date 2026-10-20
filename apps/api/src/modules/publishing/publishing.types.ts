@@ -95,6 +95,12 @@ export interface PublishedPointer {
   readonly publishedAt: Date;
 }
 
+/** A published portfolio as the sitemap sees it (`public-site-rendering.API04`). */
+export interface PublishedPortfolio {
+  readonly slug: string;
+  readonly publishedAt: Date;
+}
+
 /** A portfolio's slug and its live pointer (`null` before the first publish). */
 export interface PointerState {
   readonly portfolioId: string;

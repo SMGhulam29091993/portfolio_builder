@@ -55,3 +55,4 @@ export {
   seedContent,
 } from './publishing/publishing-fixtures.js';
 export { InMemoryPointerStore, InMemorySnapshotRepository } from './publishing/in-memory-publishing.js';
+export { CmsTestClient } from './http/cms-test-client.js';

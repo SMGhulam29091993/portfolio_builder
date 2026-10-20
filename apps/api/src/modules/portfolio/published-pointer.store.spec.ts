@@ -57,6 +57,8 @@ describe('PublishedPointerStore', () => {
     expect((await pointers.findBySlug('ada'))?.pointer).toEqual(second);
 
     expect((await portfolios.findById(portfolio.id))?.revision).toBe(portfolio.revision);
+    await newPortfolio('bea');
+    expect((await pointers.listPublished()).map((state) => state.slug)).toEqual(['ada']);
     expect(await pointers.switchTo('not-an-id', null, first)).toBe(false);
   });
 });

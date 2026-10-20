@@ -123,6 +123,9 @@ describe('app with MongoDB reachable', () => {
       { method: 'get', path: '/api/v1/cms/publishing/snapshots' },
       { method: 'post', path: '/api/v1/cms/publishing/snapshots/:version/activate' },
       { method: 'post', path: '/api/v1/cms/publishing/revalidate' },
+      { method: 'get', path: '/api/v1/public/portfolios' },
+      { method: 'get', path: '/api/v1/public/portfolios/:slug' },
+      { method: 'get', path: '/api/v1/public/portfolios/:slug/assets/:id/:filename' },
     ]);
   });
 

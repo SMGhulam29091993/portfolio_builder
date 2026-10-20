@@ -21,6 +21,7 @@ import type {
   PublishingStatus,
   PublishMeta,
   PublishRequest,
+  PublishedPortfolio,
   PublishResult,
   RevalidationStatus,
   SnapshotHeader,
@@ -93,6 +94,8 @@ export interface IPublishedPointerReader {
   read(portfolioId: string): Promise<PointerState | null>;
   /** Resolves a free portfolio's slug (`public-site`). @returns `null` when no portfolio has it. */
   findBySlug(slug: string): Promise<PointerState | null>;
+  /** Every portfolio with a live snapshot (`public-site-rendering.API04`). */
+  listPublished(): Promise<PointerState[]>;
 }
 
 /** The design verdict at publish (`design-valid`); implemented by `design`. */
@@ -183,5 +186,7 @@ export interface IPublishingService {
 export interface ISnapshotReader {
   /** The live snapshot of the portfolio at `slug`, or `null` when unknown or unpublished. */
   getCurrentForSlug(slug: string): Promise<StoredSnapshot | null>;
+  /** Every published portfolio's slug and when its live version went live, by slug. */
+  listPublished(): Promise<PublishedPortfolio[]>;
 }
 

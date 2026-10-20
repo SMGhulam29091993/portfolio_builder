@@ -2,15 +2,29 @@
 ## Spec ID
 public-site-rendering
 ## Status
-Draft
+In Progress
+- `Ready → In Progress` on 2026-10-21 with `public-site-rendering.T01` started.
+- DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`).
+- Revised 2026-10-21, before the spec was ever `Ready`, for ADR-0010 and the owner's answers of
+  2026-10-20: (1) every portfolio is served at `<platform>/<slug>` — API01 and API02 take the
+  slug, API03 revalidates one slug, and a new API04 lists published portfolios for the sitemap;
+  an unknown slug and an unpublished portfolio answer the same 404, so existence is not
+  revealed; (2) `/` is the platform home (AC20) — a portfolio on a bare domain is
+  `custom-domains`; (3) OQ1 and OQ2 resolved as "sensible defaults" (owner, 2026-10-20) — see
+  Resolved Questions; AC4 gains the mobile menu; (4) AC14 asserts layout at the reference widths
+  instead of owner-approved pixel baselines, as the section specs did (2026-10-20); full-page
+  screenshots are still captured for the owner to review; (5) `DEFAULT_PORTFOLIO_SLUG` is
+  retired — the slug comes from the URL.
 ## Linked BRD
 .ai-context/BRD.md#BRD-003
 ## Intent
-Serve the published portfolio to visitors: an anonymous read-only API that returns the current
-snapshot and its files, and a Next.js page that renders that snapshot through the shared section
-components inside the site shell — floating nav, anchors, footer, metadata — so that at 1440 and
-390 it matches the reference boards, stays usable in between, and refreshes when the owner
-publishes. Nothing on this path can read a draft.
+Serve each published portfolio to visitors at `<platform>/<slug>`: an anonymous read-only API
+that returns a portfolio's current snapshot and its files, and a Next.js page that renders that
+snapshot through the shared section components inside the site shell — floating nav, anchors,
+footer, metadata — so that at 1440 and 390 it matches the reference boards, stays usable in
+between, and refreshes when its owner publishes. Nothing on this path can read a draft. The
+platform's own root shows a minimal home page.
 ## Context
 - Builds on: .ai-context/architecture.md (Draft → publish → site, Repository layout → `apps/web`)
 - Related: .ai-context/specs/publish-pipeline.spec.md, design-theme.spec.md, section-engine.spec.md,
@@ -19,21 +33,21 @@ publishes. Nothing on this path can read a draft.
   payload · Asset reference · Section type catalogue); reference: .ai-context/design_reference.md
   (Nav, Footer, Page structure, Unknowns)
 ## API Contract
-### public-site-rendering.API01 — GET /api/v1/public/portfolio
-**Auth:** none.
+### public-site-rendering.API01 — GET /api/v1/public/portfolios/:slug
+**Auth:** none. `:slug` follows the slug rules (`section-engine` → Portfolio provisioning).
 **Success response (200):** headers `ETag: "<contentHash>"`,
 `Cache-Control: public, max-age=0, must-revalidate`.
 ```json
 { "success": true, "message": "ok",
-  "data": { "version": 4, "publishedAt": "ISO-8601", "content": "PublishedContent" } }
+  "data": { "slug": "ada", "version": 4, "publishedAt": "ISO-8601", "content": "PublishedContent" } }
 ```
 **Exceptions:**
 | Code | Condition | Response body |
 |---|---|---|
 | 304 | `If-None-Match` equals the current ETag | empty |
-| 404 | Nothing is published | `NOT_FOUND` |
+| 404 | No portfolio has the slug, or it has nothing published (one answer for both) | `NOT_FOUND` |
 | 429 | Rate limit exceeded | `RATE_LIMITED` |
-### public-site-rendering.API02 — GET /api/v1/public/assets/:id/:filename
+### public-site-rendering.API02 — GET /api/v1/public/portfolios/:slug/assets/:id/:filename
 **Auth:** none. Canonical owner of the public asset URL.
 **Success response (200):** the file bytes; `Content-Type` from the stored type, `ETag` from its
 SHA-256, `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff`,
@@ -42,25 +56,33 @@ SHA-256, `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff
 | Code | Condition | Response body |
 |---|---|---|
 | 304 | `If-None-Match` matches | empty |
-| 404 | The asset is not in the **current** snapshot's `assets`, or `:filename` differs from it | `NOT_FOUND` |
+| 404 | The portfolio has no current snapshot, the asset is not in that snapshot's `assets`, or `:filename` differs from it | `NOT_FOUND` |
 | 429 | Rate limit exceeded | `RATE_LIMITED` |
 ### public-site-rendering.API03 — POST /api/revalidate (served by `apps/web`)
 **Auth:** header `x-revalidate-secret` equal to `REVALIDATE_SECRET`.
+**Request payload:** `{ "slug": "ada" }` — the portfolio whose page to re-render.
 **Success response (200):** `{ "revalidated": true }`
-**Exceptions:** 401 when the header is missing or wrong (compared in constant time).
+**Exceptions:** 401 when the header is missing or wrong (compared in constant time), checked
+before the body; 400 when `slug` is missing or malformed.
+### public-site-rendering.API04 — GET /api/v1/public/portfolios
+**Auth:** none. For the sitemap.
+**Success response (200):** `data: { "portfolios": [ { "slug": "ada", "publishedAt": "ISO-8601" } ] }`
+— every portfolio with a live snapshot, by slug; nothing else about them.
+**Exceptions:** 429 `RATE_LIMITED`.
 ## Acceptance Criteria
-1. public-site-rendering.AC1 — Given a published snapshot, when `/` is requested, then the page
-   contains every section in the snapshot, in snapshot order, rendered from snapshot data only;
-   and given the draft is then edited without publishing, then `/` is unchanged.
-2. public-site-rendering.AC2 — Given nothing is published, when `/` is requested, then it
-   returns HTTP 404 with a minimal "This portfolio has not been published yet" page marked
-   `noindex`.
+1. public-site-rendering.AC1 — Given a published snapshot, when `/<slug>` is requested, then the
+   page contains every section in the snapshot, in snapshot order, rendered from snapshot data
+   only; and given the draft is then edited without publishing, then `/<slug>` is unchanged.
+2. public-site-rendering.AC2 — Given nothing is published for a slug, or no portfolio has it,
+   when `/<slug>` is requested, then it returns HTTP 404 with a minimal "This portfolio has not
+   been published yet" page marked `noindex` — the same page in both cases.
 3. public-site-rendering.AC3 — Given a viewport of 768 or wider, when the nav renders, then it
    is a centred floating pill containing the identity's monogram in an accent circle (linking
    to the top), one link per visible in-nav section using its `navLabel` in snapshot order, with
    the `contact` section's link as a filled pill, and the résumé label as an outlined pill.
 4. public-site-rendering.AC4 — Given a viewport narrower than 768, when the nav renders, then it
-   shows the monogram and the résumé pill only, as on the mobile board.
+   shows the monogram and the résumé pill, as on the mobile board, plus a "Menu" button that
+   opens and closes the section links (`aria-expanded`; Escape and choosing a link close it).
 5. public-site-rendering.AC5 — Given the snapshot has a résumé asset, when the résumé pill is
    activated, then the file opens in a new tab from API02; given it has none, then no résumé
    pill is rendered at any width.
@@ -73,28 +95,34 @@ SHA-256, `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff
    `builtWith` joined with middle dots on the other; at 390 the two lines are stacked and
    centred.
 8. public-site-rendering.AC8 — Given a published snapshot, when the page head renders, then it
-   carries the SEO title and description, a canonical URL from `NEXT_PUBLIC_SITE_URL`, Open
+   carries the SEO title and description, a canonical URL `NEXT_PUBLIC_SITE_URL` + `/<slug>`, Open
    Graph and Twitter card tags (with the OG image when one is set), and a JSON-LD `Person` with
    name, job title and `sameAs` social URLs — and no email address in structured data.
 9. public-site-rendering.AC9 — Given the site, when `/robots.txt` and `/sitemap.xml` are
-   requested, then robots allows `/` and disallows `/cms`, and the sitemap lists `/` only.
+   requested, then robots allows `/` and disallows `/cms` and `/api`, and the sitemap lists `/`
+   and every published portfolio's `/<slug>` (from API04).
 10. public-site-rendering.AC10 — Given the snapshot's design, when the page renders, then theme
     tokens are emitted as CSS variables in the server-rendered HTML and the three fonts load
     through the allow-list, so first paint already uses the published theme.
 11. public-site-rendering.AC11 — Given a new snapshot is activated, when API03 is called with
-    the correct secret, then the next request for `/` renders the new snapshot; given API03 is
-    never called, then `/` renders the new snapshot within 300 seconds; given a wrong secret,
-    then API03 returns 401 and nothing is refreshed.
-12. public-site-rendering.AC12 — Given a published snapshot, when API01 is called, then it
-    returns that snapshot with an ETag; a repeat call with `If-None-Match` returns 304; and no
-    request to any `/api/v1/public` route can return draft data.
+    the correct secret and the slug, then the next request for `/<slug>` renders the new
+    snapshot and no other portfolio's page is refreshed; given API03 is never called, then
+    `/<slug>` renders the new snapshot within 300 seconds; given a wrong secret, then API03
+    returns 401 and nothing is refreshed.
+12. public-site-rendering.AC12 — Given a published snapshot, when API01 is called with its
+    slug, then it returns that snapshot with an ETag; a repeat call with `If-None-Match` returns
+    304; no request to any `/api/v1/public` route can return draft data; and no portfolio's
+    route can return another portfolio's snapshot or files.
 13. public-site-rendering.AC13 — Given an asset that is uploaded but not in the current
     snapshot, when API02 is requested for it, then the response is 404; given it is in the
     current snapshot, then the bytes are returned with the headers in API02.
 14. public-site-rendering.AC14 — Given the seed content with its placeholder replaced and
-    published, when full-page screenshots are taken at 1440 and 390, then the owner approves
-    them against `docs/design-reference/desktop-1440.jpg` and `mobile-390.jpg` as the baselines;
-    and afterwards every run matches its baseline within a 1% pixel-difference ratio.
+    published, when the page renders at 1440 and at 390, then the layout matches the reference
+    boards' structure — nav pill centred (1440) or monogram + résumé (390), sections stacked in
+    order full width, footer last with its two lines side by side (1440) or stacked (390) — as
+    asserted from element geometry; and full-page screenshots at both widths are saved with the
+    test results for the owner to compare with `docs/design-reference/desktop-1440.jpg` and
+    `mobile-390.jpg`.
 15. public-site-rendering.AC15 — Given viewports of 390, 768, 1024 and 1440, when the page
     renders, then there is no horizontal page scroll, no overlapping text and no clipped
     content.
@@ -112,18 +140,24 @@ SHA-256, `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff
     `header`, `nav`, `main` and `footer` landmarks, exactly one `h1`, no skipped heading level,
     a visible focus indicator on every interactive element, and no serious or critical automated
     accessibility violation at either reference width.
+20. public-site-rendering.AC20 — Given the platform root `/`, when it is requested, then it is a
+    minimal home page — the product name, one sentence on what it does, and links to sign in and
+    to create an account (both under `/cms`) — that shows no portfolio's data and is indexable.
 ## Edge Cases Covered
 - A snapshot with only the hero: the nav shows the monogram (and résumé pill if any); no empty
   link row.
 - A snapshot whose `contact` section is hidden: no filled pill; the hero's contact CTA cannot
   exist in that snapshot because `publish-pipeline` blocks it.
-- A request for `/#work` on first load scrolls to the section after render.
+- A request for `/<slug>#work` on first load scrolls to the section after render.
+- A slug that breaks the slug rules, or is reserved (`cms`, `api`, …), never reaches API01: the
+  page answers the not-published 404 at once.
 - An older snapshot activated by rollback references a variant id that is no longer in the
   catalogue: it still resolves (`design-theme` edge case).
 - The year in the footer is the render-time year, so a long-cached page can show last year's
   until the next revalidation — accepted.
 ## Error Handling
 - API01 404 → the not-published page (AC2). Network or 5xx → stale page or 503 (AC17).
+- API04 failing leaves the sitemap with `/` only; it never fails the request.
 - An unknown section type in a snapshot is skipped by the composer (`section-engine.AC14`).
 - A renderer that throws is contained by a per-section error boundary; the rest of the page
   renders and the error is logged with the section type.
@@ -131,25 +165,28 @@ SHA-256, `Cache-Control: public, max-age=3600`, `X-Content-Type-Options: nosniff
 ## Unit Test Cases (spec-derived)
 | Test ID | Maps to AC | Scenario | Expected |
 |---|---|---|---|
-| public-site-rendering.UT01 | AC12 | `PublicSiteService.getCurrent` with and without a snapshot (fake reader) | Content + hash / not-found |
-| public-site-rendering.UT02 | AC13 | `getPublishedAsset` for an id in / not in the manifest, and a wrong filename | Stream / not-found / not-found |
+| public-site-rendering.UT01 | AC12 | `PublicSiteService.getCurrent(slug)` with and without a snapshot, and an unknown slug (fake reader) | Content + hash / not-found / not-found |
+| public-site-rendering.UT02 | AC13 | `getPublishedAsset(slug, id, filename)` for an id in / not in the manifest, and a wrong filename | Stream / not-found / not-found |
 | public-site-rendering.UT03 | AC3 | `buildNavModel` from a snapshot with one hidden and one `showInNav: false` section | Only visible in-nav sections, in order; contact flagged |
 | public-site-rendering.UT04 | AC5 | `buildNavModel` with and without a résumé asset | Résumé item present with the API02 URL / absent |
 | public-site-rendering.UT05 | AC7 | Footer with a fixed clock | Correct year, name and joined credits |
 | public-site-rendering.UT06 | AC8 | `buildMetadata` and `buildPersonJsonLd` | Expected tags; no email in JSON-LD |
 | public-site-rendering.UT07 | AC16 | `adaptSnapshot` with version 1 and version 2 | Props / unsupported-version error |
-| public-site-rendering.UT08 | AC11 | Revalidate handler with a right, wrong and missing secret | 200 / 401 / 401 |
-## Open Questions
-1. **OQ1 — Navigation behaviour.** (a) The mobile board shows no way to reach sections from the
-   nav; is that intended, or should a menu be added? (b) `Contact` is a filled pill on the
-   desktop board — is that a permanent emphasis (as specified) or an "active section" state?
-   (c) Does the nav stay fixed while scrolling?
-2. **OQ2 — Motion and hover.** Scroll reveals, hover and pressed states and transitions are not
-   visible in still images. Until specified, only focus styles and the marquee are implemented.
+| public-site-rendering.UT08 | AC11 | Revalidate handler with a right, wrong and missing secret; a right secret without a slug | 200 / 401 / 401 / 400 |
+| public-site-rendering.UT09 | AC4 | Mobile menu: toggle, Escape, choosing a link | Opens with `aria-expanded="true"`; closes each way |
+## Resolved Questions
+Both answered "sensible defaults" by the owner on 2026-10-20; the defaults chosen are:
+1. **OQ1 — Navigation behaviour.** (a) Below 768 a "Menu" button opens the section links under
+   the bar (AC4). (b) `Contact` is a permanent filled pill, not an active-section state. (c) The
+   nav is fixed at the top while scrolling; section anchors leave room for it
+   (`scroll-margin-top`).
+2. **OQ2 — Motion and hover.** Links and buttons have hover and pressed states; in-page jumps
+   scroll smoothly only when the design's motion is not `none` and the visitor has not asked for
+   reduced motion; there are no scroll reveals.
 ## Explicitly Out of Scope
 - Each section's internal layout — the six section specs.
 - Analytics, cookie banners, a blog, a contact form, search.
-- Multiple pages, locales or portfolios; custom domains per portfolio.
+- Multiple pages per portfolio, locales; custom domains (`custom-domains`).
 - Draft preview on the public origin — preview lives in the CMS.
 - Image optimisation pipelines and a CDN.
 ## Non-Functional Constraints (from constitution.md)

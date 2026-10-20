@@ -314,7 +314,10 @@ describe('history, activate, revalidate and the reader', () => {
   it('ISnapshotReader — the live snapshot for a slug; null when unknown or unpublished', async () => {
     expect(await service.getCurrentForSlug('ada')).toBeNull();
     expect(await service.getCurrentForSlug('nobody')).toBeNull();
+    expect(await service.listPublished()).toEqual([]);
     await publish();
     expect((await service.getCurrentForSlug('ada'))?.version).toBe(1);
+    pointers.add('p0', 'aaron');
+    expect(await service.listPublished()).toEqual([{ slug: 'ada', publishedAt: new Date('2026-10-21T10:00:00.000Z') }]);
   });
 });

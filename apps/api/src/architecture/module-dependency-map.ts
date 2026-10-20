@@ -15,7 +15,7 @@
  * (ADR-0013), so the graph has no cycle. Its `/cms` router reads the portfolio id that
  * `resolvePortfolio` sets on the request through a global type augmentation, not an import.
  */
-import type { DependencyMap } from './module-graph.js';
+import type { DependencyMap, ImportAllowList } from './module-graph.js';
 
 export const MODULE_DEPENDENCY_MAP: DependencyMap = {
   health: ['core'],
@@ -27,4 +27,15 @@ export const MODULE_DEPENDENCY_MAP: DependencyMap = {
   'ai-design': ['core', 'design', 'auth', 'portfolio'],
   publishing: ['core', 'assets', 'auth'],
   'public-site': ['core', 'publishing', 'assets'],
+};
+
+/**
+ * Draft isolation at the interface level (`public-site-rendering` plan): of `publishing`, the
+ * public site may import its read port and the published shapes only — never a draft
+ * contributor, the pointer writer or the service.
+ */
+export const PUBLIC_SITE_IMPORTS: ImportAllowList = {
+  from: 'public-site',
+  to: 'publishing',
+  names: ['ISnapshotReader', 'StoredSnapshot', 'PublishedContent', 'PublishedPortfolio'],
 };

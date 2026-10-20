@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.11.0
+  version: 0.12.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -42,6 +42,9 @@ tags:
   - name: publishing
     description: >-
       Publish pipeline (publish-pipeline): check the draft against the publish rules, freeze it into an immutable snapshot, switch the live pointer, and roll back to an earlier version. Every route acts on the signed-in user's portfolio.
+  - name: public-site
+    description: >-
+      Public site (public-site-rendering): anonymous, read-only access to each portfolio's live snapshot and the files it lists. Never returns draft data.
 
 paths:
   /api/v1/health:
@@ -1190,6 +1193,80 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/NothingPublished'
+  /api/v1/public/portfolios:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API04
+      x-spec-id: public-site-rendering.API04
+      summary: Published portfolios
+      description: >-
+        Every portfolio with a live snapshot, by slug, for the sitemap.
+      security: []
+      responses:
+        '200':
+          description: The published portfolios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedPortfolioListEnvelope'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/public/portfolios/{slug}:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API01
+      x-spec-id: public-site-rendering.API01
+      summary: A portfolio's live snapshot
+      description: >-
+        The live snapshot's content with ETag equal to its content hash and Cache-Control
+        public, max-age=0, must-revalidate. A matching If-None-Match is a bodiless 304. An
+        unknown slug and an unpublished portfolio are the same 404.
+      security: []
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: The live snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPortfolioEnvelope'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/public/portfolios/{slug}/assets/{id}/{filename}:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API02
+      x-spec-id: public-site-rendering.API02
+      summary: A published file
+      description: >-
+        The bytes of a file the live snapshot lists under exactly this name, with its stored
+        type, ETag from its SHA-256, Cache-Control public, max-age=3600, X-Content-Type-Options
+        nosniff and an inline Content-Disposition. Anything else is 404.
+      security: []
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' } }
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+        - { name: filename, in: path, required: true, schema: { type: string, maxLength: 100 } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: The file bytes.
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
 
 components:
   securitySchemes:
@@ -1747,6 +1824,54 @@ components:
               required: [revalidation]
               properties:
                 revalidation: { type: string, enum: [ok, failed] }
+    PublicPortfolioEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [slug, version, publishedAt, content]
+              properties:
+                slug: { type: string }
+                version: { type: integer, minimum: 1 }
+                publishedAt: { type: string, format: date-time }
+                content:
+                  type: object
+                  description: PublishedContent (publish-pipeline → Published content).
+                  required: [schemaVersion, identity, sections, design, assets]
+                  properties:
+                    schemaVersion: { type: integer, minimum: 1 }
+                    identity: { $ref: '#/components/schemas/Identity' }
+                    sections:
+                      type: array
+                      items:
+                        type: object
+                        required: [type, data]
+                        properties:
+                          type: { type: string }
+                          data: { type: object }
+                    design: { type: object }
+                    assets: { type: array, items: { type: object } }
+    PublishedPortfolioListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolios]
+              properties:
+                portfolios:
+                  type: array
+                  items:
+                    type: object
+                    required: [slug, publishedAt]
+                    properties:
+                      slug: { type: string }
+                      publishedAt: { type: string, format: date-time }
   responses:
     ValidationFailed:
       description: The request failed its schema.
@@ -2262,3 +2387,5 @@ components:
             success: false
             message: Nothing is published yet
             data: { code: NOTHING_PUBLISHED }
+    NotModified:
+      description: The client's copy is current (If-None-Match matched); no body.

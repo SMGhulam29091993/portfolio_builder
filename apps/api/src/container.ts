@@ -93,6 +93,9 @@ import { SectionRegistry } from './modules/portfolio/section.registry.js';
 import { SectionRepository } from './modules/portfolio/section.repository.js';
 import { SectionService } from './modules/portfolio/section.service.js';
 import { SectionsDraftContributor } from './modules/portfolio/sections-draft.contributor.js';
+import { PublicSiteController } from './modules/public-site/public-site.controller.js';
+import { createPublicSiteRouter } from './modules/public-site/public-site.routes.js';
+import { PublicSiteService } from './modules/public-site/public-site.service.js';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
 import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
 import { CanonicalHasher } from './modules/publishing/canonical-hasher.js';
@@ -235,6 +238,13 @@ const SECTION_DEFINITIONS: readonly ISectionDefinition[] = [
   new StackSectionDefinition(),
   new ContactSectionDefinition(),
 ];
+
+/**
+ * Requests per client on `/api/v1/public` (`public-site-rendering`): generous, because the web
+ * server fetches through it for every visitor whose page is not cached, and files are linked
+ * from every page. It bounds scraping, not normal browsing.
+ */
+const PUBLIC_RATE_LIMIT: RateLimitPolicy = { windowMs: 60_000, max: 600 };
 
 /** Snapshots kept per portfolio besides the live one (ADR-0004 retention; `publish-pipeline.AC20`). */
 const SNAPSHOT_RETENTION = 20;
@@ -531,6 +541,12 @@ export function buildContainer({
   );
   const publishingRouter = createPublishingRouter(new PublishingController(publishingService), authGuard, resolvePortfolio);
 
+  // public-site (`public-site-rendering`): anonymous, reads the live snapshot and its files only.
+  const publicSiteRouter = createPublicSiteRouter(
+    new PublicSiteController(new PublicSiteService(publishingService, assetService)),
+    rateLimiters.create(PUBLIC_RATE_LIMIT),
+  );
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
@@ -548,6 +564,7 @@ export function buildContainer({
       identityRouter,
       designRouter,
       publishingRouter,
+      publicSiteRouter,
     ],
     authGuard,
   };

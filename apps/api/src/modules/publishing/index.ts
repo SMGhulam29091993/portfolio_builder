@@ -23,6 +23,7 @@ export type {
   PortfolioPublishedEvent,
   PublishedContent,
   PublishedPointer,
+  PublishedPortfolio,
   PublishingEvents,
   RevalidationStatus,
   SectionsDraft,

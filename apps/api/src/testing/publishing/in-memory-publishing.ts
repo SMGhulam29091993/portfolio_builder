@@ -130,6 +130,10 @@ export class InMemoryPointerStore implements IPublishedPointerReader, IPublished
     return Promise.resolve(clone(this.states.get(portfolioId)));
   }
 
+  listPublished(): Promise<PointerState[]> {
+    return Promise.resolve([...this.states.values()].filter((state) => state.pointer !== null).map((state) => structuredClone(state)));
+  }
+
   findBySlug(slug: string): Promise<PointerState | null> {
     return Promise.resolve(clone([...this.states.values()].find((state) => state.slug === slug)));
   }

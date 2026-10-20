@@ -21,6 +21,7 @@ import type {
   DraftScope,
   ListSnapshotsQuery,
   PointerState,
+  PublishedPortfolio,
   PublishingEvents,
   PublishingStatus,
   PublishMeta,
@@ -144,6 +145,13 @@ export class PublishingService implements IPublishingService, ISnapshotReader {
   async getCurrentForSlug(slug: string): Promise<StoredSnapshot | null> {
     const state = await this.pointers.findBySlug(slug);
     return state ? this.liveSnapshot(state) : null;
+  }
+
+  async listPublished(): Promise<PublishedPortfolio[]> {
+    const states = await this.pointers.listPublished();
+    return states
+      .flatMap((state) => (state.pointer ? [{ slug: state.slug, publishedAt: state.pointer.publishedAt }] : []))
+      .sort((a, b) => (a.slug < b.slug ? -1 : 1));
   }
 
   private async pointerOf(portfolioId: string): Promise<PointerState> {

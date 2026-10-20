@@ -185,3 +185,51 @@ function describeCycle(nodes: readonly string[]): string {
   const rotated = [...nodes.slice(first), ...nodes.slice(0, first)];
   return `dependency cycle: ${[...rotated, rotated[0]].join(' → ')}`;
 }
+
+/** Which names one module may import from another (`public-site-rendering.T01`). */
+export interface ImportAllowList {
+  readonly from: string;
+  readonly to: string;
+  readonly names: readonly string[];
+}
+
+/**
+ * Reports every name `rule.from` imports or re-exports from `rule.to` that the allow-list does
+ * not name, as `file: name`. Namespace imports (`* as x`) are reported as `*`, since they reach
+ * everything. This is the interface-level half of draft isolation: `public-site` may depend on
+ * `publishing`, but only on its read port (`public-site-rendering.IT09`).
+ */
+export function findDisallowedImports(files: readonly SourceFile[], rule: ImportAllowList): string[] {
+  const allowed = new Set(rule.names);
+  const found: string[] = [];
+  for (const file of files) {
+    if (isTestFile(file.path) || nodeOf(file.path) !== rule.from) continue;
+    const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, false);
+    for (const statement of source.statements) {
+      const isImport = ts.isImportDeclaration(statement);
+      if (!isImport && !ts.isExportDeclaration(statement)) continue;
+      const specifier = statement.moduleSpecifier;
+      if (!specifier || !ts.isStringLiteral(specifier) || !specifier.text.startsWith('.')) continue;
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(file.path), specifier.text));
+      if (nodeOf(target) !== rule.to) continue;
+      for (const name of importedNames(statement)) {
+        if (!allowed.has(name)) found.push(`${file.path}: ${name}`);
+      }
+    }
+  }
+  return found;
+}
+
+/** The names an import or export declaration brings in; `*` for a namespace or bare star. */
+function importedNames(statement: ts.ImportDeclaration | ts.ExportDeclaration): string[] {
+  if (ts.isExportDeclaration(statement)) {
+    const clause = statement.exportClause;
+    if (!clause) return ['*'];
+    return ts.isNamedExports(clause) ? clause.elements.map((element) => (element.propertyName ?? element.name).text) : ['*'];
+  }
+  const bindings = statement.importClause?.namedBindings;
+  const names: string[] = statement.importClause?.name ? ['default'] : [];
+  if (!bindings) return names;
+  if (ts.isNamespaceImport(bindings)) return [...names, '*'];
+  return [...names, ...bindings.elements.map((element) => (element.propertyName ?? element.name).text)];
+}

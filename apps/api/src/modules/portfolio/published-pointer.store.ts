@@ -42,6 +42,15 @@ export class PublishedPointerStore implements IPublishedPointerWriter, IPublishe
     return found ? toState(found) : null;
   }
 
+  async listPublished(): Promise<PointerState[]> {
+    const found = await this.model()
+      .find({ publishedSnapshotId: { $ne: null } }, POINTER_FIELDS)
+      .sort({ slug: 1 })
+      .lean<LeanPortfolio[]>()
+      .exec();
+    return found.map(toState);
+  }
+
   private model() {
     return portfolioModel(this.connections.getConnection());
   }
