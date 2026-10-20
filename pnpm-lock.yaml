@@ -17,6 +17,9 @@ importers:
       '@portfolio/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@portfolio/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@redis/client':
         specifier: 6.3.0
         version: 6.3.0

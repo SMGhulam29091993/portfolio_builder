@@ -124,6 +124,9 @@ describe('readDocumentedOperations', () => {
       { method: 'get', path: '/api/v1/cms/assets/{id}/content', specId: 'media-assets.API04' },
       { method: 'get', path: '/api/v1/cms/identity', specId: 'site-identity.API01' },
       { method: 'put', path: '/api/v1/cms/identity', specId: 'site-identity.API02' },
+      { method: 'get', path: '/api/v1/cms/design', specId: 'design-theme.API01' },
+      { method: 'put', path: '/api/v1/cms/design', specId: 'design-theme.API02' },
+      { method: 'post', path: '/api/v1/cms/design/reset', specId: 'design-theme.API03' },
     ]);
   });
 });

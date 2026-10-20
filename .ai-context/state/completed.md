@@ -362,3 +362,9 @@
   normalised), `VARIANT_CATALOGUE`, `FONT_ALLOW_LIST`, `contrastRatio` / `checkContrast` /
   `CONTRAST_PAIRS`, `validateDesign` (shape, font roles, variants, contrast — all issues with
   paths), `toCssVariables`, `DEFAULT_DESIGN` (passes its own validator). UT01–UT03, UT06–UT08.
+- design-theme.T02–T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `designs` model,
+  `DesignRepository`; `DesignValidator` (wraps `validateDesign` — the CMS's own check),
+  `DesignService` (default at revision 0, create / update / reset, default validated at
+  construction so a bad default fails startup; implements reader, writer, validator ports for
+  `ai-design`); controller, routes API01–API03 (catalogue in API01), OpenAPI 0.10.0; contracts
+  envelopes. UT04, UT05, IT01–IT06, CT01 (validator vs HTTP on 13 designs).

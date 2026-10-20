@@ -114,6 +114,9 @@ describe('app with MongoDB reachable', () => {
       { method: 'get', path: '/api/v1/cms/assets/:id/content' },
       { method: 'get', path: '/api/v1/cms/identity' },
       { method: 'put', path: '/api/v1/cms/identity' },
+      { method: 'get', path: '/api/v1/cms/design' },
+      { method: 'put', path: '/api/v1/cms/design' },
+      { method: 'post', path: '/api/v1/cms/design/reset' },
     ]);
   });
 

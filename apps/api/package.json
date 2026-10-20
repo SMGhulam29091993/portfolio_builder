@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@portfolio/contracts": "workspace:*",
+    "@portfolio/design-tokens": "workspace:*",
     "@redis/client": "6.3.0",
     "argon2": "0.45.1",
     "bcryptjs": "3.0.3",

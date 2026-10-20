@@ -60,6 +60,11 @@ import { createAssetRouter } from './modules/assets/asset.routes.js';
 import { AssetService } from './modules/assets/asset.service.js';
 import type { IAssetReferenceProvider, IFileStorage } from './modules/assets/index.js';
 import { GridFsFileStorage } from './modules/assets/storage/gridfs-file-storage.js';
+import { DesignController } from './modules/design/design.controller.js';
+import { DesignRepository } from './modules/design/design.repository.js';
+import { createDesignRouter } from './modules/design/design.routes.js';
+import { DesignService } from './modules/design/design.service.js';
+import { DesignValidator } from './modules/design/design.validator.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { IdentityAssetReferenceProvider } from './modules/identity/identity-asset-reference.provider.js';
 import { IdentityController } from './modules/identity/identity.controller.js';
@@ -415,6 +420,10 @@ export function buildContainer({
   });
   const identityRouter = createIdentityRouter(new IdentityController(identityService), authGuard, resolvePortfolio);
 
+  // design (`design-theme`): the default is validated when the service is built (startup).
+  const designService = new DesignService(new DesignRepository(mongo), new DesignValidator());
+  const designRouter = createDesignRouter(new DesignController(designService), authGuard, resolvePortfolio);
+
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
     handler: new OriginAllowListMiddleware(env).handle,
@@ -423,7 +432,7 @@ export function buildContainer({
   return {
     logger,
     originAllowList,
-    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter, identityRouter],
+    apiRouters: [healthRouter, authRouter, googleRouter, portfolioRouter, assetRouter, identityRouter, designRouter],
     authGuard,
   };
 }

@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.9.0
+  version: 0.10.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -36,6 +36,9 @@ tags:
   - name: identity
     description: >-
       The facts several parts of the page read (site-identity): name, monogram, role, email, location, availability, socials, résumé, footer and SEO text. One per portfolio; until saved, the draft is a template from the account.
+  - name: design
+    description: >-
+      The portfolio's look as data (design-theme): theme tokens and one layout variant per section, validated against the catalogue, the font allow-list and the contrast rule. One per portfolio; the reference design until the first save.
 
 paths:
   /api/v1/health:
@@ -943,6 +946,91 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design:
+    get:
+      tags: [design]
+      operationId: design-theme.API01
+      x-spec-id: design-theme.API01
+      summary: The design and the catalogue
+      description: >-
+        The stored design, or the reference design at revision 0, with the variant catalogue and
+        the font allow-list.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+    put:
+      tags: [design]
+      operationId: design-theme.API02
+      x-spec-id: design-theme.API02
+      summary: Save the design
+      description: >-
+        Validates the whole design (6-digit hex, fonts in their roles, every section's variant
+        in its catalogue, the contrast pairs) and stores it when expectedRevision matches; 0
+        creates it. Every problem is listed in one 400. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDesignRequest'
+      responses:
+        '200':
+          description: The saved design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/design/reset:
+    post:
+      tags: [design]
+      operationId: design-theme.API03
+      x-spec-id: design-theme.API03
+      summary: Reset to the reference design
+      description: >-
+        Replaces the design with the reference design when expectedRevision matches. Requires
+        the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetDesignRequest'
+      responses:
+        '200':
+          description: The reset design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
 
 components:
   securitySchemes:
@@ -1307,6 +1395,69 @@ components:
                     revision: { type: integer, minimum: 0 }
                     updatedAt: { type: string, format: date-time }
                     data: { $ref: '#/components/schemas/Identity' }
+    DesignSpec:
+      type: object
+      description: Owned by packages/design-tokens (design-theme → Design payload).
+      required: [theme, layout]
+      properties:
+        theme:
+          type: object
+          required: [colors, fonts, radius, effects]
+          properties:
+            colors:
+              type: object
+              additionalProperties: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+            fonts:
+              type: object
+              required: [sans, display, mono]
+              properties:
+                sans: { type: string }
+                display: { type: string }
+                mono: { type: string }
+            radius: { enum: [none, sm, md, lg, xl] }
+            effects:
+              type: object
+              required: [glow, dotGrid, motion]
+              properties:
+                glow: { type: boolean }
+                dotGrid: { type: boolean }
+                motion: { enum: [none, subtle, full] }
+        layout:
+          type: object
+          additionalProperties: { type: string }
+    UpdateDesignRequest:
+      allOf:
+        - $ref: '#/components/schemas/DesignSpec'
+        - type: object
+          required: [expectedRevision]
+          properties:
+            expectedRevision: { type: integer, minimum: 0 }
+    ResetDesignRequest:
+      type: object
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+    DesignEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [design]
+              properties:
+                design:
+                  allOf:
+                    - $ref: '#/components/schemas/DesignSpec'
+                    - type: object
+                      required: [revision]
+                      properties:
+                        revision: { type: integer, minimum: 0 }
+                        updatedAt: { type: string, format: date-time }
+                catalogue:
+                  type: object
+                  description: The variant catalogue and font allow-list (API01 only).
   responses:
     ValidationFailed:
       description: The request failed its schema.
