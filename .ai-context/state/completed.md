@@ -478,3 +478,11 @@
   dependency; `deletePending`). Container and `main.ts` wiring of the hook and the service is
   T09. Checked locally: typecheck, lint, 1013 API tests with the coverage floor (service 100%
   lines, 87% branches), drift (no route).
+- ai-design-studio.T05 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `TimeoutDesignGenerator`
+  (aborts the inner call at `timeoutMs`, rejects with `ProviderTimeoutError`) and
+  `RetryDesignGenerator` (bounded attempts, exponential backoff, no retry for
+  `ProviderRejectedError`, non-upstream errors or an aborted caller), both on the new
+  `core/time` `IDelay` with `ManualDelay` in tests; UT09, UT10. One real bug found and fixed
+  (the timeout lost its own race; `memory/pitfalls.md`). CT02 (decorators in the generator
+  contract suite) joins with the suite in T06. Checked locally: typecheck, lint, 1026 API tests
+  with the coverage floor.

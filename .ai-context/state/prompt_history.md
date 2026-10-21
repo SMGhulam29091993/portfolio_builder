@@ -179,3 +179,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 16:20 IST] — ai-design-studio.T04
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added `AiDesignService`, `MonthlyGenerationAllowance`, the pricing and wallet placeholders, `InterruptedProposalRecovery`, `ProviderTimeoutError`; `core/background` (runner) and `IStartupHook`; `CreditsRequiredError`; `deletePending`. Turned the repository spec into contract suite CT04 with `InMemoryProposalRepository` and added the ai-design test doubles. Recorded two plan deviations and corrected the task text for `ISectionTypeLister`.
+
+### [2026-10-21 16:45 IST] — ai-design-studio.T05
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `core/time` (`IDelay`, `SystemDelay`), `ManualDelay`, `ProviderRejectedError`, `TimeoutDesignGenerator` and `RetryDesignGenerator` with UT09 and UT10; fixed the timeout race found by UT09 and recorded it in `memory/pitfalls.md`.

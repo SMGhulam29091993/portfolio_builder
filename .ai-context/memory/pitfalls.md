@@ -122,3 +122,13 @@ a 400 that also had a plain field error.
 **Fix:** each rule sits on the narrowest schema that owns its fields (the process card, a
 project, an entry, a group, an array); every rule now reports in the same response. Covered by
 `section-definitions.spec.ts`.
+
+### 2026-10-21 — ai-design-studio.T05: a timeout reported as a provider error
+**Symptom:** `TimeoutDesignGenerator` rejected with a plain `UpstreamError` when the time ran
+out, so a slow provider would have been recorded as `PROVIDER_ERROR`, not `PROVIDER_TIMEOUT`.
+**Root cause:** `AbortController.abort()` runs `abort` listeners synchronously. Aborting the
+inner call made the adapter reject with its own `UpstreamError` *before* the timeout branch
+returned its rejection, so that rejection won the `Promise.race`.
+**Fix:** the decorator remembers the timeout error and rethrows it from `catch`, whatever settled
+first. Regression test: `timeout.design-generator.spec.ts` → `ai-design-studio.UT09`. Applies to
+any race between an aborted call and the reason it was aborted.
