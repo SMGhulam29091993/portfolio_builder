@@ -10,3 +10,4 @@
 - [x] cms-panel-shell.T06 — Overview screen: section list, visibility switch, drag and keyboard reorder, portfolio address and slug change — Acceptance: AC10, AC20
 - [x] cms-panel-shell.T07 — `PreviewPane`: preview model, 1440 / 390 frames scaled to fit, 300 ms debounce, error boundary per section — Acceptance: AC9
 - [x] cms-panel-shell.T08 — E2E harness: a generic `SMTP_URL` mail strategy (ADR-0009 amendment) so the E2E API's codes land in a local `smtp-server` the specs read; the seeded development account; Playwright Chromium in CI; axe checks and the keyboard-only sign-in journey; E2E01–E2E03, E2E11–E2E12, E2E14–E2E15 and the registration journey — Acceptance: AC1–AC3, AC12, AC14–AC17
+- [x] cms-panel-shell.T09 — `SignedOutOnly` guard in the `(auth)` layout (`owner-auth.API04` through the API client, decided once, skipped on `?notice=`), `useMe({ enabled })`, `isPublicCmsPath` so a failed check there is not a session loss; UT13, E2E16 — Acceptance: AC21

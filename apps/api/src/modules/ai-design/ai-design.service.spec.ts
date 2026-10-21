@@ -221,6 +221,29 @@ describe('AiDesignService', () => {
       expect(broken.generator.requests).toHaveLength(1);
     });
 
+    it('a provider failure logs its upstream cause; the proposal keeps only the plain message', async () => {
+      const { generate, logger } = setup([new UpstreamError('openrouter', { cause: new Error('HTTP 402') })]);
+      const failed = await generate();
+      expect(failed.failure).toEqual({ code: 'PROVIDER_ERROR', message: 'The design provider could not be reached or returned an error. Try again.' });
+      expect(JSON.stringify(failed)).not.toContain('402');
+      expect(logger.entries).toContainEqual(
+        expect.objectContaining({
+          level: 'warn',
+          message: 'design provider call failed',
+          context: { proposalId: failed.id, provider: 'ollama', attempt: 1, reason: 'Upstream provider failed', cause: 'HTTP 402' },
+        }),
+      );
+    });
+
+    it('a cause other than an HTTP status is logged by its type only, as its message could echo a response', async () => {
+      const echo = new SyntaxError('Unexpected token, "<html>Cool and calm</html>" is not valid JSON');
+      const { generate, logger } = setup([new UpstreamError('gemini', { cause: echo })]);
+      await generate();
+      const entry = logger.entries.find((logged) => logged.message === 'design provider call failed');
+      expect(entry?.context).toMatchObject({ cause: 'SyntaxError' });
+      expect(JSON.stringify(logger.entries)).not.toContain('html');
+    });
+
     it('a crash is logged with the proposal id and recorded as PROVIDER_ERROR, never left pending', async () => {
       const { generate, logger } = setup([new TypeError('bug')]);
       const failed = await generate();

@@ -1,7 +1,7 @@
 /**
  * CMS sign-in, registration and password-reset journeys in a real browser against the real API
  * (`cms-panel-shell.T08`; E2E01–E2E03, E2E10–E2E12, E2E14, E2E15 and the registration journey;
- * AC1–AC3, AC12, AC14–AC17). Codes are read from the harness's local SMTP server.
+ * AC1–AC3, AC12, AC14–AC17; `cms-panel-shell.T09`, E2E16 / AC21). Codes are read from the harness's local SMTP server.
  */
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -65,6 +65,21 @@ test('cms-panel-shell.E2E03 / AC2 — a wrong password shows one generic error a
   expect(page.url()).not.toContain('password');
 });
 
+test('cms-panel-shell.E2E16 / AC21 — a signed-in browser skips the signed-out screens', async ({ page }) => {
+  await signIn(page, E2E_OWNER.email, E2E_OWNER.password);
+
+  await page.goto('/cms/login?next=%2Fcms%2Fdesign');
+  await expect(page).toHaveURL(/\/cms\/design$/, { timeout: 30_000 });
+  for (const path of ['/cms/login', '/cms/register', '/cms/forgot-password', '/cms/verify']) {
+    await page.goto(path);
+    await expect(page, path).toHaveURL(/\/cms$/, { timeout: 30_000 });
+  }
+
+  // A notice means the session just ended: the form shows without asking.
+  await page.goto('/cms/login?notice=signed-out');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+});
+
 test('cms-panel-shell.E2E12 / AC12 — CMS pages are noindex, nofollow', async ({ page }) => {
   await page.goto('/cms/login');
 
@@ -125,6 +140,8 @@ test('cms-panel-shell.E2E15 / AC15 — forgot password: a wrong code, then the r
 
 test('cms-panel-shell.E2E10 / AC14 — keyboard-only sign-in with a visible focus ring', async ({ page }) => {
   await page.goto('/cms/login');
+  // The form renders once the session check answers "signed out" (AC21).
+  await expect(page.getByLabel('Email')).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Email')).toBeFocused();
   const outline = await page.getByLabel('Email').evaluate((element) => getComputedStyle(element).outlineStyle);

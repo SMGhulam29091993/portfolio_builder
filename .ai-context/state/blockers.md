@@ -7,6 +7,13 @@
 - **Express `trust proxy`** — must be set to the real hop count at deployment
   (`memory/review-findings.md`, 2026-10-18). Blocks nothing in code.
 
+- **Explore across many sections on Gemini** — an explore request asks for a custom layout for
+  every visible section (`design-library.AC7`), so a portfolio showing all six sends the six-tree
+  schema Gemini refused with HTTP 400 (`design-library` → Status, 2026-10-21). One tree is known
+  to be accepted; how many fit is unmeasured. Needs an owner decision: measure live, slim the
+  tree schema, or explore fewer sections per request. Explore with one or two sections and
+  every request without explore are unaffected.
+
 ## Resolved 2026-10-21
 - ADR-0003 selection mechanics accepted as written — `ai-design-studio` may become `Ready`.
 - Suspension takes a member's public portfolio offline until re-enabled (ADR-0010 → Owner

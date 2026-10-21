@@ -4,6 +4,7 @@
 |---|---|---|---|
 | design-library.UT01 | AC1 | Valid trees for every section; missing, duplicated or foreign blocks; wrong `columns` pairing; bad style; too many children | Accepted; each refused with a path |
 | design-library.UT02 | AC1 | `validateDesign` with `custom:<id>` entries and malformed ones | Shape accepted; malformed refused |
+| design-library.UT04 | AC7 | The answer schema per scope with and without explore, and exploring each section alone | No `customLayouts` without explore or for `theme`; a tree per visible section under explore; base and one-tree schemas within the Gemini-accepted size |
 | design-library.UT03 | AC3 | `CustomLayoutRenderer` for each section | Every block drawn once, in order, columns classes as given |
 | design-library.IT01 | AC2 | Save a design naming a library layout; another section's; another portfolio's; unknown | 200; 400; 400; 400 |
 | design-library.IT02 | AC5 | Delete a layout used by the draft; by a preset; unused | 409 `LAYOUT_IN_USE` (usedBy); 409; 200 |

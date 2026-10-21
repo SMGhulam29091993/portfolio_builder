@@ -31,14 +31,18 @@ export const authKeys = {
   registrationOptions: ['auth', 'registration-options'] as const,
 };
 
-/** The signed-in user (`owner-auth.API04`); a 401 means "not signed in". */
-export function useMe() {
+/**
+ * The signed-in user (`owner-auth.API04`); a 401 means "not signed in". `enabled: false` holds
+ * the request back, for a guard that already knows the answer (`cms-panel-shell.AC21`).
+ */
+export function useMe({ enabled = true }: { readonly enabled?: boolean } = {}) {
   const api = useApiClient();
   return useQuery({
     queryKey: authKeys.me,
     queryFn: async () => (await api.request<{ user: AuthUser }>('/auth/me')).user,
     retry: false,
     staleTime: 60_000,
+    enabled,
   });
 }
 

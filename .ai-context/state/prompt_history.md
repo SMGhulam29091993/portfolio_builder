@@ -223,3 +223,11 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 23:30 IST] — design-library (T01–T06)
 **User Request:** Let the AI create different layouts and keep them for reuse (chose structured layouts plus more variety and presets; the "AI writes HTML" option was offered and not chosen).
 **Agent Action:** Wrote ADR-0014 (amends ADR-0006) and the `design-library` spec set; built the custom-layout schema and validator (design-tokens), `CustomLayoutRenderer` (sections), the layout library and presets (`design` module, API01–API06), snapshot schema version 2, AI custom layouts with explore and API07, and the CMS screens; E2E01–E02. Fixed the publish check that would have blocked custom layouts.
+
+### [2026-10-21 22:55 IST] — cms-panel-shell.T09
+**User Request:** Opening the app again after signing in earlier asked for sign-in again; add redirection for a signed-in browser, like a private / public-only route pair.
+**Agent Action:** Diagnosed: the session was alive in Redis; `/` and the signed-out screens never checked for one. Added AC21, UT13 and E2E16 to `cms-panel-shell`; built `components/cms/signed-out-only.tsx` (guard in the `(auth)` layout, via `/auth/me` with the refresh rule, decided once, skipped on `?notice=`), `useMe({ enabled })`, `isPublicCmsPath` in `navigation.ts`, and made `providers.tsx` ignore a session loss on those screens. Pitfall recorded (the URL lags a client-side `router.replace`).
+
+### [2026-10-21 23:45 IST] — design-library.T07
+**User Request:** Fix the proposed AI provider failures: shrink the answer schema, add a max output token setting for OpenRouter, log the upstream cause, and add a schema-size test.
+**Agent Action:** `design-prompt.builder.ts` builds the schema per request (custom layout trees only under explore, per visible section, cached per section set); `AI_MAX_OUTPUT_TOKENS` in `env.ts`, `.env.example`, `turbo.json`, `architecture.md`, sent by `openrouter.design-generator.ts`; `ai-design.service.ts` logs the sanitised upstream cause; tests in the builder, service, contract and env specs (design-library.UT04). Pitfall and provider notes recorded; explore across all six sections on Gemini left open in `blockers.md`.

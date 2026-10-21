@@ -1,7 +1,7 @@
-/** `safeNext` and `loginUrl` — `cms-panel-shell.UT01` (AC1). */
+/** `safeNext` and `loginUrl` — `cms-panel-shell.UT01` (AC1); `isPublicCmsPath` — UT13 (AC21). */
 import { describe, expect, it } from 'vitest';
 
-import { loginUrl, safeNext } from './navigation';
+import { isPublicCmsPath, loginUrl, safeNext } from './navigation';
 
 describe('safeNext (cms-panel-shell.UT01)', () => {
   it.each([
@@ -29,5 +29,20 @@ describe('loginUrl', () => {
     );
     expect(loginUrl('/cms')).toBe('/cms/login');
     expect(loginUrl('https://evil.example')).toBe('/cms/login');
+  });
+});
+
+describe('isPublicCmsPath (cms-panel-shell.UT13)', () => {
+  it.each([
+    ['/cms/login', true],
+    ['/cms/register/', true],
+    ['/cms/verify', true],
+    ['/cms/forgot-password', true],
+    ['/cms', false],
+    ['/cms/design', false],
+    ['/cms/login/extra', false],
+    ['/', false],
+  ])('%j → %j', (pathname, expected) => {
+    expect(isPublicCmsPath(pathname)).toBe(expected);
   });
 });

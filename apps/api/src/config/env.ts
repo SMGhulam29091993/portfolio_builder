@@ -157,6 +157,15 @@ const envSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.coerce.number().int().min(1_000).max(600_000).default(60_000),
   ),
+  /**
+   * The most tokens one answer may use, sent by the OpenRouter adapter as `max_tokens`. Unset,
+   * OpenRouter reserves the model's full output limit against the account's credits, which a
+   * small balance refuses (HTTP 402); a design answer needs far fewer.
+   */
+  AI_MAX_OUTPUT_TOKENS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(256).max(200_000).optional(),
+  ),
   /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */
   OLLAMA_BASE_URL: optional(z.url({ protocol: /^https?$/ })),
 });

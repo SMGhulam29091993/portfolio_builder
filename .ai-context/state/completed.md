@@ -570,3 +570,16 @@
   preset. The stub fixture carries a custom Work layout. E2E01, E2E02; 43 journeys, 103 web unit
   tests, web build, 1159 API tests.
 - `design-library` spec — 2026-10-21 — `In Progress → Implemented`.
+- cms-panel-shell.T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass. AC21: the signed-out
+  screens send a browser with a usable session on to `next` or `/cms` (`SignedOutOnly` in the
+  `(auth)` layout). UT13 and E2E16 added; E2E10 now waits for the form before pressing Tab.
+  Verified: web typecheck, lint, 111 unit tests, the full E2E suite (44 journeys; the auth spec
+  run five times in a row), and a production build (the static auth pages prerender behind the
+  Suspense fallback). No API change, so no OpenAPI change.
+- design-library.T07 — 2026-10-21 — DoD self-check: 2026-10-21, pass. The answer schema carries
+  custom layout trees only for an explore request, one per visible section (2 025 bytes without
+  explore, was 11 169); `AI_MAX_OUTPUT_TOKENS` (env, `.env.example`, `turbo.json`,
+  `architecture.md`) is sent by OpenRouter as `max_tokens`; a failed provider call logs
+  `design provider call failed` with its `HTTP` status or error type, never in the user message.
+  UT04 added. Verified: API typecheck, lint, 1174 API tests with coverage. No route change, so no
+  OpenAPI change. Open: exploring all six sections on Gemini (`state/blockers.md`).

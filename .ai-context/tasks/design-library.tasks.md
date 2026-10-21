@@ -8,3 +8,4 @@
 - [x] design-library.T04 — Snapshot v2 with `design.customLayouts`; public site renders it — Acceptance: AC4
 - [x] design-library.T05 — `ai-design`: `customLayouts` in answers, `explore`, apply saves layouts, API07, OpenAPI — Acceptance: AC7, AC8
 - [x] design-library.T06 — CMS: preview with custom layouts, Design screen library and presets, AI Studio explore and Save as preset, E2E — Acceptance: AC9
+- [x] design-library.T07 — The answer schema carries custom layout trees only for an explore request, one per visible section; `AI_MAX_OUTPUT_TOKENS` sent by OpenRouter as `max_tokens`; a failed provider call logs its upstream cause; UT04 keeps the schema within what Gemini accepts — Acceptance: AC7

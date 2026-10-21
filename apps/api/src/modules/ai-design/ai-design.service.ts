@@ -10,7 +10,9 @@
  *   provider failure never becomes an HTTP error (spec → Error Handling).
  * - Applying goes through `IDesignWriter`, so `design` stays the only writer of `designs` (AC8).
  *
- * Logs carry ids, statuses and durations — never the prompt text or a key (AC15).
+ * Logs carry ids, statuses and durations — never the prompt text or a key (AC15). A provider
+ * failure is logged with its cause (`HTTP 400`, `HTTP 402`, a timeout…) so it can be diagnosed;
+ * the proposal, and so the user, only ever gets the plain message of its failure code.
  */
 import { ConflictError, CreditsRequiredError, NotFoundError, UpstreamError } from '../../core/errors/index.js';
 import type { IBackgroundRunner } from '../../core/background/index.js';
@@ -212,6 +214,13 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
         ({ text } = await this.active.generator.generate(request, new AbortController().signal));
       } catch (error) {
         if (!(error instanceof UpstreamError)) throw error;
+        this.logger.warn('design provider call failed', {
+          proposalId: proposal.id,
+          provider: proposal.provider,
+          attempt,
+          reason: error.message,
+          cause: upstreamCause(error),
+        });
         return this.failed(error instanceof ProviderTimeoutError ? 'PROVIDER_TIMEOUT' : 'PROVIDER_ERROR', started);
       }
       const answer = this.parser.parse(text, proposal.scope, current);
@@ -267,6 +276,16 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
 
 function notReady(proposal: StoredProposal): ConflictError {
   return new ConflictError('PROPOSAL_NOT_READY', { status: proposal.status }, 'The design proposal is not ready');
+}
+
+/** An `HTTP <status>` cause as it is; any other only by its type, as its message could echo a response. */
+const HTTP_STATUS_CAUSE = /^HTTP \d{3}$/;
+
+/** What an `UpstreamError` was caused by, safe to log: `HTTP 402`, `TypeError`, … or `null`. */
+function upstreamCause(error: UpstreamError): string | null {
+  const { cause } = error;
+  if (!(cause instanceof Error)) return null;
+  return HTTP_STATUS_CAUSE.test(cause.message) ? cause.message : cause.name;
 }
 
 /** The proposal as the API returns it: no owner ids, ISO dates. */

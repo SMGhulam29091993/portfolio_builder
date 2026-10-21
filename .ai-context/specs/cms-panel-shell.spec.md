@@ -3,6 +3,8 @@
 cms-panel-shell
 ## Status
 Implemented
+- 2026-10-21: AC21 added at the owner's request (a signed-in browser opening the sign-in screen
+  had to sign in again) and built as `cms-panel-shell.T09`; the spec stays `Implemented`.
 - 2026-10-21: AC11's data arrived with `publish-pipeline.T09` — the header shows the live version
   and time or "Never published", and the "Unpublished changes" badge; asserted in
   `e2e/cms-publish.spec.ts`.
@@ -122,6 +124,12 @@ None of its own. Consumes `owner-auth.API01`–`API07`, `account-registration.AP
 20. cms-panel-shell.AC20 — Given the overview, then it shows the portfolio's public address
     (`<site origin>/<slug>`) and lets the user change the slug (`section-engine.API06`); `SLUG_TAKEN`
     shows an inline message on the field.
+21. cms-panel-shell.AC21 — Given a browser whose session is still usable (refreshing an expired
+    access token first, as AC3), when `/cms/login`, `/cms/register`, `/cms/verify` or
+    `/cms/forgot-password` is opened, then it is sent to `next` (by AC1's rule) or `/cms` without
+    the form; with no usable session the screen shows as before. A `?notice=` on the URL means the
+    session has just ended, so no check is made; a failed check on these screens never counts as
+    a lost session (no redirect, cached data kept).
 ## Edge Cases Covered
 - Network failure on save: the form stays dirty, an error with Retry is shown, nothing is lost.
 - The API is unreachable on load: a full-pane error with Retry, not a blank screen.
@@ -148,6 +156,7 @@ None of its own. Consumes `owner-auth.API01`–`API07`, `account-registration.AP
 | cms-panel-shell.UT07 | AC13 | `ListField` at max and at min | Add disabled; Remove disabled |
 | cms-panel-shell.UT11 | AC19 | `googleErrorMessage` for every known reason and an unknown one | One message each; generic fallback |
 | cms-panel-shell.UT12 | AC5 | `fieldLimits(schema)` reads max lengths for counters | Limits per path |
+| cms-panel-shell.UT13 | AC21 | `isPublicCmsPath()` with each signed-out screen, a trailing slash, `/cms`, `/cms/design`, `/cms/login/extra`, `/` | The four screens → true; others false |
 ## Explicitly Out of Scope
 - The field-level editor for each section, identity, design, assets, AI and publish screens —
   their own specs.

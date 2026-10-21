@@ -6,6 +6,9 @@
  * { require_parameters: true } }`. Structured output is supported per model and per upstream
  * provider, so `require_parameters` makes OpenRouter refuse a route that would silently ignore
  * the schema. The text is `choices[0].message.content`. Health is `GET {base}/models`.
+ *
+ * `max_tokens` is sent when `AI_MAX_OUTPUT_TOKENS` is set: without it OpenRouter reserves the
+ * model's whole output limit against the account's credits, and a small balance answers 402.
  */
 import { UpstreamError } from '../../../core/errors/index.js';
 import type { IDesignGenerator, IHttpClient, IProviderHealth } from '../ai-design.interface.js';
@@ -15,6 +18,8 @@ export interface OpenRouterSettings {
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly model: string;
+  /** `AI_MAX_OUTPUT_TOKENS`; unset sends no `max_tokens`. */
+  readonly maxOutputTokens?: number | undefined;
   readonly probeTimeoutMs: number;
 }
 
@@ -39,6 +44,7 @@ export class OpenRouterDesignGenerator implements IDesignGenerator, IProviderHea
           json_schema: { name: request.schemaName, strict: true, schema: request.schema },
         },
         provider: { require_parameters: true },
+        ...(this.settings.maxOutputTokens === undefined ? {} : { max_tokens: this.settings.maxOutputTokens }),
       },
       signal,
     );

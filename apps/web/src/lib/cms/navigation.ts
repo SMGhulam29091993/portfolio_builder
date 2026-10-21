@@ -14,6 +14,15 @@ export const PUBLIC_CMS_PATHS: readonly string[] = [
   '/cms/forgot-password',
 ];
 
+/**
+ * Whether `pathname` is one of the signed-out screens, where a failed session check is the
+ * expected answer rather than a lost session (`cms-panel-shell.AC21`, UT13).
+ */
+export function isPublicCmsPath(pathname: string): boolean {
+  const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  return PUBLIC_CMS_PATHS.includes(path);
+}
+
 /** Notices the sign-in page knows how to show (`?notice=`). */
 export type LoginNotice = 'signed-out-elsewhere' | 'password-updated' | 'signed-out';
 

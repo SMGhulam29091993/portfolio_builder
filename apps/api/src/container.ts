@@ -271,9 +271,15 @@ const DESIGN_GENERATORS: DesignGeneratorRegistrations = {
       { baseUrl: GEMINI_BASE_URL, apiKey: GEMINI_API_KEY, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
       new FetchHttpClient(),
     ),
-  openrouter: ({ OPENROUTER_BASE_URL, OPENROUTER_API_KEY, AI_MODEL }) =>
+  openrouter: ({ OPENROUTER_BASE_URL, OPENROUTER_API_KEY, AI_MODEL, AI_MAX_OUTPUT_TOKENS }) =>
     new OpenRouterDesignGenerator(
-      { baseUrl: OPENROUTER_BASE_URL, apiKey: OPENROUTER_API_KEY, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
+      {
+        baseUrl: OPENROUTER_BASE_URL,
+        apiKey: OPENROUTER_API_KEY,
+        model: AI_MODEL,
+        maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
+        probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS,
+      },
       new FetchHttpClient(),
     ),
 };

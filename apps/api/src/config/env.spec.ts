@@ -241,6 +241,15 @@ describe('loadEnv', () => {
     }
   });
 
+  it('AI_MAX_OUTPUT_TOKENS is unset when blank, a whole number when set, and bounded', () => {
+    expect(loadEnv(VALID_SOURCE).AI_MAX_OUTPUT_TOKENS).toBeUndefined();
+    expect(loadEnv({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: '' }).AI_MAX_OUTPUT_TOKENS).toBeUndefined();
+    expect(loadEnv({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: '4096' }).AI_MAX_OUTPUT_TOKENS).toBe(4_096);
+    for (const value of ['255', '200001', '12.5', 'lots']) {
+      expect(captureEnvError({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: value }).variables).toEqual(['AI_MAX_OUTPUT_TOKENS']);
+    }
+  });
+
   it('google-sign-in.AC9 — Google is all three variables or none; the issuer defaults', () => {
     const off = loadEnv(VALID_SOURCE);
     expect(off.GOOGLE_CLIENT_ID).toBeUndefined();

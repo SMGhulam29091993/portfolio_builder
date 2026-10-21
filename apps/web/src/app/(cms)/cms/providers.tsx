@@ -6,7 +6,8 @@
  * When the client reports the session gone, the tab goes to the sign-in page carrying the
  * current path as `next` — with the "signed in elsewhere" notice when a newer sign-in replaced
  * this one (`cms-panel-shell.AC3`). Cached data is dropped first, so nothing of the previous
- * session lingers in memory.
+ * session lingers in memory. On the signed-out screens themselves a failed check is the
+ * expected answer of their guard (`cms-panel-shell.AC21`), so nothing happens there.
  */
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -15,7 +16,7 @@ import { useState, type ReactNode } from 'react';
 import { ApiClient, ApiError, type SessionLoss } from '../../../lib/api/client';
 import { ApiClientProvider } from '../../../lib/api/context';
 import { publishingKeys } from '../../../lib/api/publishing';
-import { loginUrl } from '../../../lib/cms/navigation';
+import { isPublicCmsPath, loginUrl } from '../../../lib/cms/navigation';
 
 export function CmsProviders({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -43,6 +44,7 @@ export function CmsProviders({ children }: { children: ReactNode }) {
     () =>
       new ApiClient({
         onSessionLost: (reason: SessionLoss) => {
+          if (isPublicCmsPath(window.location.pathname)) return;
           queryClient.clear();
           const here = `${window.location.pathname}${window.location.search}`;
           router.replace(loginUrl(here, reason === 'superseded' ? 'signed-out-elsewhere' : undefined));

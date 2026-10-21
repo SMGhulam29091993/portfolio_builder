@@ -5,9 +5,14 @@
  * types and — when the user asked to start from it — the current design. Its input type has no
  * field for a name, an email or section text, so none can reach a provider (AC15).
  *
- * The JSON Schema of the answer is derived once from the `DesignSpec` zod schema in
+ * The JSON Schema of the answer is derived from the `DesignSpec` zod schema in
  * `packages/design-tokens`, narrowed to this catalogue's fonts and variants — one definition,
  * never hand-copied per adapter. The parser stays the authority whatever a provider enforces.
+ *
+ * Custom layout trees are the bulk of that schema, and a schema with one per section is larger
+ * than Gemini's structured output accepts (HTTP 400). So the schema carries `customLayouts` only
+ * when the request explores and the layout may change, with a tree for each visible section only
+ * (`design-library.AC7`). Every other request gets the base schema.
  */
 import {
   designSpecSchema,
@@ -59,14 +64,18 @@ const SCOPE_TEXT: Readonly<Record<ProposalScope, string>> = {
 
 export class DesignPromptBuilder implements IDesignPromptBuilder {
   private readonly instructions: string;
-  private readonly schema: Readonly<Record<string, unknown>>;
+  /** The answer's schema without custom layouts, and with them per explored section set. */
+  private readonly baseAnswer: z.ZodObject;
+  private readonly schemas = new Map<string, Readonly<Record<string, unknown>>>();
 
   constructor(catalogue: DesignCatalogue) {
     this.instructions = DesignPromptBuilder.instructionsFor(catalogue);
-    this.schema = DesignPromptBuilder.schemaFor(catalogue);
+    this.baseAnswer = DesignPromptBuilder.answerFor(catalogue);
   }
 
   build(input: PromptInput): GenerationRequest {
+    // Explore asks for new arrangements; it has no meaning when only the theme may change.
+    const explore = input.explore && input.scope !== 'theme';
     const lines = [
       `Request: ${input.prompt}`,
       `Scope: ${SCOPE_TEXT[input.scope]}`,
@@ -75,8 +84,7 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
         ? `Current design, to start from:\n${JSON.stringify(input.current)}`
         : 'Start fresh rather than from the current design.',
     ];
-    // Explore asks for new arrangements; it has no meaning when only the theme may change.
-    if (input.explore && input.scope !== 'theme') {
+    if (explore) {
       lines.push(
         'Explore: design a NEW custom layout in "customLayouts" for every visible section. Make each arrangement clearly different from the current layout and from the catalogue layouts; vary columns, order and styles.',
       );
@@ -84,9 +92,32 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
     return {
       instructions: this.instructions,
       messages: [{ role: 'user', content: lines.join('\n') }],
-      schema: this.schema,
+      schema: this.schemaFor(explore ? input.visibleSections : []),
       schemaName: SCHEMA_NAME,
     };
+  }
+
+  /**
+   * The answer's schema with a custom layout tree for each of `sections` (none: the base schema).
+   * Built once per section set, so equal requests share one frozen schema.
+   */
+  schemaFor(sections: readonly string[]): Readonly<Record<string, unknown>> {
+    const known = SECTION_TYPES.filter((section) => sections.includes(section));
+    const key = known.join(',');
+    let schema = this.schemas.get(key);
+    if (schema === undefined) {
+      const answer =
+        known.length === 0
+          ? this.baseAnswer
+          : this.baseAnswer.extend({
+              // One fixed-depth tree per section, with that section's blocks; null for none. Not
+              // recursive, because strict structured-output modes do not all accept recursion.
+              customLayouts: z.object(Object.fromEntries(known.map((section) => [section, DesignPromptBuilder.layoutTree(section).nullable()]))),
+            });
+      schema = DesignPromptBuilder.toJsonSchema(answer);
+      this.schemas.set(key, schema);
+    }
+    return schema;
   }
 
   repair(request: GenerationRequest, answer: string, issues: readonly AnswerIssue[]): GenerationRequest {
@@ -131,7 +162,7 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
       `Radius: one of ${RADII.join(', ')}. Motion: one of ${MOTIONS.join(', ')}.`,
       'Layout variants by section:',
       variants,
-      'Custom layouts ("customLayouts", optional per section, null for none): arrange a section\'s blocks in a "stack" or in "columns" (split 1-1, 2-1, 1-2 or 1-1-1, one child per column), two levels at most, gap sm, md or lg, align start or center. Every block of the section must appear exactly once. A custom layout replaces that section\'s variant. Blocks by section (style options in brackets; a block without options takes style null):',
+      'Custom layouts ("customLayouts", only when the schema has it; per section, null for none): arrange a section\'s blocks in a "stack" or in "columns" (split 1-1, 2-1, 1-2 or 1-1-1, one child per column), two levels at most, gap sm, md or lg, align start or center. Every block of the section must appear exactly once. A custom layout replaces that section\'s variant. Blocks by section (style options in brackets; a block without options takes style null):',
       blocks,
       'Choose only from these lists. When the request asks for something they cannot express, still return a design from the lists and say so in the rationale.',
     ].join('\n');
@@ -161,11 +192,11 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
     });
   }
 
-  /** The answer's JSON Schema: `DesignSpec` plus a rationale, narrowed to the catalogue. */
-  private static schemaFor(catalogue: DesignCatalogue): Readonly<Record<string, unknown>> {
+  /** The answer's zod shape: `DesignSpec` plus a rationale, narrowed to the catalogue. */
+  private static answerFor(catalogue: DesignCatalogue): z.ZodObject {
     const choice = (ids: readonly string[]) => z.enum(ids as [string, ...string[]]);
     const fontIds = (role: FontRole) => catalogue.fonts.filter((font) => font.role === role).map((font) => font.id);
-    const answer = designSpecSchema.extend({
+    return designSpecSchema.extend({
       theme: themeTokensSchema.extend({
         fonts: z.object({ sans: choice(fontIds('sans')), display: choice(fontIds('display')), mono: choice(fontIds('mono')) }),
       }),
@@ -178,10 +209,11 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
         ),
       ),
       rationale: z.string().max(RATIONALE_MAX_LENGTH),
-      // One fixed-depth tree per section, with that section's blocks; null for none. Not
-      // recursive, because strict structured-output modes do not all accept recursion.
-      customLayouts: z.object(Object.fromEntries(SECTION_TYPES.map((section) => [section, DesignPromptBuilder.layoutTree(section).nullable()]))),
     });
+  }
+
+  /** The JSON Schema a provider receives for `answer`. */
+  private static toJsonSchema(answer: z.ZodObject): Readonly<Record<string, unknown>> {
     // `io: 'input'` describes what the model writes (before the hex transform). Strict-mode
     // providers want closed objects, so every object refuses extra keys.
     const schema: Record<string, unknown> = z.toJSONSchema(answer, {

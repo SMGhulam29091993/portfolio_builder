@@ -154,3 +154,29 @@ AC18. The preview says when every section is hidden instead of showing an empty 
 its frame to the scaled page. Regression tests: `section.service.spec.ts` → "a section that
 cannot be hidden (hero) is never hidden"; `sections-draft.contributor.spec.ts` → "publishes a
 hero stored hidden…".
+
+### 2026-10-21 — `window.location` still shows the old URL while a `router.replace` renders
+**Symptom:** E2E14 failed intermittently: a `/auth/refresh` request was sent after a superseded
+session landed on `/cms/login?notice=signed-out-elsewhere`, though the new sign-in guard skips
+its check whenever `?notice=` is present.
+**Root cause:** the guard first read the query from `window.location.search`. On a client-side
+`router.replace`, Next.js renders the new route before it updates the window URL, so the guard
+saw the previous page's query, missed the notice and checked the (just cleared) session.
+**Fix:** read the query with `useSearchParams()` (the router's view of the target URL), inside a
+`Suspense` boundary so statically rendered pages still build (`components/cms/signed-out-only.tsx`).
+
+### 2026-10-21 — every AI proposal failed with `PROVIDER_ERROR` against real providers
+**Symptom:** with Gemini, and with OpenRouter, each generation ended `PROVIDER_ERROR` and the
+log said only `design proposal completed`; the contract suite and recorded answers all passed.
+**Root cause:** two upstream refusals the service did not log. Gemini answered HTTP 400: the
+answer schema carried a custom layout tree for all six sections (11 169 bytes, 64 `anyOf`
+branches), more than its structured output accepts. OpenRouter answered HTTP 402: with no
+`max_tokens` it reserves the model's whole output limit against the credits. Recorded answers
+never send the schema to a real provider, so neither surfaced in tests.
+**Fix:** `DesignPromptBuilder` adds `customLayouts` only for an explore request, one tree per
+visible section; `AI_MAX_OUTPUT_TOKENS` is sent as `max_tokens`; the service logs
+`design provider call failed` with the cause (`HTTP 4xx`, or only the error type otherwise).
+Regression tests: `design-prompt.builder.spec.ts` → "the answer schema stays within what Gemini
+accepts" (design-library.UT04); `ai-design.service.spec.ts` → "a provider failure logs its
+upstream cause…". OpenRouter model ids are namespaced: `AI_MODEL=google/gemini-3.5-flash`, not
+the bare Gemini id.

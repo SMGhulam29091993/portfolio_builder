@@ -1,7 +1,7 @@
 /**
  * `DesignPromptBuilder` (`ai-design-studio.T03`; UT14; AC3, AC4, AC15): what a provider is sent.
  */
-import { CONTRAST_PAIRS, DEFAULT_DESIGN, FONT_ALLOW_LIST, VARIANT_CATALOGUE } from '@portfolio/design-tokens';
+import { CONTRAST_PAIRS, DEFAULT_DESIGN, FONT_ALLOW_LIST, SECTION_TYPES, VARIANT_CATALOGUE } from '@portfolio/design-tokens';
 import { describe, expect, it } from 'vitest';
 
 import { DesignPromptBuilder } from './design-prompt.builder.js';
@@ -115,17 +115,68 @@ describe('custom layouts in the request (design-library.AC7)', () => {
     expect(builder.build(input).messages[0]?.content).not.toContain('Explore:');
   });
 
-  it('the schema carries a nullable, fixed-depth tree per section with that section\'s block names', () => {
-    const { schema } = builder.build(input);
-    const properties = schema.properties as Record<string, { properties?: Record<string, unknown>; required?: string[] }>;
-    const custom = properties.customLayouts;
-    expect(Object.keys(custom?.properties ?? {}).sort()).toEqual(['about', 'contact', 'experience', 'hero', 'stack', 'work']);
-    const text = JSON.stringify(custom?.properties?.work);
+  it('the schema carries custom layouts only when exploring a layout, with a tree per visible section', () => {
+    const customOf = (request: ReturnType<typeof builder.build>) =>
+      (request.schema.properties as Record<string, { properties?: Record<string, unknown> }>).customLayouts;
+    expect(customOf(builder.build(input))).toBeUndefined();
+    expect(customOf(builder.build({ ...input, scope: 'theme', explore: true }))).toBeUndefined();
+    const explored = customOf(builder.build({ ...input, explore: true }));
+    expect(Object.keys(explored?.properties ?? {})).toEqual(['hero', 'about', 'work']);
+    // An unknown section type is ignored rather than given a tree.
+    const unknown = customOf(builder.build({ ...input, explore: true, visibleSections: ['work', 'blog'] }));
+    expect(Object.keys(unknown?.properties ?? {})).toEqual(['work']);
+  });
+
+  it('each tree is nullable, fixed-depth and holds only that section\'s block names', () => {
+    const { schema } = builder.build({ ...input, explore: true });
+    const properties = schema.properties as Record<string, { properties?: Record<string, unknown> }>;
+    const text = JSON.stringify(properties.customLayouts?.properties?.work);
     expect(text).toContain('"featured"');
     expect(text).toContain('"projects"');
     expect(text).not.toContain('"bio"');
     expect(text).toContain('"null"');
     // No recursion: nothing refers back to itself.
     expect(JSON.stringify(schema)).not.toContain('"$ref"');
+  });
+
+  it('equal requests share one schema object; the repair keeps it', () => {
+    const first = builder.build({ ...input, explore: true });
+    expect(builder.build({ ...input, explore: true, prompt: 'Something else' }).schema).toBe(first.schema);
+    expect(builder.repair(first, '{}', []).schema).toBe(first.schema);
+  });
+});
+
+/** The size of a schema as structured-output limits count it: its bytes and its `anyOf` branches. */
+function schemaCost(node: unknown): { bytes: number; branches: number } {
+  let branches = 0;
+  const walk = (value: unknown) => {
+    if (typeof value !== 'object' || value === null) return;
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.anyOf)) branches += record.anyOf.length;
+    for (const child of Object.values(record)) walk(child);
+  };
+  walk(node);
+  return { bytes: JSON.stringify(node).length, branches };
+}
+
+/**
+ * What Gemini's structured output was seen to accept on 2026-10-21: the base schema plus one
+ * section's custom layout tree. The schema with all six trees (11 169 bytes, 64 branches) was
+ * refused with HTTP 400, and the recorded provider answers the other tests use never send a
+ * schema to a real provider, so nothing else would notice the schema growing past this again.
+ */
+const GEMINI_ACCEPTED = { bytes: 4_000, branches: 12 } as const;
+
+describe('the answer schema stays within what Gemini accepts', () => {
+  it.each(['theme', 'layout', 'both'] as const)('a %s request without explore sends no custom layouts', (scope) => {
+    const cost = schemaCost(builder.build({ ...input, scope, visibleSections: [...SECTION_TYPES] }).schema);
+    expect(cost.bytes).toBeLessThanOrEqual(GEMINI_ACCEPTED.bytes);
+    expect(cost.branches).toBe(0);
+  });
+
+  it.each([...SECTION_TYPES])('exploring the %s section alone stays within it', (section) => {
+    const cost = schemaCost(builder.build({ ...input, explore: true, visibleSections: [section] }).schema);
+    expect(cost.bytes).toBeLessThanOrEqual(GEMINI_ACCEPTED.bytes);
+    expect(cost.branches).toBeLessThanOrEqual(GEMINI_ACCEPTED.branches);
   });
 });

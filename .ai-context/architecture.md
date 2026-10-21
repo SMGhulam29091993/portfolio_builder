@@ -290,6 +290,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `GEMINI_BASE_URL` | api | The Gemini API base the adapter calls `<base>/interactions` on; default `https://generativelanguage.googleapis.com/v1beta` |
 | `OPENROUTER_BASE_URL` | api | The OpenRouter API base the adapter calls `<base>/chat/completions` on; default `https://openrouter.ai/api/v1` |
 | `AI_TIMEOUT_MS` | api | Upper bound on one provider call (default 60 000 ms, provisional) |
+| `AI_MAX_OUTPUT_TOKENS` | api | Most tokens one answer may use, sent by the OpenRouter adapter as `max_tokens`; unset sends none (256–200 000) |
 | `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
 | `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_SITE_URL` | web | Server-side fetch target; canonical URL |

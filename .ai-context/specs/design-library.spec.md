@@ -3,6 +3,13 @@
 design-library
 ## Status
 Implemented
+- 2026-10-21: found in use — with a custom layout tree for all six sections in every request,
+  the answer schema (11 169 bytes, 64 `anyOf` branches) was refused by Gemini with HTTP 400, and
+  OpenRouter refused a small balance with HTTP 402 (it reserves the model's whole output limit).
+  Fixed as `design-library.T07`: the schema carries `customLayouts` only when exploring a layout,
+  with a tree per visible section; a request without explore no longer offers custom layouts
+  (AC7 asks for them only under explore). `AI_MAX_OUTPUT_TOKENS` caps OpenRouter's reservation.
+  Still open: exploring all six sections sends the same six trees (`state/blockers.md`).
 - `In Progress → Implemented` 2026-10-21: T01–T06 completed, each with a DoD self-check line in
   `state/completed.md`. Found while building: the `design-valid` publish check treated every
   custom layout as missing (fixed in T04); applying checks the revision before saving layouts and

@@ -286,6 +286,13 @@ describe('OpenRouterDesignGenerator wire format', () => {
     });
   });
 
+  it('sends AI_MAX_OUTPUT_TOKENS as max_tokens when it is set, so the credit reservation fits', async () => {
+    server.reply({ body: openRouterCompletionReply('{}') });
+    const capped = new OpenRouterDesignGenerator({ baseUrl: server.url, apiKey: SECRET, model: MODEL, maxOutputTokens: 4_096, probeTimeoutMs: 1_000 }, http);
+    await capped.generate(request, new AbortController().signal);
+    expect(server.requests[0]?.body).toMatchObject({ max_tokens: 4_096 });
+  });
+
   it('an empty choices list is UpstreamError', async () => {
     server.reply({ body: { choices: [] } });
     await expect(openRouter(server.url).generate(request, new AbortController().signal)).rejects.toBeInstanceOf(UpstreamError);
