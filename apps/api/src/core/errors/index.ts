@@ -4,6 +4,7 @@
 export { AppError } from './app-error.js';
 export {
   ConflictError,
+  CreditsRequiredError,
   NotFoundError,
   PayloadTooLargeError,
   RateLimitedError,

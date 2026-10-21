@@ -28,6 +28,7 @@ No test in CI calls a real provider. Integration tests use the stub or a scripte
 | ai-design-studio.CT01 | `IDesignGenerator` — stub, Ollama, Gemini, OpenRouter (recorded HTTP) — AC13 | Returns raw text; sends the generated JSON Schema; aborts on signal; maps 4xx / 5xx / network errors to `UpstreamError`; sends no credential in a URL |
 | ai-design-studio.CT02 | `IDesignGenerator` decorators | Timeout and retry wrappers satisfy CT01 around any adapter |
 | ai-design-studio.CT03 | `IProviderHealth` | `reachable` true / false without throwing |
+| ai-design-studio.CT04 | `IProposalRepository` — `ProposalRepository` (real MongoDB), `InMemoryProposalRepository` | One pending per portfolio, conditional completion and transitions, cursor paging with ties, the monthly free count, the once-only refund flag, pending list, `deletePending` |
 
 ## Manual, opt-in (never in CI)
 | Test ID | Scenario | Expected |

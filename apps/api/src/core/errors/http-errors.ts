@@ -58,6 +58,18 @@ export class ConflictError extends AppError {
   }
 }
 
+/**
+ * 402 — a paid action needs more credits than the user has (ADR-0012; `ai-design-studio.AC7`).
+ * `creditsRequired` is what the action costs, `balance` what the user holds.
+ */
+export class CreditsRequiredError extends AppError {
+  readonly status = 402;
+
+  constructor(creditsRequired: number, balance: number, message = 'Not enough credits') {
+    super('CREDITS_REQUIRED', message, { creditsRequired, balance });
+  }
+}
+
 /** 413 — the request body is larger than the route accepts. */
 export class PayloadTooLargeError extends AppError {
   readonly status = 413;

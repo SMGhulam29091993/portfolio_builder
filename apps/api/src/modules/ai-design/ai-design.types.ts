@@ -9,7 +9,10 @@ import type {
   ProposalScope,
   ProposalStatus,
 } from '@portfolio/contracts';
+import type { GenerationAllowance, Proposal } from '@portfolio/contracts';
 import type { DesignSpec } from '@portfolio/design-tokens';
+
+import type { CmsDesign } from '../design/index.js';
 
 export {
   AI_PROVIDER_IDS,
@@ -36,6 +39,33 @@ export {
   type ProposalStatus,
 } from '@portfolio/contracts';
 export type { DesignSpec } from '@portfolio/design-tokens';
+
+/** The roles `auth` knows (ADR-0010); the owner generates without limit (AC17). */
+export type UserRole = 'owner' | 'member';
+
+/** Who a request acts for: the signed-in user and the portfolio they own (ADR-0010). */
+export interface AllowanceSubject {
+  readonly userId: string;
+  readonly portfolioId: string;
+}
+
+/** The allowance and what the next generation would cost; `next: null` means refused (402). */
+export interface AllowanceQuote {
+  readonly allowance: GenerationAllowance;
+  readonly next: Omit<ProposalCharge, 'refunded'> | null;
+}
+
+/** API03 — a page of proposals. */
+export interface ProposalPage {
+  readonly proposals: readonly Proposal[];
+  readonly nextCursor: string | null;
+}
+
+/** API04 — the draft design after the apply, and the applied proposal. */
+export interface AppliedProposal {
+  readonly design: CmsDesign;
+  readonly proposal: Proposal;
+}
 
 /** Why a proposal failed, as stored and returned (`ai-design-studio` → Proposal). */
 export interface ProposalFailure {

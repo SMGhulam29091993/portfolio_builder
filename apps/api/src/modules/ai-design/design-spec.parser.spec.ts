@@ -3,22 +3,13 @@
  * test double over the same `validateDesign` that `design`'s `DesignValidator` wraps, so the
  * verdicts are the real ones without importing another module's class.
  */
-import { DEFAULT_DESIGN, validateDesign, type DesignSpec } from '@portfolio/design-tokens';
+import { DEFAULT_DESIGN, type DesignSpec } from '@portfolio/design-tokens';
 import { describe, expect, it } from 'vitest';
 
-import { ValidationError } from '../../core/errors/index.js';
-import type { IDesignValidator } from '../design/index.js';
+import { TokensDesignValidator } from '../../testing/index.js';
 import { DesignSpecParser } from './design-spec.parser.js';
 
-class TokensValidator implements IDesignValidator {
-  validate(candidate: unknown): DesignSpec {
-    const verdict = validateDesign(candidate);
-    if (!verdict.ok) throw new ValidationError(verdict.issues);
-    return verdict.design;
-  }
-}
-
-const parser = new DesignSpecParser(new TokensValidator());
+const parser = new DesignSpecParser(new TokensDesignValidator());
 const current: DesignSpec = DEFAULT_DESIGN;
 
 /** A valid answer that differs from the current design in both parts. */

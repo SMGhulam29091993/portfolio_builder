@@ -139,6 +139,12 @@ export class ProposalRepository implements IProposalRepository {
     return rows.map(toProposal);
   }
 
+  async deletePending(portfolioId: string, proposalId: string): Promise<boolean> {
+    if (!isValidObjectId(portfolioId) || !isValidObjectId(proposalId)) return false;
+    const result = await this.model().deleteOne({ _id: proposalId, portfolioId, status: 'pending' }).exec();
+    return result.deletedCount === 1;
+  }
+
   private model() {
     return proposalModel(this.connections.getConnection());
   }

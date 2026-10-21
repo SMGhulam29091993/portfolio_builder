@@ -466,3 +466,15 @@
   contrast pair). UT03–UT06, UT14. Deviation, harmless: an object inside a JSON array is found
   and then fully validated, rather than refused. Checked locally: typecheck, lint, 951 API tests
   with the coverage floor, drift (no route).
+- ai-design-studio.T04 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `AiDesignService`
+  (create with charge then background run, one repair attempt, timeout / error mapping, crash
+  recorded as `PROVIDER_ERROR`, get, list with cursor, apply claimed-then-written through
+  `IDesignWriter` with rollback, discard, provider info, `recoverInterrupted`);
+  `MonthlyGenerationAllowance` (owner unlimited, monthly UTC free count, credits, once-only
+  refunds); `DefaultAiPricing`, `EmptyGenerationWallet`; `InterruptedProposalRecovery`;
+  `core/background` runner, `IStartupHook`, `CreditsRequiredError`; ports `ISectionTypeLister`,
+  `IUserRoleReader`, `IAiPricing`, `IGenerationWallet` owned by `ai-design`. CT04 contract suite
+  (real repository and `InMemoryProposalRepository`). Deviations in the plan (recovery hook
+  dependency; `deletePending`). Container and `main.ts` wiring of the hook and the service is
+  T09. Checked locally: typecheck, lint, 1013 API tests with the coverage floor (service 100%
+  lines, 87% branches), drift (no route).

@@ -55,4 +55,15 @@ export {
   seedContent,
 } from './publishing/publishing-fixtures.js';
 export { InMemoryPointerStore, InMemorySnapshotRepository } from './publishing/in-memory-publishing.js';
+export { InMemoryProposalRepository } from './ai-design/in-memory-proposal-repository.js';
+export {
+  InMemoryDesignStore,
+  ManualBackgroundRunner,
+  MapRoleReader,
+  RecordingWallet,
+  ScriptedDesignGenerator,
+  StaticSectionLister,
+  TokensDesignValidator,
+  type ScriptedAnswer,
+} from './ai-design/ai-design-doubles.js';
 export { CmsTestClient } from './http/cms-test-client.js';

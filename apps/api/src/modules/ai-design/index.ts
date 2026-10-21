@@ -1,14 +1,24 @@
 /** Public surface of the `ai-design` module: interfaces and types only. */
 export type {
   ActiveDesignGenerator,
+  IAiDesignService,
+  IAiPricing,
   IDesignGenerator,
   IDesignPromptBuilder,
   IDesignSpecParser,
+  IGenerationAllowance,
+  IGenerationWallet,
+  IInterruptedWorkRecovery,
   IProposalRepository,
   IProviderHealth,
+  ISectionTypeLister,
+  IUserRoleReader,
 } from './ai-design.interface.js';
 export type {
+  AllowanceQuote,
+  AllowanceSubject,
   AnswerIssue,
+  AppliedProposal,
   GenerationMessage,
   GenerationRequest,
   GenerationResult,
@@ -17,5 +27,7 @@ export type {
   PromptInput,
   ProposalFailure,
   ProposalOutcome,
+  ProposalPage,
   StoredProposal,
+  UserRole,
 } from './ai-design.types.js';

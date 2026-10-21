@@ -14,13 +14,18 @@ Module `apps/api/src/modules/ai-design/`, module file pattern plus `providers/` 
 | `TimeoutDesignGenerator`, `RetryDesignGenerator` | **Decorators** | `IDesignGenerator` | an inner `IDesignGenerator`, `IClock` |
 | `DesignGeneratorFactory` | **Factory** | — | `Env`; the only place the environment table is implemented |
 | `InProcessBackgroundRunner` | Adapter | `IBackgroundRunner` | `ILogger` |
-| `InterruptedProposalRecovery` | Startup hook | `IStartupHook` | `IProposalRepository` |
+| `InterruptedProposalRecovery` | Startup hook | `IStartupHook` | `IInterruptedWorkRecovery` (the service's recovery role)² |
 | `MonthlyGenerationAllowance` | Service — who may generate, at what charge | `IGenerationAllowance` | `IProposalRepository`, `IAiPricing`, `IGenerationWallet`, `IUserRoleReader`, `IClock` |
 | `DefaultAiPricing` | Adapter — the ADR-0012 defaults until `platform-admin` | `IAiPricing` | — |
 | `EmptyGenerationWallet` | Adapter — no credits until `credits-billing` | `IGenerationWallet` | — |
 
 ¹ Owned by `ai-design` and adapted in the container from the section repository (visible types),
 like `IUserRoleReader` from `auth`'s user reader — so `ai-design` imports neither module's classes.
+² Deviation recorded 2026-10-21 (`ai-design-studio.T04`): the table first named
+`IProposalRepository`, but an interrupted proposal also gives back its charge (AC17, added by the
+2026-10-21 revision), which needs the allowance; the service already holds both, so the hook
+calls its `recoverInterrupted` role. A credit spend that fails after the insert removes the
+pending row (`IProposalRepository.deletePending`), so nothing unpaid is left stored.
 `IBackgroundRunner` is a small `core/` interface; interrupted proposals are recovered in
 `buildContainer`'s startup step (`main.ts` awaits it before listening).
 - Revised 2026-10-21: the daily cap became the allowance above. `IAiPricing` and
