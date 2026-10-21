@@ -11,17 +11,24 @@ import { Chips, Credentials } from './stack-parts.js';
 export function StackChipGroups({ data, number }: SectionProps<StackSection>) {
   return (
     <SectionShell type="stack" number={number} eyebrow={data.meta.eyebrow} heading={data.heading}>
-      <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {data.groups.map((group) => (
-          <li key={group.id ?? group.label}>
-            <Card className="h-full p-6">
-              <h3 className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-text-muted">{group.label}</h3>
-              <Chips items={group.items} />
-            </Card>
-          </li>
-        ))}
-      </ul>
+      <SkillCards data={data} />
       <Credentials data={data} />
     </SectionShell>
+  );
+}
+
+/** The skill groups as cards; also the `skills` block's `cards` style (`design-library`). */
+export function SkillCards({ data }: { data: StackSection }) {
+  return (
+    <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {data.groups.map((group) => (
+        <li key={group.id ?? group.label}>
+          <Card className="h-full p-6">
+            <h3 className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-text-muted">{group.label}</h3>
+            <Chips items={group.items} />
+          </Card>
+        </li>
+      ))}
+    </ul>
   );
 }

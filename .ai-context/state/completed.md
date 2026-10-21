@@ -538,3 +538,8 @@
   `layout.ts`: fixed-depth `customLayoutSchema`, `LAYOUT_BLOCKS` (existing components' options
   only), `validateCustomLayout` (section, styles, columns pairing, every block exactly once),
   `isCustomLayoutRef` / `customLayoutId`; `validateDesign` accepts `custom:<id>`. UT01, UT02.
+- design-library.T02 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `packages/sections`:
+  `CustomLayoutRenderer` (the section frame, stacks and columns from fixed class strings, each
+  block an existing component), `PortfolioPage.customLayouts`; `TimelineEntries`, `JobCards`,
+  `SkillCards`, `SkillRows` extracted from their variants with no change in output. UT03; 44
+  sections tests, web typecheck and unit tests pass.

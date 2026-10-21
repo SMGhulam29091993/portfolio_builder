@@ -7,10 +7,13 @@
  * reported through `onUnknownType` (the web app logs it in development only); the rest of the
  * page renders.
  */
+import type { CustomLayout } from '@portfolio/design-tokens';
 import { Fragment, type ReactElement, type ReactNode } from 'react';
 
 import { composeSections, type ComposableSection } from './compose.js';
+import { CustomLayoutRenderer } from './custom/custom-layout.js';
 import type { SectionRendererRegistry } from './registry.js';
+import type { SectionContext } from './shared/context.js';
 
 export interface PortfolioPageProps<Context = unknown> {
   readonly sections: readonly ComposableSection[];
@@ -28,6 +31,12 @@ export interface PortfolioPageProps<Context = unknown> {
    * broken section names itself instead of blanking the page (`cms-panel-shell` → Edge Cases).
    */
   readonly wrapSection?: (type: string, section: ReactNode) => ReactNode;
+  /**
+   * Custom layouts by section type (`design-library`; ADR-0014): a type listed here is drawn from
+   * its layout, whatever `variants` says. The site passes the snapshot's copies, the CMS the
+   * library layouts its design names, or a proposal's own.
+   */
+  readonly customLayouts?: Readonly<Partial<Record<string, CustomLayout>>>;
 }
 
 export function PortfolioPage<Context>({
@@ -38,11 +47,21 @@ export function PortfolioPage<Context>({
   context,
   onUnknownType,
   wrapSection,
+  customLayouts,
 }: PortfolioPageProps<Context>): ReactElement {
   const placed = composeSections(sections, sectionOrder);
   return (
     <>
       {placed.map((section) => {
+        const custom = customLayouts?.[section.type];
+        if (custom?.section === section.type) {
+          const drawn = (
+            // Every page in this app passes `SectionContext`; the composer is generic only so its
+            // tests can use a smaller one.
+            <CustomLayoutRenderer layout={custom} data={section.data} number={section.number} position={section.position} context={context as unknown as SectionContext} />
+          );
+          return <Fragment key={section.type}>{wrapSection ? wrapSection(section.type, drawn) : drawn}</Fragment>;
+        }
         const Renderer = registry.get(section.type, variants[section.type]);
         if (!Renderer) {
           onUnknownType?.(section.type);

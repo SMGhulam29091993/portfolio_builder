@@ -15,7 +15,11 @@ import type {
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
+import { LAYOUT_BLOCKS, SECTION_TYPES, validateCustomLayout, type CustomLayout } from '@portfolio/design-tokens';
+
 import { rendererRegistry } from './catalog.js';
+import { CustomLayoutRenderer } from './custom/custom-layout.js';
+import { PortfolioPage } from './portfolio-page.js';
 import { formatMonth, orderEntries } from './experience/dates.js';
 import { mailtoHref } from './contact/contact-parts.js';
 
@@ -222,5 +226,81 @@ describe('contact', () => {
     expect(html).toContain('mailto:ann@example.test?subject=Hello%20%26%20welcome');
     expect(html).toContain('aria-label="Copy ann@example.test"');
     expect(html).toContain('GitHub</a>');
+  });
+});
+
+describe('CustomLayoutRenderer (design-library.UT03 / AC3)', () => {
+  const block = (name: string, style: string | null = null) => ({ kind: 'block' as const, block: name, style });
+  const data: Record<string, unknown> = { hero, about, work, experience, stack, contact };
+
+  /** Every block of `section`, stacked, each with its first style. */
+  function stacked(section: CustomLayout['section']): CustomLayout {
+    const children = Object.entries(LAYOUT_BLOCKS[section]).map(([name, styles]) => block(name, styles[0] ?? null));
+    return { section, align: 'start', body: { kind: 'stack', gap: 'md', columns: null, children } };
+  }
+
+  const draw = (layout: CustomLayout) =>
+    renderToStaticMarkup(<CustomLayoutRenderer layout={layout} data={data[layout.section]} number="02" position={2} context={{ identity }} />);
+
+  const blocksIn = (html: string) => [...html.matchAll(/data-block="([^"]+)"/g)].map((match) => match[1]);
+
+  it.each(SECTION_TYPES)('%s: every block drawn exactly once, in order', (section) => {
+    const layout = stacked(section);
+    expect(validateCustomLayout(layout, section)).toMatchObject({ ok: true });
+    expect(blocksIn(draw(layout))).toEqual(Object.keys(LAYOUT_BLOCKS[section]));
+  });
+
+  it('arranges blocks in columns that stack on phones, with the chosen gaps', () => {
+    const layout: CustomLayout = {
+      section: 'about',
+      align: 'center',
+      body: {
+        kind: 'stack',
+        gap: 'lg',
+        columns: null,
+        children: [
+          { kind: 'columns', gap: 'md', columns: '2-1', children: [block('bio'), block('currently')] },
+          { kind: 'columns', gap: 'sm', columns: '1-1', children: [block('stats', 'four-columns'), block('process', 'list')] },
+        ],
+      },
+    };
+    const html = draw(layout);
+    expect(blocksIn(html)).toEqual(['bio', 'currently', 'stats', 'process']);
+    expect(html).toContain('class="flex flex-col gap-10"');
+    expect(html).toContain('class="grid items-start gap-6 md:grid-cols-[2fr_1fr]"');
+    expect(html).toContain('class="grid items-start gap-4 md:grid-cols-2"');
+    // The heading follows the layout's alignment.
+    expect(html).toMatch(/items-center text-center/);
+  });
+
+  it('keeps the section frame: the hero backdrop and marquee; the contact accent; text stays text', () => {
+    const heroHtml = draw(stacked('hero'));
+    expect(heroHtml).toContain('id="hero"');
+    expect(heroHtml).toContain('A'); // marquee items
+    const contactHtml = draw(stacked('contact'));
+    expect(contactHtml).toContain('text-accent');
+    const work = draw({ ...stacked('work'), body: { kind: 'stack', gap: 'md', columns: null, children: [block('projects', 'list'), block('featured')] } });
+    expect(blocksIn(work)).toEqual(['projects', 'featured']);
+    expect(work).toContain('flex flex-col gap-4');
+  });
+
+  it('PortfolioPage draws a type from its custom layout instead of its variant', () => {
+    const layout = stacked('work');
+    const html = renderToStaticMarkup(
+      <PortfolioPage
+        sections={[{ type: 'work', visible: true, data: work }]}
+        sectionOrder={['work']}
+        registry={rendererRegistry}
+        variants={{ work: 'featured-grid' }}
+        context={{ identity }}
+        customLayouts={{ work: layout }}
+      />,
+    );
+    expect(html).toContain('data-custom-layout');
+    // A layout for another section is ignored.
+    const ignored = renderToStaticMarkup(
+      <PortfolioPage sections={[{ type: 'work', visible: true, data: work }]} sectionOrder={['work']} registry={rendererRegistry} context={{ identity }} customLayouts={{ work: stacked('about') }} />,
+    );
+    expect(ignored).not.toContain('data-custom-layout');
   });
 });

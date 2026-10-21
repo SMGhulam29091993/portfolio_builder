@@ -13,25 +13,32 @@ import { orderEntries } from './dates.js';
 export function ExperienceTimeline({ data, number }: SectionProps<ExperienceSection>) {
   return (
     <SectionShell type="experience" number={number} eyebrow={data.meta.eyebrow} heading={data.heading}>
-      <ol className="relative flex flex-col gap-12 border-l border-border pl-8 md:ml-[13rem] md:pl-10">
-        {orderEntries(data.entries).map((entry) => (
-          <li key={entry.id ?? entry.company} className="relative">
-            <span
-              aria-hidden="true"
-              className={`absolute top-2 -left-[2.4rem] h-3 w-3 rounded-full md:-left-[2.9rem] ${entry.end === null ? 'bg-accent' : 'bg-text-muted'}`}
-            >
-              {entry.end === null ? <span data-effect="glow" className="absolute inset-0 rounded-full bg-accent blur-md" /> : null}
-            </span>
-            <p className="mb-2 font-mono text-sm text-text-muted md:absolute md:top-0 md:-left-[16rem] md:w-48 md:text-right">
-              <DateRange entry={entry} presentLabel={data.presentLabel} />
-              {entry.location ? <span className="block">{entry.location}</span> : null}
-            </p>
-            <h3 className="text-2xl font-semibold text-text">{entry.company}</h3>
-            <p className="mb-4 text-accent">{entry.role}</p>
-            <Highlights highlights={entry.highlights} />
-          </li>
-        ))}
-      </ol>
+      <TimelineEntries data={data} />
     </SectionShell>
+  );
+}
+
+/** The jobs as a timeline; also the `jobs` block's `timeline` style (`design-library`). */
+export function TimelineEntries({ data }: { data: ExperienceSection }) {
+  return (
+    <ol className="relative flex flex-col gap-12 border-l border-border pl-8 md:ml-[13rem] md:pl-10">
+      {orderEntries(data.entries).map((entry) => (
+        <li key={entry.id ?? entry.company} className="relative">
+          <span
+            aria-hidden="true"
+            className={`absolute top-2 -left-[2.4rem] h-3 w-3 rounded-full md:-left-[2.9rem] ${entry.end === null ? 'bg-accent' : 'bg-text-muted'}`}
+          >
+            {entry.end === null ? <span data-effect="glow" className="absolute inset-0 rounded-full bg-accent blur-md" /> : null}
+          </span>
+          <p className="mb-2 font-mono text-sm text-text-muted md:absolute md:top-0 md:-left-[16rem] md:w-48 md:text-right">
+            <DateRange entry={entry} presentLabel={data.presentLabel} />
+            {entry.location ? <span className="block">{entry.location}</span> : null}
+          </p>
+          <h3 className="text-2xl font-semibold text-text">{entry.company}</h3>
+          <p className="mb-4 text-accent">{entry.role}</p>
+          <Highlights highlights={entry.highlights} />
+        </li>
+      ))}
+    </ol>
   );
 }

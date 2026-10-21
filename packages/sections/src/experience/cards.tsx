@@ -8,21 +8,28 @@ import { orderEntries } from './dates.js';
 export function ExperienceCards({ data, number }: SectionProps<ExperienceSection>) {
   return (
     <SectionShell type="experience" number={number} eyebrow={data.meta.eyebrow} heading={data.heading}>
-      <ol className="grid gap-4 md:grid-cols-2">
-        {orderEntries(data.entries).map((entry) => (
-          <li key={entry.id ?? entry.company}>
-            <Card className="flex h-full flex-col gap-3 p-6">
-              <p className="font-mono text-sm text-text-muted">
-                <DateRange entry={entry} presentLabel={data.presentLabel} />
-                {entry.location ? ` · ${entry.location}` : ''}
-              </p>
-              <h3 className="text-2xl font-semibold text-text">{entry.company}</h3>
-              <p className="text-accent">{entry.role}</p>
-              <Highlights highlights={entry.highlights} />
-            </Card>
-          </li>
-        ))}
-      </ol>
+      <JobCards data={data} />
     </SectionShell>
+  );
+}
+
+/** The jobs as cards; also the `jobs` block's `cards` style (`design-library`). */
+export function JobCards({ data }: { data: ExperienceSection }) {
+  return (
+    <ol className="grid gap-4 md:grid-cols-2">
+      {orderEntries(data.entries).map((entry) => (
+        <li key={entry.id ?? entry.company}>
+          <Card className="flex h-full flex-col gap-3 p-6">
+            <p className="font-mono text-sm text-text-muted">
+              <DateRange entry={entry} presentLabel={data.presentLabel} />
+              {entry.location ? ` · ${entry.location}` : ''}
+            </p>
+            <h3 className="text-2xl font-semibold text-text">{entry.company}</h3>
+            <p className="text-accent">{entry.role}</p>
+            <Highlights highlights={entry.highlights} />
+          </Card>
+        </li>
+      ))}
+    </ol>
   );
 }

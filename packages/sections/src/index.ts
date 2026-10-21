@@ -12,6 +12,7 @@ export { mailtoHref } from './contact/contact-parts.js';
 export * from './shared/index.js';
 export { composeSections, HERO_TYPE, type ComposableSection, type PlacedSection } from './compose.js';
 export { PortfolioPage, type PortfolioPageProps } from './portfolio-page.js';
+export { CustomLayoutRenderer, type CustomLayoutRendererProps } from './custom/custom-layout.js';
 export { ThemeRoot, themeStyle, type ThemeRootProps } from './theme-root.js';
 export {
   DEFAULT_VARIANT,
