@@ -25,7 +25,7 @@ owner moves a spec to `Ready`.
 | 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
 | 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
 | 16 | `ai-design-studio` | AI design proposals | Implemented | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
-| 17 | `design-library` | AI-arranged layouts, layout library, design presets | Ready | BRD-004 | — (ADR-0014, owner 2026-10-21) |
+| 17 | `design-library` | AI-arranged layouts, layout library, design presets | In Progress | BRD-004 | — (ADR-0014, owner 2026-10-21) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 

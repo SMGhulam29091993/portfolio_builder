@@ -2,7 +2,7 @@
 ## Spec ID
 design-library
 ## Status
-Ready
+In Progress
 - DoR self-check: 2026-10-21, pass. Written from the owner's decision of 2026-10-21 (ADR-0014,
   Accepted) and moved `Draft → Ready` by the agent under the owner's standing authorisation of
   2026-10-20 (`governance.md`).

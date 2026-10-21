@@ -534,3 +534,7 @@
   (`ListField`, `StringListField`, emphasis heading, metrics, tags, link target, year fields)
   accept `hint`; the AI Studio says when the development stub is answering and previews applied
   proposals. Checked: web typecheck, lint, 101 unit tests, 40 E2E journeys (axe included), build.
+- design-library.T01 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `packages/design-tokens`
+  `layout.ts`: fixed-depth `customLayoutSchema`, `LAYOUT_BLOCKS` (existing components' options
+  only), `validateCustomLayout` (section, styles, columns pairing, every block exactly once),
+  `isCustomLayoutRef` / `customLayoutId`; `validateDesign` accepts `custom:<id>`. UT01, UT02.
