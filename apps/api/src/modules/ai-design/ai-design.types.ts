@@ -103,6 +103,38 @@ export interface GenerationResult {
   readonly text: string;
 }
 
+/**
+ * What the prompt builder may use (AC15). It has no field for a name, an email or any section
+ * text, so none can reach a provider.
+ */
+export interface PromptInput {
+  /** The user's request, already plain text (API01). */
+  readonly prompt: string;
+  readonly scope: ProposalScope;
+  /** The draft design to start from, or `null` when `basedOnCurrent` is false. */
+  readonly current: DesignSpec | null;
+  /** The section types the portfolio shows, in page order. */
+  readonly visibleSections: readonly string[];
+}
+
+/** One reason a provider's answer cannot be used, sent back in the repair attempt. */
+export interface AnswerIssue {
+  readonly path: string;
+  readonly message: string;
+}
+
+/**
+ * The parser's verdict on a provider's answer (AC3, AC4, AC5). `CONTRAST_FAILED` means the
+ * answer was well-formed and only contrast pairs failed; anything else is `INVALID_OUTPUT`.
+ */
+export type ParsedAnswer =
+  | { readonly ok: true; readonly design: DesignSpec; readonly rationale: string | null }
+  | {
+      readonly ok: false;
+      readonly code: Extract<ProposalFailureCode, 'INVALID_OUTPUT' | 'CONTRAST_FAILED'>;
+      readonly issues: readonly AnswerIssue[];
+    };
+
 /** How a `pending` proposal ends (AC2, AC3, AC4, AC6, AC10). */
 export type ProposalOutcome =
   | {

@@ -457,3 +457,12 @@
   start (IT10, three process boots). `env.ts` reads `AI_PROVIDER`, `AI_MODEL`,
   `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` (example and `turbo.json` updated).
   Checked locally: typecheck, lint, 924 API tests with the coverage floor, drift (no route).
+- ai-design-studio.T03 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `DesignPromptBuilder`
+  (catalogue, fonts, contrast rules, scope, visible sections, the current design on request;
+  input type with no field for a name, email or section text; the one repair turn) with the
+  answer's JSON Schema derived from the `DesignSpec` zod schema, narrowed to the catalogue and
+  closed for strict modes. `DesignSpecParser` (first JSON object, markup and URL refusal in any
+  string or key, scope merge, `IDesignValidator`, `CONTRAST_FAILED` only when every issue is a
+  contrast pair). UT03–UT06, UT14. Deviation, harmless: an object inside a JSON array is found
+  and then fully validated, rather than refused. Checked locally: typecheck, lint, 951 API tests
+  with the coverage floor, drift (no route).

@@ -4,10 +4,15 @@
  */
 import type {
   AiProviderId,
+  AnswerIssue,
+  DesignSpec,
   GenerationRequest,
   GenerationResult,
   NewProposal,
+  ParsedAnswer,
+  PromptInput,
   ProposalOutcome,
+  ProposalScope,
   ProposalStatus,
   StoredProposal,
 } from './ai-design.types.js';
@@ -37,6 +42,29 @@ export interface ActiveDesignGenerator {
   readonly health: IProviderHealth;
   /** `AI_MODEL`, or the stub's fixture name. */
   readonly model: string;
+}
+
+/**
+ * Builds the provider-agnostic request (`ai-design-studio.T03`). Knows nothing about providers;
+ * sends the catalogue, the font allow-list, the contrast rules, the scope and — when asked —
+ * the current design, and nothing about the person (AC15).
+ */
+export interface IDesignPromptBuilder {
+  build(input: PromptInput): GenerationRequest;
+  /** The one repair attempt (AC3, AC4): the previous answer and why it cannot be used. */
+  repair(request: GenerationRequest, answer: string, issues: readonly AnswerIssue[]): GenerationRequest;
+}
+
+/**
+ * Turns a provider's raw text into a usable design, or says why not (`ai-design-studio.T03`).
+ * Knows nothing about transport. Model output is data, never code (ADR-0006).
+ */
+export interface IDesignSpecParser {
+  /**
+   * @param current - The draft design at generation time; the part outside `scope` is copied
+   *   from it whatever the model returned (AC5).
+   */
+  parse(text: string, scope: ProposalScope, current: DesignSpec): ParsedAnswer;
 }
 
 /** The `design_proposals` collection; every read and write is scoped by `portfolioId`. */

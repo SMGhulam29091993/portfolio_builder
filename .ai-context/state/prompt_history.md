@@ -171,3 +171,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 15:40 IST] — ai-design-studio.T02
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added the generator port and health port, the stub generator and its fixture, and `DesignGeneratorFactory` (environment table, adapter registrations, production refusals), run in `buildContainer`; `env.ts` reads five AI variables (`.env.example`, `turbo.json`, `architecture.md` updated); factory, stub, env and process-boot tests. Two self-review findings recorded.
+
+### [2026-10-21 15:55 IST] — ai-design-studio.T03
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `DesignPromptBuilder` (instructions from the catalogue, the derived and closed JSON Schema, the repair turn) and `DesignSpecParser` (JSON extraction, markup and URL refusal, scope merge, validation through `IDesignValidator`, contrast classification), with UT03–UT06 and UT14.
