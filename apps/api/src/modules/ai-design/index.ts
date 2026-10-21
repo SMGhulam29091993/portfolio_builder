@@ -8,6 +8,7 @@ export type {
   IDesignSpecParser,
   IGenerationAllowance,
   IGenerationWallet,
+  IHttpClient,
   IInterruptedWorkRecovery,
   IProposalRepository,
   IProviderHealth,

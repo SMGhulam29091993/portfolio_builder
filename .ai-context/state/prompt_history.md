@@ -183,3 +183,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 16:45 IST] — ai-design-studio.T05
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added `core/time` (`IDelay`, `SystemDelay`), `ManualDelay`, `ProviderRejectedError`, `TimeoutDesignGenerator` and `RetryDesignGenerator` with UT09 and UT10; fixed the timeout race found by UT09 and recorded it in `memory/pitfalls.md`.
+
+### [2026-10-21 17:05 IST] — ai-design-studio.T06
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `IHttpClient` and `FetchHttpClient`, `OllamaDesignGenerator` (registered in the container), `RecordedProviderServer`, documented-shape Ollama recording, and the shared generator contract suite (CT01 stub and Ollama, CT02 through the decorators, CT03 health).

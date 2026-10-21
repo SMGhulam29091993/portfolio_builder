@@ -56,6 +56,7 @@ export {
 } from './publishing/publishing-fixtures.js';
 export { InMemoryPointerStore, InMemorySnapshotRepository } from './publishing/in-memory-publishing.js';
 export { ManualDelay } from './time/manual-delay.js';
+export { ollamaChatReply } from './ai-design/provider-recordings.js';
 export { InMemoryProposalRepository } from './ai-design/in-memory-proposal-repository.js';
 export {
   InMemoryDesignStore,
@@ -68,3 +69,8 @@ export {
   type ScriptedAnswer,
 } from './ai-design/ai-design-doubles.js';
 export { CmsTestClient } from './http/cms-test-client.js';
+export {
+  RecordedProviderServer,
+  type RecordedRequest,
+  type ScriptedReply,
+} from './http/recorded-provider-server.js';

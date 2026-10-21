@@ -7,7 +7,7 @@
 - [x] ai-design-studio.T03 — `DesignPromptBuilder` (no PII; catalogue, rules, scope) and `DesignSpecParser` (JSON extraction, validation through `IDesignValidator`, markup / URL rejection, scope merge); JSON Schema derived from the `DesignSpec` zod schema — Acceptance: AC3, AC4, AC5, AC15
 - [x] ai-design-studio.T04 — `MonthlyGenerationAllowance`, `DefaultAiPricing`, `EmptyGenerationWallet`; `AiDesignService` with `IBackgroundRunner`: create (one pending, the allowance and its charge), run with one repair attempt, get / list, apply through `IDesignWriter`, discard; `InterruptedProposalRecovery` startup hook (`IStartupHook` in `core/`); `ISectionTypeLister` owned by `ai-design` (plan footnote ¹; corrected 2026-10-21 from "exported from `portfolio`") — Acceptance: AC1, AC2, AC3, AC4, AC7, AC8, AC9, AC10
 - [x] ai-design-studio.T05 — `TimeoutDesignGenerator` and `RetryDesignGenerator` with an injected clock — Acceptance: AC6
-- [ ] ai-design-studio.T06 — `OllamaDesignGenerator`; the shared `IDesignGenerator` contract suite with recorded responses; run it against stub + Ollama — Acceptance: AC13, AC14
+- [x] ai-design-studio.T06 — `OllamaDesignGenerator`; the shared `IDesignGenerator` contract suite with recorded responses; run it against stub + Ollama — Acceptance: AC13, AC14
 - [ ] ai-design-studio.T07 — `GeminiDesignGenerator` on the Interactions API (confirmed 2026-10-21, `memory/ai-provider-apis.md`); add to the contract suite — Acceptance: AC13, AC14
 - [ ] ai-design-studio.T08 — `OpenRouterDesignGenerator` with `require_parameters`; add to the contract suite — Acceptance: AC13, AC14
 - [ ] ai-design-studio.T09 — `AiDesignController`, routes, AI rate limiter, container wiring (factory → retry → timeout), OpenAPI for API01–API06 — Acceptance: AC1, AC7

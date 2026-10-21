@@ -486,3 +486,12 @@
   (the timeout lost its own race; `memory/pitfalls.md`). CT02 (decorators in the generator
   contract suite) joins with the suite in T06. Checked locally: typecheck, lint, 1026 API tests
   with the coverage floor.
+- ai-design-studio.T06 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `OllamaDesignGenerator`
+  (`/api/chat`, `format` = the schema, system turn first, `/api/tags` health) on the new
+  `IHttpClient` port and `FetchHttpClient` (4xx other than 429 → `ProviderRejectedError`;
+  network, abort, 429, 5xx, non-JSON → `UpstreamError`; bodies never logged). The shared
+  contract suite `design-generator.contract.spec.ts`: CT01 (Ollama, stub), CT02 (Ollama through
+  retry and timeout), CT03 (health), over `RecordedProviderServer` on the loopback with responses
+  in the documented shape (`testing/ai-design/recordings`; shaped from the docs, not captured
+  live — MT01 is the live run). Registered in `container.ts`. Checked locally: typecheck, lint,
+  1052 API tests with the coverage floor, drift (no route).

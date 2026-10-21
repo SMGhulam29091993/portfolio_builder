@@ -100,6 +100,8 @@ import {
   DesignGeneratorFactory,
   type DesignGeneratorRegistrations,
 } from './modules/ai-design/providers/design-generator.factory.js';
+import { FetchHttpClient } from './modules/ai-design/adapters/fetch-http.client.js';
+import { OllamaDesignGenerator } from './modules/ai-design/providers/ollama.design-generator.js';
 import { STUB_MODEL, StubDesignGenerator } from './modules/ai-design/providers/stub.design-generator.js';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
 import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
@@ -233,10 +235,16 @@ const MAIL_STRATEGIES: readonly MailStrategy[] = [
 
 /**
  * Design-generation adapters this build can construct (ADR-0003), by `AI_PROVIDER`. Each adapter
- * task adds its one entry (`ai-design-studio.T06`–`T08`); `DesignGeneratorFactory` refuses a
+ * task adds its one entry (Ollama `ai-design-studio.T06`; Gemini T07, OpenRouter T08); `DesignGeneratorFactory` refuses a
  * named provider with no entry rather than falling back to the stub.
  */
-const DESIGN_GENERATORS: DesignGeneratorRegistrations = {};
+const DESIGN_GENERATORS: DesignGeneratorRegistrations = {
+  ollama: ({ OLLAMA_BASE_URL, AI_MODEL }) =>
+    new OllamaDesignGenerator(
+      { baseUrl: OLLAMA_BASE_URL, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
+      new FetchHttpClient(),
+    ),
+};
 
 /**
  * The registered section types (`section-engine`; ADR-0005), in page order. Each section spec
@@ -260,6 +268,9 @@ const PUBLIC_RATE_LIMIT: RateLimitPolicy = { windowMs: 60_000, max: 600 };
 
 /** Snapshots kept per portfolio besides the live one (ADR-0004 retention; `publish-pipeline.AC20`). */
 const SNAPSHOT_RETENTION = 20;
+
+/** Upper bound on an AI provider's health probe (`ai-design-studio.API06`). */
+const PROVIDER_PROBE_TIMEOUT_MS = 3_000;
 
 /** Upper bound on one call to the web app's revalidate route (`publish-pipeline.AC12`). */
 const REVALIDATION_TIMEOUT_MS = 5_000;

@@ -45,6 +45,28 @@ export interface IProviderHealth {
   check(): Promise<{ reachable: boolean }>;
 }
 
+/**
+ * The one way adapters reach a provider (`ai-design-studio` plan → adapters depend on
+ * `IHttpClient`). It owns the transport rules every adapter shares, so each adapter only
+ * translates its wire format (Single Responsibility).
+ */
+export interface IHttpClient {
+  /**
+   * POSTs `body` as JSON and returns the parsed JSON answer.
+   * @throws {ProviderRejectedError} A 4xx other than 429 — the request itself was refused.
+   * @throws {UpstreamError} Anything else: network failure, abort, 429, 5xx, a body that is not JSON.
+   */
+  postJson(
+    provider: AiProviderId,
+    url: string,
+    headers: Readonly<Record<string, string>>,
+    body: unknown,
+    signal: AbortSignal,
+  ): Promise<unknown>;
+  /** `true` when a GET of `url` answers 2xx within `timeoutMs`; never throws. */
+  probe(url: string, headers: Readonly<Record<string, string>>, timeoutMs: number): Promise<boolean>;
+}
+
 /** The generator `DesignGeneratorFactory` chose for this environment, with what API06 reports. */
 export interface ActiveDesignGenerator {
   readonly generator: IDesignGenerator;
