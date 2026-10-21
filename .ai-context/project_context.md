@@ -65,7 +65,7 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
 `section-engine` → `cms-panel-shell` → `site-identity` → `media-assets` → `design-theme` →
 `hero-section` · `about-section` · `work-showcase` · `experience-timeline` ·
 `stack-credentials` · `contact-section` → `publish-pipeline` → `public-site-rendering` →
-`ai-design-studio` → `platform-admin` → `credits-billing` → `custom-domains` (the slugs added
+`ai-design-studio` → `design-library` → `platform-admin` → `credits-billing` → `custom-domains` (the slugs added
 2026-10-18 and 2026-10-20 have no spec yet)
 
 ### State (`state/`)
@@ -80,7 +80,8 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
   ADR-0009 mail delivery (Accepted, amended 2026-10-18) · ADR-0010 multi-tenant accounts and
   the owner claim (Accepted / mechanics Proposed; owner answers 2026-10-20) · ADR-0011 Google
   sign-in (Accepted / mechanics Proposed; owner answer 2026-10-20) · ADR-0012 Stripe payments
-  (Accepted) · ADR-0013 `publishing` owns its ports (Accepted)
+  (Accepted) · ADR-0013 `publishing` owns its ports (Accepted) · ADR-0014 structured layouts
+  and the design library (Accepted 2026-10-21, amends ADR-0006)
 
 ### Memory (`memory/`)
 - `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only, from

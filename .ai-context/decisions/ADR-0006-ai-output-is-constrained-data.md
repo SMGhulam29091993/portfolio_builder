@@ -1,7 +1,9 @@
 # ADR-0006: AI generates a validated design specification, never markup or code
 **Status:** Accepted — owner, 2026-10-20, reading (a), amended: version 1 ships more than one
 layout variant per section (Decision → Variant catalogue), so generated designs vary layout as
-well as theme
+well as theme. **Amended by ADR-0014 (owner, 2026-10-21):** besides catalogue variants, a design
+may use a custom layout — validated data arranging a section's existing building blocks, kept in
+a per-portfolio library — still never model-written markup or code.
 
 ## Context
 BRD-004 asks for AI-generated "UI designs" without saying what a design is. Two readings:
