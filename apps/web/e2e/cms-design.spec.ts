@@ -16,19 +16,19 @@ test('design-theme.E2E01 / AC10 — a failing contrast pair disables Save; resto
   await text.fill('#1a1a1a');
 
   await expect(page.locator('[data-contrast="fail"]').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
 
   await text.fill('#ededef');
   await expect(page.locator('[data-contrast="fail"]')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
   await page.getByLabel('Accent colour', { exact: true }).fill('#b4f02a');
-  await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
 });
 
 test('design-theme.E2E02 / AC10 — change the accent and a layout, save, reload', async ({ page }) => {
   await page.getByLabel('Accent colour', { exact: true }).fill('#a3e635');
   await page.getByLabel('Hero section layout').selectOption('centered');
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Design saved.')).toBeVisible();
   await expect(page.locator('#design-form')).toHaveAttribute('data-dirty', 'false');
 

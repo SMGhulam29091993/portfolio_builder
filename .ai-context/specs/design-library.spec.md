@@ -2,7 +2,11 @@
 ## Spec ID
 design-library
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` 2026-10-21: T01–T06 completed, each with a DoD self-check line in
+  `state/completed.md`. Found while building: the `design-valid` publish check treated every
+  custom layout as missing (fixed in T04); applying checks the revision before saving layouts and
+  records the saved references on the proposal, so a later preset stores no second copy (T05).
 - DoR self-check: 2026-10-21, pass. Written from the owner's decision of 2026-10-21 (ADR-0014,
   Accepted) and moved `Draft → Ready` by the agent under the owner's standing authorisation of
   2026-10-20 (`governance.md`).

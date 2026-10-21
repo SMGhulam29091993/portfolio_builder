@@ -6,11 +6,11 @@
  * screen passes its unsaved design, `design-theme.AC10`), inside a 1440- or 390-wide frame scaled to fit the pane. Each section sits in
  * an error boundary. Below 1024 px the pane hides behind a toggle so the form stays usable.
  */
-import { DEFAULT_DESIGN, type DesignSpec } from '@portfolio/design-tokens';
+import { DEFAULT_DESIGN, type CustomLayout, type DesignSpec } from '@portfolio/design-tokens';
 import { PortfolioPage, rendererRegistry, ThemeRoot } from '@portfolio/sections';
 import { useEffect, useRef, useState } from 'react';
 
-import { useDesign } from '../../../lib/api/design';
+import { resolveCustomLayouts, useDesign, useLayoutLibrary } from '../../../lib/api/design';
 import { useIdentity } from '../../../lib/api/identity';
 import { usePortfolioDraft, useSectionTypes } from '../../../lib/api/portfolio';
 import { buildPreviewModel } from '../../../lib/cms/preview-model';
@@ -25,9 +25,19 @@ export const VIEWPORT_WIDTHS: Readonly<Record<PreviewViewport, number>> = { desk
 /** How long the preview waits after the last keystroke (AC9: within 300 ms). */
 const PREVIEW_DEBOUNCE_MS = 250;
 
-export function PreviewPane({ editing, design }: { editing?: { type: string; data: unknown }; design?: DesignSpec }) {
+export function PreviewPane({
+  editing,
+  design,
+  customLayouts,
+}: {
+  editing?: { type: string; data: unknown };
+  design?: DesignSpec;
+  /** An AI proposal's own custom layouts, not yet in the library (`design-library.AC9`). */
+  customLayouts?: Readonly<Partial<Record<string, CustomLayout>>>;
+}) {
   const draft = usePortfolioDraft();
   const stored = useDesign();
+  const library = useLayoutLibrary();
   const identity = useIdentity();
   // The design screen passes its unsaved design; every other screen previews the saved one.
   const shown = design ?? stored.data?.design ?? DEFAULT_DESIGN;
@@ -71,6 +81,8 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
 
   if (!draft.data) return null;
   const model = buildPreviewModel(draft.data, debounced);
+  // Library layouts the design names, then the proposal's own on top (`design-library.AC3`).
+  const layouts = { ...resolveCustomLayouts(shown.layout, library.data), ...customLayouts };
   const labels = new Map((types.data ?? []).map((info) => [info.type, info.label]));
   const nothingVisible = model.sections.every((section) => !section.visible);
 
@@ -116,6 +128,7 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
               sectionOrder={model.sectionOrder}
               registry={rendererRegistry}
               variants={shown.layout}
+              customLayouts={layouts}
               context={{ identity: identity.data?.data ?? null }}
               wrapSection={(type, node) => (
                 <SectionErrorBoundary label={labels.get(type) ?? type} resetKey={type === debounced?.type ? debounced.data : type}>

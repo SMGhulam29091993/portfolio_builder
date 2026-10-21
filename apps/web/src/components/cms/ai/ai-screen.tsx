@@ -7,7 +7,7 @@
  * without being applied, then applied or discarded; a failed one says why in plain language.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { DesignSpec } from '@portfolio/design-tokens';
+import type { CustomLayout, DesignSpec } from '@portfolio/design-tokens';
 import { createProposalRequestSchema, type CreateProposalRequest, type Proposal } from '@portfolio/contracts';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -21,6 +21,7 @@ import {
   useDiscardProposal,
   useProposal,
   useProposalHistory,
+  useSaveProposalPreset,
 } from '../../../lib/api/ai-design';
 import { useDesign } from '../../../lib/api/design';
 import { allowanceSummary, BUY_CREDITS_HREF, providerBadge, SCOPE_OPTIONS } from '../../../lib/cms/ai-studio';
@@ -28,7 +29,7 @@ import { genericErrorMessage } from '../../../lib/cms/messages';
 import { useCmsUi } from '../../../lib/cms/ui-store';
 import { FormSchemaProvider, SelectField, SwitchField, TextAreaField } from '../form';
 import { PreviewPane } from '../preview/preview-pane';
-import { Button, Notice, TextLink } from '../ui';
+import { Button, Notice, TextInput, TextLink } from '../ui';
 
 const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const DAY_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
@@ -63,7 +64,7 @@ export function AiScreen() {
   const [creditsShort, setCreditsShort] = useState(false);
   const form = useForm<FormValues, unknown, CreateProposalRequest>({
     resolver: zodResolver(createProposalRequestSchema),
-    defaultValues: { prompt: '', scope: 'both', basedOnCurrent: true },
+    defaultValues: { prompt: '', scope: 'both', basedOnCurrent: true, explore: false },
     mode: 'onChange',
   });
 
@@ -168,6 +169,11 @@ export function AiScreen() {
                   label="Start from my current design"
                   hint="Off: the AI starts from scratch instead of adjusting what you have."
                 />
+                <SwitchField
+                  name="explore"
+                  label="Explore new layouts"
+                  hint="The AI arranges each section in a new way instead of reusing a layout. Ignored when only the theme may change."
+                />
               </div>
               <div>
                 <Button type="submit" disabled={pending || outOfCredits || !form.formState.isValid} busy={create.isPending}>
@@ -217,8 +223,12 @@ export function AiScreen() {
         </section>
       </section>
       {(proposal?.status === 'ready' || proposal?.status === 'applied') && proposal.design ? (
-        // The API stores a proposal's design only after validating it as a `DesignSpec` (ADR-0006).
-        <PreviewPane design={proposal.design as DesignSpec} />
+        // The API stores a proposal's design only after validating it (ADR-0006, ADR-0014); its own
+        // custom layouts are drawn before they are in the library.
+        <PreviewPane
+          design={proposal.design as DesignSpec}
+          customLayouts={(proposal.design.customLayouts ?? {}) as Readonly<Partial<Record<string, CustomLayout>>>}
+        />
       ) : (
         <PreviewPane />
       )}
@@ -254,6 +264,12 @@ function ProposalPanel({
       {proposal.status === 'applied' ? (
         <Notice tone="success">Applied to your draft design. The preview shows it; publish to put it on your live site.</Notice>
       ) : null}
+      {proposal.design?.customLayouts && Object.keys(proposal.design.customLayouts).length > 0 ? (
+        <p className="text-sm text-neutral-400">
+          New layouts for: {Object.keys(proposal.design.customLayouts).join(', ')}. Applying saves them to My layouts on the Design page.
+        </p>
+      ) : null}
+      {proposal.status === 'ready' || proposal.status === 'applied' ? <SavePresetForm proposalId={proposal.id} /> : null}
       <div className="flex flex-wrap gap-2">
         {proposal.status === 'ready' ? (
           <Button onClick={onApply} busy={applying}>
@@ -267,5 +283,38 @@ function ProposalPanel({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/** Saves the proposal as a named preset (`ai-design-studio.API07`; `design-library.AC8`). */
+function SavePresetForm({ proposalId }: { proposalId: string }) {
+  const save = useSaveProposalPreset();
+  const notify = useCmsUi((state) => state.notify);
+  const [name, setName] = useState('');
+  return (
+    <form
+      className="flex flex-wrap items-end gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const trimmed = name.trim();
+        if (trimmed === '') return;
+        void save
+          .mutateAsync({ id: proposalId, name: trimmed })
+          .then(() => {
+            setName('');
+            notify('success', 'Saved as a preset. Find it under Saved designs on the Design page.');
+          })
+          .catch((error: unknown) => {
+            notify('error', error instanceof ApiError && error.code === 'LIBRARY_FULL' ? 'The library is full. Delete a preset or layout first.' : genericErrorMessage(error));
+          });
+      }}
+    >
+      <div className="min-w-0 flex-1">
+        <TextInput label="Save this proposal as a preset" placeholder="Preset name" value={name} maxLength={60} onChange={(event) => { setName(event.target.value); }} />
+      </div>
+      <Button type="submit" variant="secondary" disabled={name.trim() === ''} busy={save.isPending}>
+        Save as preset
+      </Button>
+    </form>
   );
 }

@@ -10,9 +10,17 @@
       "accent": "#3f6212",
       "onAccent": "#ffffff"
     },
-    "fonts": { "sans": "manrope", "display": "fraunces", "mono": "ibm-plex-mono" },
+    "fonts": {
+      "sans": "manrope",
+      "display": "fraunces",
+      "mono": "ibm-plex-mono"
+    },
     "radius": "md",
-    "effects": { "glow": false, "dotGrid": false, "motion": "subtle" }
+    "effects": {
+      "glow": false,
+      "dotGrid": false,
+      "motion": "subtle"
+    }
   },
   "layout": {
     "hero": "centered",
@@ -22,5 +30,33 @@
     "stack": "columns",
     "contact": "minimal"
   },
-  "rationale": "A light, editorial look: warm off-white surfaces, a deep olive accent and a serif display face, with calmer single-column layouts."
+  "rationale": "A light, editorial look: warm off-white surfaces, a deep olive accent and a serif display face, with calmer single-column layouts.",
+  "customLayouts": {
+    "hero": null,
+    "about": null,
+    "experience": null,
+    "stack": null,
+    "contact": null,
+    "work": {
+      "section": "work",
+      "align": "start",
+      "body": {
+        "kind": "columns",
+        "gap": "lg",
+        "columns": "1-2",
+        "children": [
+          {
+            "kind": "block",
+            "block": "featured",
+            "style": null
+          },
+          {
+            "kind": "block",
+            "block": "projects",
+            "style": "list"
+          }
+        ]
+      }
+    }
+  }
 }

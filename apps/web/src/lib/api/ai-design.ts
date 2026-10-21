@@ -4,7 +4,6 @@ import type { AiProviderInfo, CreateProposalRequest, Proposal } from '@portfolio
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { CmsDesign } from './design';
-import { designKeys } from './design';
 import { useApiClient } from './context';
 
 export interface ProposalPage {
@@ -81,8 +80,22 @@ export function useApplyProposal() {
         body: { expectedDesignRevision },
       }),
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: designKeys.draft });
+      // The draft design and the layout library both change on apply (`design-library.AC8`).
+      await queryClient.invalidateQueries({ queryKey: ['design'] });
       await refresh();
+    },
+  });
+}
+
+/** `ai-design-studio.API07` — save a proposal as a design preset (`design-library`). */
+export function useSaveProposalPreset() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      api.request<{ preset: { id: string; name: string } }>(`/cms/ai/design-proposals/${id}/preset`, { method: 'POST', body: { name } }),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['design'] });
     },
   });
 }

@@ -25,7 +25,7 @@ owner moves a spec to `Ready`.
 | 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
 | 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
 | 16 | `ai-design-studio` | AI design proposals | Implemented | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
-| 17 | `design-library` | AI-arranged layouts, layout library, design presets | In Progress | BRD-004 | — (ADR-0014, owner 2026-10-21) |
+| 17 | `design-library` | AI-arranged layouts, layout library, design presets | Implemented | BRD-004 | — (ADR-0014, owner 2026-10-21) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
@@ -38,6 +38,11 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-21
+- `design-library` written from the owner's decision (ADR-0014: the AI arranges layouts as
+  validated data, never code; a layout library and presets keep them), `Ready` under the standing
+  authorisation, and implemented T01–T06: custom-layout schema and validator, the renderer,
+  library and presets in `design`, snapshot schema version 2, AI custom layouts with explore and
+  proposals as presets, and the CMS screens. `Implemented`.
 - Documentation audit after `ai-design-studio`: the architecture tree and summary, project
   context, governance status, ownership index, the AI testing rule in `generate-tests.md`, and
   memory brought up to date with the code. No code changed.

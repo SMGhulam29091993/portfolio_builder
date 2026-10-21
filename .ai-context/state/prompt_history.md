@@ -219,3 +219,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 20:35 IST] — filled sections not showing
 **User Request:** Sections were filled in but do not show in the preview or the site.
 **Agent Action:** Confirmed from the dev database that every section except the hero was hidden (saving never changes visibility) and that placeholders remained in About, Work and Stack. Added a visibility bar to the section editor (shown / hidden, with Show on my site and Hide from my site, revision kept in step for the next save) and an E2E journey for it.
+
+### [2026-10-21 23:30 IST] — design-library (T01–T06)
+**User Request:** Let the AI create different layouts and keep them for reuse (chose structured layouts plus more variety and presets; the "AI writes HTML" option was offered and not chosen).
+**Agent Action:** Wrote ADR-0014 (amends ADR-0006) and the `design-library` spec set; built the custom-layout schema and validator (design-tokens), `CustomLayoutRenderer` (sections), the layout library and presets (`design` module, API01–API06), snapshot schema version 2, AI custom layouts with explore and API07, and the CMS screens; E2E01–E02. Fixed the publish check that would have blocked custom layouts.

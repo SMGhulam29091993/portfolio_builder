@@ -146,6 +146,11 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Referenced by:** `architecture.md` (AI design flow), `ai-design-studio` plan (Architecture Approach, Data Model `charge`), `state/next.md`; code: `container.ts` (`AI_DEFAULT_PRICES`, the seeded 5 free / 1 credit until `platform-admin`), `modules/ai-design/generation-allowance.service.ts`, `adapters/default-ai-pricing.ts`, `adapters/empty-generation-wallet.ts` (until `credits-billing`), `packages/contracts/src/ai-design` (`REFUNDABLE_FAILURES`), `apps/web/src/lib/cms/ai-studio.ts` (the screen's wording)
 **Last updated:** 2026-10-21
 
+## Custom layouts, the block catalogue and the design library
+**Canonical definition:** `.ai-context/specs/design-library.spec.md` → Custom layout · Block catalogue (the *why* is ADR-0014, amending ADR-0006)
+**Referenced by:** `architecture.md` (AI design flow, Data ownership), `ai-design-studio` (proposals carry custom layouts; API07), `publish-pipeline` (snapshot schema version 2); code: `packages/design-tokens/src/layout.ts` (schema, `LAYOUT_BLOCKS`, `validateCustomLayout` — the one verdict), `packages/sections/src/custom/custom-layout.tsx`, `apps/api/src/modules/design/design-library.service.ts`, `ai-design/design-prompt.builder.ts` and `design-spec.parser.ts`, `apps/web/src/lib/site/snapshot-adapter.ts`
+**Last updated:** 2026-10-21
+
 ## AI provider wire formats
 **Canonical definition:** `.ai-context/memory/ai-provider-apis.md` (confirmed against each provider's documentation 2026-10-21)
 **Referenced by:** `ai-design-studio` plan (Structured output per provider) and tasks (T06–T08); code: `modules/ai-design/providers/ollama.design-generator.ts`, `gemini.design-generator.ts`, `openrouter.design-generator.ts`, `apps/api/src/testing/ai-design/recordings/` (responses in those shapes)

@@ -562,3 +562,11 @@
   to the repair attempt); apply checks the revision first, saves layouts through
   `ILayoutLibraryWriter`, writes the design naming them and records the references on the
   proposal; API07 saves a proposal as a preset. OpenAPI 0.15.0. Checked: lint, 1159+ API tests.
+- design-library.T06 — 2026-10-21 — DoD self-check: 2026-10-21, pass. CMS: the preview draws
+  library layouts a design names and a proposal's own; the Design screen offers library layouts
+  in each section's layout choice, a My layouts panel (delete, with the in-use explanation) and
+  Saved designs (presets: save current, apply with confirmation over unsaved edits, delete); the
+  AI Studio has Explore new layouts, names the sections a proposal re-arranged, and Save as
+  preset. The stub fixture carries a custom Work layout. E2E01, E2E02; 43 journeys, 103 web unit
+  tests, web build, 1159 API tests.
+- `design-library` spec — 2026-10-21 — `In Progress → Implemented`.

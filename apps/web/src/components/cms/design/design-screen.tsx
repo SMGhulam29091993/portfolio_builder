@@ -11,14 +11,27 @@ import { useEffect, useId, useState } from 'react';
 import { FormProvider, useController, useForm, useFormContext, useWatch } from 'react-hook-form';
 
 import { ApiError } from '../../../lib/api/client';
-import { designKeys, useDesign, useResetDesign, useSaveDesign, type DesignResponse } from '../../../lib/api/design';
+import {
+  designKeys,
+  useApplyPreset,
+  useDeleteLayout,
+  useDeletePreset,
+  useDesign,
+  useLayoutLibrary,
+  usePresets,
+  useResetDesign,
+  useSaveDesign,
+  useSavePreset,
+  type CmsDesign,
+  type DesignResponse,
+} from '../../../lib/api/design';
 import { designResolver } from '../../../lib/cms/design-resolver';
 import { genericErrorMessage } from '../../../lib/cms/messages';
 import { useCmsUi } from '../../../lib/cms/ui-store';
 import { ConflictDialog } from '../editor/conflict-dialog';
 import { SelectField, SwitchField } from '../form';
 import { PreviewPane } from '../preview/preview-pane';
-import { Button, Notice, focusRing } from '../ui';
+import { Button, Notice, TextInput, focusRing } from '../ui';
 
 const COLOR_LABELS: Readonly<Record<ColorToken, string>> = {
   background: 'Page background',
@@ -41,6 +54,16 @@ const COLOR_HINTS: Readonly<Record<ColorToken, string>> = {
   textMuted: 'Smaller, less important text such as dates and captions.',
   accent: 'Buttons, links, highlights and the italic heading words.',
   onAccent: 'Text and icons placed on the accent colour, such as button labels.',
+};
+
+/** Plain section names, for the library list. */
+const SECTION_NAMES: Readonly<Record<string, string>> = {
+  hero: 'Hero',
+  about: 'About',
+  work: 'Work',
+  experience: 'Experience',
+  stack: 'Stack',
+  contact: 'Contact',
 };
 
 const SECTION_LABELS: Readonly<Record<string, string>> = {
@@ -137,6 +160,19 @@ function DesignForm({ initial }: { initial: DesignResponse }) {
   };
 
   const fontsFor = (role: string) => initial.catalogue.fonts.filter((font) => font.role === role).map((font) => ({ value: font.id, label: font.label }));
+  const library = useLayoutLibrary();
+  // Each section offers the catalogue layouts, then the library layouts made for it (`design-library.AC9`).
+  const layoutOptions = (section: string, variants: readonly { id: string; label: string }[]) => [
+    ...variants.map((variant) => ({ value: variant.id, label: variant.label })),
+    ...(library.data ?? [])
+      .filter((layout) => layout.section === section)
+      .map((layout) => ({ value: `custom:${layout.id}`, label: `My layout: ${layout.name}` })),
+  ];
+  const loadDesign = (design: CmsDesign) => {
+    setRevision(design.revision);
+    setConflict(null);
+    resetForm(toSpec(design));
+  };
 
   return (
     <div className="flex flex-col gap-6 xl:flex-row">
@@ -214,12 +250,13 @@ function DesignForm({ initial }: { initial: DesignResponse }) {
                   key={section}
                   name={`layout.${section}`}
                   label={SECTION_LABELS[section] ?? section}
-                  options={variants.map((variant) => ({ value: variant.id, label: variant.label }))}
+                  options={layoutOptions(section, variants)}
                 />
               ))}
             </fieldset>
           </form>
         </FormProvider>
+        <LibraryPanels revision={revision} dirty={formState.isDirty} onApplied={loadDesign} />
       </section>
       <PreviewPane design={live} />
       <ConflictDialog
@@ -266,6 +303,112 @@ function ColorField({ token }: { token: ColorToken }) {
         />
       </div>
       {fieldState.error ? <p id={`${id}-error`} className="text-sm text-red-300">{fieldState.error.message}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * The layout library and design presets (`design-library.AC9`): layouts the AI made, each deletable
+ * unless in use; presets saved from the current design, applied (replacing the form) or deleted.
+ */
+function LibraryPanels({ revision, dirty, onApplied }: { revision: number; dirty: boolean; onApplied: (design: CmsDesign) => void }) {
+  const layouts = useLayoutLibrary();
+  const presets = usePresets();
+  const deleteLayout = useDeleteLayout();
+  const savePreset = useSavePreset();
+  const applyPreset = useApplyPreset();
+  const deletePreset = useDeletePreset();
+  const notify = useCmsUi((state) => state.notify);
+  const [name, setName] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const explain = (error: unknown) => {
+    if (error instanceof ApiError && error.code === 'LAYOUT_IN_USE') {
+      const usedBy = Array.isArray(error.data.usedBy) ? (error.data.usedBy as string[]) : [];
+      return `This layout is in use by ${usedBy.map((by) => (by === 'draft' ? 'your design' : 'a preset')).join(' and ')}. Choose another layout or delete the preset first.`;
+    }
+    if (error instanceof ApiError && error.code === 'LIBRARY_FULL') return 'The library is full. Delete one before saving another.';
+    if (error instanceof ApiError && error.code === 'REVISION_CONFLICT') return 'The design changed elsewhere. Reload the page, then apply the preset again.';
+    return genericErrorMessage(error);
+  };
+  const run = async (action: () => Promise<unknown>, done: string) => {
+    setFailure(null);
+    try {
+      await action();
+      notify('success', done);
+    } catch (error) {
+      setFailure(explain(error));
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      {failure ? <Notice tone="error">{failure}</Notice> : null}
+      <section aria-labelledby="presets-heading" className="flex flex-col gap-3">
+        <h2 id="presets-heading" className="text-lg font-semibold">Saved designs (presets)</h2>
+        <p className="text-sm text-neutral-400">Keep a whole look — colours, fonts and layouts — and switch back to it later.</p>
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const trimmed = name.trim();
+            if (trimmed === '') return;
+            void run(async () => {
+              await savePreset.mutateAsync(trimmed);
+              setName('');
+            }, 'Design saved as a preset.');
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <TextInput label="Name for the current design" value={name} maxLength={60} onChange={(event) => { setName(event.target.value); }} hint="Saves the design as it is saved now, not unsaved changes." />
+          </div>
+          <Button type="submit" variant="secondary" disabled={name.trim() === ''} busy={savePreset.isPending}>
+            Save as preset
+          </Button>
+        </form>
+        {presets.data?.length === 0 ? <p className="text-sm text-neutral-400">No saved designs yet.</p> : null}
+        <ul className="flex flex-col gap-2">
+          {presets.data?.map((preset) => (
+            <li key={preset.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-800 px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 truncate">{preset.name}</span>
+              <div className="flex gap-1">
+                <Button
+                  variant="secondary"
+                  busy={applyPreset.isPending}
+                  onClick={() => {
+                    if (dirty && !window.confirm('Applying this preset replaces your unsaved changes. Continue?')) return;
+                    void run(async () => {
+                      onApplied(await applyPreset.mutateAsync({ id: preset.id, expectedRevision: revision }));
+                    }, `Applied "${preset.name}".`);
+                  }}
+                >
+                  Apply
+                </Button>
+                <Button variant="ghost" aria-label={`Delete preset ${preset.name}`} onClick={() => void run(() => deletePreset.mutateAsync(preset.id), 'Preset deleted.')}>
+                  Delete
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="library-heading" className="flex flex-col gap-3">
+        <h2 id="library-heading" className="text-lg font-semibold">My layouts</h2>
+        <p className="text-sm text-neutral-400">Layouts the AI designed for you. Choose one under Layouts above for its section.</p>
+        {layouts.data?.length === 0 ? <p className="text-sm text-neutral-400">No layouts yet. Use Explore new layouts in the AI Studio to make some.</p> : null}
+        <ul className="flex flex-col gap-2">
+          {layouts.data?.map((layout) => (
+            <li key={layout.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-800 px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 truncate">
+                {layout.name} <span className="text-neutral-400">· {SECTION_NAMES[layout.section] ?? layout.section} section</span>
+              </span>
+              <Button variant="ghost" aria-label={`Delete layout ${layout.name}`} onClick={() => void run(() => deleteLayout.mutateAsync(layout.id), 'Layout deleted.')}>
+                Delete
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

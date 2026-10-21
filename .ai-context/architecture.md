@@ -244,7 +244,11 @@ runs before listening. Who may generate is `MonthlyGenerationAllowance`: the own
 limit, a member free for `freeMonthly` generations per UTC month and then for credits; prices
 come from `IAiPricing` and credits from `IGenerationWallet`, placeholders until `platform-admin`
 and `credits-billing` replace them in the container. One proposal per portfolio is `pending` at a
-time (partial unique index), and API01 has its own rate limit.
+time (partial unique index), and API01 has its own rate limit. A proposal may also carry custom
+layouts (`design-library`, ADR-0014): validated data arranging a section's existing blocks, drawn
+by `CustomLayoutRenderer`; applying saves them to the portfolio's layout library (owned by
+`design`) and the design names them as `custom:<id>`; a published snapshot (schema version 2)
+holds copies of the custom layouts it uses.
 
 ## Shared packages — one owner each
 | Package | Owns | Consumed by |

@@ -162,3 +162,18 @@ within a module this stays a self-review item.
 against a real 2 s Redis TTL, leaving 0.8 s of margin, which a loaded machine can eat.
 **Resulting rule/check added:** none yet — left unchanged in this task (auth scope); if it
 fails again, widen the TTL and sleeps in proportion rather than retrying the test.
+
+### 2026-10-21 — design-library.T04
+**Finding:** the `design-valid` publish check required a catalogue variant for every visible
+section, so any design using a custom layout would have been blocked from publishing; the spec
+set did not foresee it. The check now accepts a `custom:` entry the draft resolved to a layout
+copy and names one that did not resolve.
+**Resulting rule/check added:** a new kind of design value is traced through every reader of
+`design.layout` (editor, publish rules, snapshot, site, preview) before its task is complete.
+
+### 2026-10-21 — design-library.T06 (full E2E runs)
+**Finding:** `site-identity.E2E01` failed once in four full runs (passed in the other three). It
+also cannot run twice against one database (`--repeat-each`): the second upload of
+`identity-cv.pdf` makes its text locator match two rows. Pre-existing; unrelated to this work.
+**Resulting rule/check added:** none yet — if it fails again, give the uploaded file a unique
+name per run, as `cms-ai` and `cms-design-library` do for their names.
