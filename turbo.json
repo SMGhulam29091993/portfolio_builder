@@ -77,6 +77,11 @@
         "GOOGLE_ISSUER",
         "WEB_REVALIDATE_URL",
         "REVALIDATE_SECRET",
+        "AI_PROVIDER",
+        "AI_MODEL",
+        "GEMINI_API_KEY",
+        "OPENROUTER_API_KEY",
+        "OLLAMA_BASE_URL",
         "API_INTERNAL_URL"
       ]
     },

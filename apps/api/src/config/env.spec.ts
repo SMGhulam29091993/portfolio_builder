@@ -213,6 +213,20 @@ describe('loadEnv', () => {
     }
   });
 
+  it('ai-design-studio.T02 — the AI variables are optional; blank is unset; values are checked without echoing them', () => {
+    const blank = loadEnv({ ...VALID_SOURCE, AI_PROVIDER: '', AI_MODEL: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OLLAMA_BASE_URL: '' });
+    for (const name of ['AI_PROVIDER', 'AI_MODEL', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY', 'OLLAMA_BASE_URL'] as const) {
+      expect(blank[name]).toBeUndefined();
+    }
+    const set = loadEnv({ ...VALID_SOURCE, AI_PROVIDER: 'ollama', AI_MODEL: 'local', OLLAMA_BASE_URL: 'http://127.0.0.1:11434' });
+    expect(set).toMatchObject({ AI_PROVIDER: 'ollama', AI_MODEL: 'local', OLLAMA_BASE_URL: 'http://127.0.0.1:11434' });
+
+    expect(captureEnvError({ ...VALID_SOURCE, AI_PROVIDER: 'not-a-provider' }).variables).toEqual(['AI_PROVIDER']);
+    const badUrl = captureEnvError({ ...VALID_SOURCE, OLLAMA_BASE_URL: 'ftp://not-a-real-secret@host' });
+    expect(badUrl.variables).toEqual(['OLLAMA_BASE_URL']);
+    expect(badUrl.message).not.toContain('not-a-real-secret');
+  });
+
   it('google-sign-in.AC9 — Google is all three variables or none; the issuer defaults', () => {
     const off = loadEnv(VALID_SOURCE);
     expect(off.GOOGLE_CLIENT_ID).toBeUndefined();

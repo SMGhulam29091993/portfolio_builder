@@ -147,3 +147,18 @@ repositories still pass `new: true`. Behaviour is unchanged today, but the optio
 later major.
 **Resulting rule/check added:** none yet — new repositories use `returnDocument: 'after'`; the
 existing five are switched when each is next touched, not as drive-by edits in another task.
+
+### 2026-10-21 — ai-design-studio.T02
+**Finding:** The first draft of `DesignGeneratorFactory` imported `STUB_MODEL` from the stub
+adapter's file — a concrete module reaching into a concrete adapter, which the self-review's
+"no concrete class imports another concrete class" item forbids. The container now hands the
+factory a `StubRegistration` (builder plus model name), as it hands it every other adapter.
+**Resulting rule/check added:** none — the lint boundary rules cover cross-module imports only;
+within a module this stays a self-review item.
+
+### 2026-10-21 — ai-design-studio.T02 (full-suite run)
+**Finding:** `owner-auth.CT03` "compareAndSet() resets the TTL" failed once in a full
+`pnpm test` run and passed alone three times and in the next full run. It sleeps 1.2 s twice
+against a real 2 s Redis TTL, leaving 0.8 s of margin, which a loaded machine can eat.
+**Resulting rule/check added:** none yet — left unchanged in this task (auth scope); if it
+fails again, widen the TTL and sleeps in proportion rather than retrying the test.

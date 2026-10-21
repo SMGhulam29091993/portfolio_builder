@@ -77,6 +77,32 @@ export interface NewProposal {
   readonly createdAt: Date;
 }
 
+/** One turn of the conversation sent to a provider; a repair attempt adds two (AC3, AC4). */
+export interface GenerationMessage {
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
+}
+
+/**
+ * What every provider receives (`ai-design-studio` → Provider contract), built by the prompt
+ * builder and translated to a wire format by each adapter. It carries no owner name, email or
+ * section text (AC15).
+ */
+export interface GenerationRequest {
+  /** The system instructions: the catalogue, the font allow-list, the rules. */
+  readonly instructions: string;
+  readonly messages: readonly GenerationMessage[];
+  /** The JSON Schema of the expected answer, derived from the `DesignSpec` zod schema. */
+  readonly schema: Readonly<Record<string, unknown>>;
+  /** A short name for the schema, for providers that ask for one (OpenRouter). */
+  readonly schemaName: string;
+}
+
+/** A provider's raw answer. Adapters never parse, validate or retry it (ADR-0003). */
+export interface GenerationResult {
+  readonly text: string;
+}
+
 /** How a `pending` proposal ends (AC2, AC3, AC4, AC6, AC10). */
 export type ProposalOutcome =
   | {

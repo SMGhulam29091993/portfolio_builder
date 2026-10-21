@@ -268,7 +268,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `OWNER_REGISTRATION_SECRET` | api | The owner secret key: a registration carrying it while no owner exists claims the owner account (`account-registration`, ADR-0010); optional, 32–200 characters; unset keeps the claim closed |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL` | api | Google sign-in (`google-sign-in`, ADR-0011): all three switch it on, none leaves it off (routes redirect with `google_unavailable`); some but not all fails startup |
 | `GOOGLE_ISSUER` | api | The OpenID Connect issuer whose discovery document gives the endpoints; default `https://accounts.google.com` |
-| `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
+| `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama` \| `stub`; unset or `stub` outside production → stub; production refuses unset, `stub` and `ollama` (`DesignGeneratorFactory`) |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |
 | `AI_TIMEOUT_MS` | api | Upper bound on one provider call (default 60 000 ms, provisional) |

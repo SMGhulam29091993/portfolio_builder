@@ -96,6 +96,11 @@ import { SectionsDraftContributor } from './modules/portfolio/sections-draft.con
 import { PublicSiteController } from './modules/public-site/public-site.controller.js';
 import { createPublicSiteRouter } from './modules/public-site/public-site.routes.js';
 import { PublicSiteService } from './modules/public-site/public-site.service.js';
+import {
+  DesignGeneratorFactory,
+  type DesignGeneratorRegistrations,
+} from './modules/ai-design/providers/design-generator.factory.js';
+import { STUB_MODEL, StubDesignGenerator } from './modules/ai-design/providers/stub.design-generator.js';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
 import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
 import { CanonicalHasher } from './modules/publishing/canonical-hasher.js';
@@ -225,6 +230,13 @@ const MAIL_STRATEGIES: readonly MailStrategy[] = [
       }),
   ),
 ];
+
+/**
+ * Design-generation adapters this build can construct (ADR-0003), by `AI_PROVIDER`. Each adapter
+ * task adds its one entry (`ai-design-studio.T06`–`T08`); `DesignGeneratorFactory` refuses a
+ * named provider with no entry rather than falling back to the stub.
+ */
+const DESIGN_GENERATORS: DesignGeneratorRegistrations = {};
 
 /**
  * The registered section types (`section-engine`; ADR-0005), in page order. Each section spec
@@ -546,6 +558,11 @@ export function buildContainer({
     new PublicSiteController(new PublicSiteService(publishingService, assetService)),
     rateLimiters.create(PUBLIC_RATE_LIMIT),
   );
+
+  // ai-design (`ai-design-studio`). The generator is chosen while the container is built, after
+  // mail and revalidation, so production without a usable provider refuses to start naming the
+  // variable (AC12). The service and routes that use it are wired by `ai-design-studio.T09`.
+  new DesignGeneratorFactory(DESIGN_GENERATORS, { create: () => new StubDesignGenerator(), model: STUB_MODEL }).create(env);
 
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,

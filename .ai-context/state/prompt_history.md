@@ -167,3 +167,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 14:51 IST] — ai-design-studio.T01
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Moved `ai-design-studio` `Ready → In Progress`. Added the `ai-design` module's types, `IProposalRepository`, the `design_proposals` model (history index, partial unique index on `pending`) and `ProposalRepository` with its real-MongoDB spec; the contracts written in the previous session are part of this task. Recorded the Mongoose `new: true` deprecation in `memory/review-findings.md`.
+
+### [2026-10-21 15:40 IST] — ai-design-studio.T02
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added the generator port and health port, the stub generator and its fixture, and `DesignGeneratorFactory` (environment table, adapter registrations, production refusals), run in `buildContainer`; `env.ts` reads five AI variables (`.env.example`, `turbo.json`, `architecture.md` updated); factory, stub, env and process-boot tests. Two self-review findings recorded.

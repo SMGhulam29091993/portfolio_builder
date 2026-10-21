@@ -2,7 +2,42 @@
  * Contracts of the `ai-design` module (`ai-design-studio` plan → Architecture Approach). Each
  * port is role-sized; the service, generator and allowance ports join this file in their tasks.
  */
-import type { NewProposal, ProposalOutcome, ProposalStatus, StoredProposal } from './ai-design.types.js';
+import type {
+  AiProviderId,
+  GenerationRequest,
+  GenerationResult,
+  NewProposal,
+  ProposalOutcome,
+  ProposalStatus,
+  StoredProposal,
+} from './ai-design.types.js';
+
+/**
+ * The design-generation port (`ai-design-studio` → Provider contract, the canonical owner;
+ * ADR-0003). Every adapter and decorator passes the shared contract suite (AC13).
+ */
+export interface IDesignGenerator {
+  readonly providerId: AiProviderId;
+  /**
+   * Returns the model's raw text. Never parses, validates or retries.
+   * @throws {UpstreamError} Every transport failure, an abort included — no provider type.
+   */
+  generate(request: GenerationRequest, signal: AbortSignal): Promise<GenerationResult>;
+}
+
+/** Whether the provider answers at all (API06); split from generation (Interface Segregation). */
+export interface IProviderHealth {
+  /** Never throws: an unreachable provider is `{ reachable: false }`. */
+  check(): Promise<{ reachable: boolean }>;
+}
+
+/** The generator `DesignGeneratorFactory` chose for this environment, with what API06 reports. */
+export interface ActiveDesignGenerator {
+  readonly generator: IDesignGenerator;
+  readonly health: IProviderHealth;
+  /** `AI_MODEL`, or the stub's fixture name. */
+  readonly model: string;
+}
 
 /** The `design_proposals` collection; every read and write is scoped by `portfolioId`. */
 export interface IProposalRepository {

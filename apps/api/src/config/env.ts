@@ -130,6 +130,20 @@ const envSchema = z.object({
    * `WEB_REVALIDATE_URL` is set. A secret: never logged.
    */
   REVALIDATE_SECRET: optional(z.string().min(32).max(200)),
+  /**
+   * The design-generation provider (`ai-design-studio`, ADR-0003). Unset outside production
+   * selects the stub; `DesignGeneratorFactory` owns the rest of the environment table,
+   * including the production refusals.
+   */
+  AI_PROVIDER: optional(z.enum(['gemini', 'openrouter', 'ollama', 'stub'])),
+  /** The provider's model id — configuration, never a code literal (`constitution.md` → Secrets). */
+  AI_MODEL: optional(z.string().min(1).max(200)),
+  /** Gemini API key. A secret: sent in a header only, never logged or put in a URL. */
+  GEMINI_API_KEY: optional(z.string().min(1)),
+  /** OpenRouter API key. A secret: sent in a header only, never logged or put in a URL. */
+  OPENROUTER_API_KEY: optional(z.string().min(1)),
+  /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */
+  OLLAMA_BASE_URL: optional(z.url({ protocol: /^https?$/ })),
 });
 
 /** The three variables that switch Google sign-in on together (`google-sign-in.AC9`). */

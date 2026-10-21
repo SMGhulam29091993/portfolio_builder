@@ -448,3 +448,12 @@
   real MongoDB, including the concurrent-insert race (IT14 at the storage layer). Checked
   locally: API typecheck, lint, 890 tests with the coverage floor, OpenAPI drift (no route
   change). Not wired into `container.ts` yet: that is T09.
+- ai-design-studio.T02 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `IDesignGenerator`,
+  `IProviderHealth`, `GenerationRequest` / `GenerationResult`; `StubDesignGenerator` with
+  `stub.fixture.json` (a valid light design that differs from the default);
+  `DesignGeneratorFactory` implementing the environment table, with adapters as registrations
+  (none yet: T06–T08 add one entry each; a named provider with no entry refuses on
+  `AI_PROVIDER`). Run in `buildContainer` after mail and revalidation, so production refuses to
+  start (IT10, three process boots). `env.ts` reads `AI_PROVIDER`, `AI_MODEL`,
+  `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` (example and `turbo.json` updated).
+  Checked locally: typecheck, lint, 924 API tests with the coverage floor, drift (no route).

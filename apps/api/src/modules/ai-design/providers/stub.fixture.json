@@ -1,0 +1,26 @@
+{
+  "theme": {
+    "colors": {
+      "background": "#fafaf9",
+      "surface": "#ffffff",
+      "surfaceRaised": "#f4f4f5",
+      "border": "#d4d4d8",
+      "text": "#18181b",
+      "textMuted": "#52525b",
+      "accent": "#3f6212",
+      "onAccent": "#ffffff"
+    },
+    "fonts": { "sans": "manrope", "display": "fraunces", "mono": "ibm-plex-mono" },
+    "radius": "md",
+    "effects": { "glow": false, "dotGrid": false, "motion": "subtle" }
+  },
+  "layout": {
+    "hero": "centered",
+    "about": "stacked",
+    "work": "list",
+    "experience": "cards",
+    "stack": "columns",
+    "contact": "minimal"
+  },
+  "rationale": "A light, editorial look: warm off-white surfaces, a deep olive accent and a serif display face, with calmer single-column layouts."
+}
