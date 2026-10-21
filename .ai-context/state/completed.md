@@ -495,3 +495,10 @@
   in the documented shape (`testing/ai-design/recordings`; shaped from the docs, not captured
   live — MT01 is the live run). Registered in `container.ts`. Checked locally: typecheck, lint,
   1052 API tests with the coverage floor, drift (no route).
+- ai-design-studio.T07 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `GeminiDesignGenerator`
+  on the Interactions API (key in `x-goog-api-key`, `system_instruction`, the conversation as
+  `user_input` / `model_output` steps, top-level `response_format` with the schema; text from
+  the last `model_output` step; health `GET /models`). Multi-turn input re-read from the API
+  reference before building (`memory/ai-provider-apis.md`). `GEMINI_BASE_URL` (default the
+  documented base) read by `env.ts`, in the example, `turbo.json` and `architecture.md`. Added to
+  CT01–CT03 and registered in the container. Checked locally: typecheck, lint, 1079 API tests.

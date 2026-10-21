@@ -187,3 +187,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 17:05 IST] — ai-design-studio.T06
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added `IHttpClient` and `FetchHttpClient`, `OllamaDesignGenerator` (registered in the container), `RecordedProviderServer`, documented-shape Ollama recording, and the shared generator contract suite (CT01 stub and Ollama, CT02 through the decorators, CT03 health).
+
+### [2026-10-21 17:20 IST] — ai-design-studio.T07
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Re-read the Gemini Interactions API reference for the multi-turn input form; added `GeminiDesignGenerator`, its documented-shape recording, `GEMINI_BASE_URL`, contract-suite subject and wire-format tests, and the container registration.

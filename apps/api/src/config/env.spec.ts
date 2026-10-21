@@ -51,8 +51,10 @@ describe('loadEnv', () => {
       REDIS_URL: VALID_SOURCE.REDIS_URL,
       JWT_ACCESS_SECRET: VALID_SOURCE.JWT_ACCESS_SECRET,
       WEB_ORIGIN: VALID_SOURCE.WEB_ORIGIN,
-      // The one defaulted variable (google-sign-in): the issuer is Google's unless overridden.
+      // The defaulted variables: the issuer is Google's (google-sign-in), and the Gemini API base
+      // is Google's (ai-design-studio.T07), unless overridden.
       GOOGLE_ISSUER: 'https://accounts.google.com',
+      GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
     });
     expect(Object.isFrozen(env)).toBe(true);
   });

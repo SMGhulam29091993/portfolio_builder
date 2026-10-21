@@ -140,6 +140,11 @@ const envSchema = z.object({
   AI_MODEL: optional(z.string().min(1).max(200)),
   /** Gemini API key. A secret: sent in a header only, never logged or put in a URL. */
   GEMINI_API_KEY: optional(z.string().min(1)),
+  /**
+   * The Gemini API's versioned base; the adapter calls `<base>/interactions`. Configuration, so no
+   * provider URL is a code literal; tests point it at a local server.
+   */
+  GEMINI_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://generativelanguage.googleapis.com/v1beta'),
   /** OpenRouter API key. A secret: sent in a header only, never logged or put in a URL. */
   OPENROUTER_API_KEY: optional(z.string().min(1)),
   /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */

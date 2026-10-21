@@ -15,3 +15,12 @@ export function ollamaChatReply(text: string): unknown {
   const reply = recording('ollama-chat');
   return { ...reply, message: { role: 'assistant', content: text } };
 }
+
+/** `POST /interactions`: a thought step, then the model output carrying `text`. */
+export function geminiInteractionReply(text: string): unknown {
+  const reply = recording('gemini-interaction');
+  const steps = (reply.steps as { type: string }[]).map((step) =>
+    step.type === 'model_output' ? { type: 'model_output', content: [{ type: 'text', text }] } : step,
+  );
+  return { ...reply, steps };
+}

@@ -101,6 +101,7 @@ import {
   type DesignGeneratorRegistrations,
 } from './modules/ai-design/providers/design-generator.factory.js';
 import { FetchHttpClient } from './modules/ai-design/adapters/fetch-http.client.js';
+import { GeminiDesignGenerator } from './modules/ai-design/providers/gemini.design-generator.js';
 import { OllamaDesignGenerator } from './modules/ai-design/providers/ollama.design-generator.js';
 import { STUB_MODEL, StubDesignGenerator } from './modules/ai-design/providers/stub.design-generator.js';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
@@ -242,6 +243,11 @@ const DESIGN_GENERATORS: DesignGeneratorRegistrations = {
   ollama: ({ OLLAMA_BASE_URL, AI_MODEL }) =>
     new OllamaDesignGenerator(
       { baseUrl: OLLAMA_BASE_URL, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
+      new FetchHttpClient(),
+    ),
+  gemini: ({ GEMINI_BASE_URL, GEMINI_API_KEY, AI_MODEL }) =>
+    new GeminiDesignGenerator(
+      { baseUrl: GEMINI_BASE_URL, apiKey: GEMINI_API_KEY, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
       new FetchHttpClient(),
     ),
 };

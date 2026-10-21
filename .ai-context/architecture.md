@@ -271,6 +271,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama` \| `stub`; unset or `stub` outside production → stub; production refuses unset, `stub` and `ollama` (`DesignGeneratorFactory`) |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |
+| `GEMINI_BASE_URL` | api | The Gemini API base the adapter calls `<base>/interactions` on; default `https://generativelanguage.googleapis.com/v1beta` |
 | `AI_TIMEOUT_MS` | api | Upper bound on one provider call (default 60 000 ms, provisional) |
 | `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
 | `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |

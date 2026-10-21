@@ -15,13 +15,14 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { UpstreamError } from '../../../core/errors/index.js';
 import { SystemDelay } from '../../../core/time/index.js';
-import { ollamaChatReply, RecordedProviderServer, type RecordedRequest, type ScriptedReply } from '../../../testing/index.js';
+import { geminiInteractionReply, ollamaChatReply, RecordedProviderServer, type RecordedRequest, type ScriptedReply } from '../../../testing/index.js';
 import { FetchHttpClient } from '../adapters/fetch-http.client.js';
 import { ProviderRejectedError } from '../ai-design.errors.js';
 import type { IDesignGenerator, IProviderHealth } from '../ai-design.interface.js';
 import type { GenerationRequest } from '../ai-design.types.js';
 import { RetryDesignGenerator } from '../decorators/retry.design-generator.js';
 import { TimeoutDesignGenerator } from '../decorators/timeout.design-generator.js';
+import { GeminiDesignGenerator } from './gemini.design-generator.js';
 import { OllamaDesignGenerator } from './ollama.design-generator.js';
 import { StubDesignGenerator } from './stub.design-generator.js';
 
@@ -69,6 +70,7 @@ interface NetworkSubject {
 
 const http = new FetchHttpClient();
 const ollama = (baseUrl: string) => new OllamaDesignGenerator({ baseUrl, model: MODEL, probeTimeoutMs: 1_000 }, http);
+const gemini = (baseUrl: string) => new GeminiDesignGenerator({ baseUrl, apiKey: SECRET, model: MODEL, probeTimeoutMs: 1_000 }, http);
 
 /** CT02: the composition the container builds — adapter → retry → timeout. */
 function decorated(adapter: IDesignGenerator & IProviderHealth): IDesignGenerator & IProviderHealth {
@@ -84,6 +86,13 @@ const NETWORK_SUBJECTS: readonly NetworkSubject[] = [
     success: (text) => ({ body: ollamaChatReply(text) }),
     schemaSent: (sent) => (sent.body as { format?: unknown }).format,
     healthPath: '/api/tags',
+  },
+  {
+    name: 'GeminiDesignGenerator',
+    create: gemini,
+    success: (text) => ({ body: geminiInteractionReply(text) }),
+    schemaSent: (sent) => (sent.body as { response_format?: { schema?: unknown } }).response_format?.schema,
+    healthPath: '/models',
   },
 ];
 
@@ -207,5 +216,43 @@ describe('OllamaDesignGenerator wire format', () => {
       stream: false,
       messages: [{ role: 'system', content: request.instructions }, ...request.messages],
     });
+  });
+});
+
+describe('GeminiDesignGenerator wire format', () => {
+  it('posts to <base>/interactions with the key in a header, system_instruction, steps as input and a top-level response_format', async () => {
+    server.reply({ body: geminiInteractionReply('{}') });
+    await gemini(`${server.url}/v1beta`).generate(request, new AbortController().signal);
+    const [sent] = server.requests;
+    expect(sent?.url).toBe('/v1beta/interactions');
+    expect(sent?.headers['x-goog-api-key']).toBe(SECRET);
+    expect(sent?.body).toEqual({
+      model: MODEL,
+      system_instruction: request.instructions,
+      input: [
+        { type: 'user_input', content: [{ type: 'text', text: 'Calm and editorial' }] },
+        { type: 'model_output', content: [{ type: 'text', text: '{"theme":1}' }] },
+        { type: 'user_input', content: [{ type: 'text', text: 'That answer cannot be used.' }] },
+      ],
+      response_format: { type: 'text', mime_type: 'application/json', schema: request.schema },
+    });
+  });
+
+  it('reads the last model_output step, skipping thoughts, joining its text parts', async () => {
+    server.reply({
+      body: {
+        steps: [
+          { type: 'thought', summary: [{ type: 'text', text: 'ignored' }] },
+          { type: 'model_output', content: [{ type: 'text', text: '{"a":' }, { type: 'image' }, { type: 'text', text: '1}' }] },
+        ],
+      },
+    });
+    await expect(gemini(server.url).generate(request, new AbortController().signal)).resolves.toEqual({ text: '{"a":1}' });
+  });
+
+  it('sends the key to the health check in a header too', async () => {
+    server.reply({ status: 200, body: { models: [] } });
+    await gemini(server.url).check();
+    expect(server.requests[0]?.headers['x-goog-api-key']).toBe(SECRET);
   });
 });
