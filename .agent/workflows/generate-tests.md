@@ -21,7 +21,13 @@ Tests derive from acceptance criteria, never from reading finished code.
    pass one to `buildContainer` as `mailSender` (omit it to get the configured strategy — the
    disabled sender when no mail variables are set), and
    a new mail strategy joins the `IMailSender` contract suite, which runs the real adapter
-   against a local `smtp-server`. Route tests set `WEB_ORIGIN` in the
+   against a local `smtp-server`. No test calls a real AI provider either
+   (`ai-design-studio` → Non-Functional Constraints): a new adapter joins the `IDesignGenerator`
+   contract suite (`design-generator.contract.spec.ts`), which runs it — bare and inside the
+   retry and timeout decorators — against `RecordedProviderServer` on the loopback with responses
+   in the provider's documented shape (`testing/ai-design/recordings/`); service tests use
+   `ScriptedDesignGenerator`, and anything that waits takes an `IDelay` so tests use
+   `ManualDelay` instead of real time. Route tests set `WEB_ORIGIN` in the
    env they load and send `Origin: <WEB_ORIGIN>` on every non-GET under `/api/v1/auth` and
    `/api/v1/cms`, as the browser does; without it the allow-list answers 403 first
    (`owner-auth.AC12`).

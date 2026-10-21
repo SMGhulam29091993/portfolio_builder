@@ -16,8 +16,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
-**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`, `EMAIL_NOT_VERIFIED`, `OWNER_CLAIM_REFUSED`), `modules/auth/user.repository.ts` (`OWNER_EXISTS`, `USER_EXISTS`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
-**Last updated:** 2026-10-18
+**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`, `EMAIL_NOT_VERIFIED`, `OWNER_CLAIM_REFUSED`), `modules/auth/user.repository.ts` (`OWNER_EXISTS`, `USER_EXISTS`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`), `core/errors/http-errors.ts` (`CreditsRequiredError`, 402 `CREDITS_REQUIRED`, ADR-0012), `modules/ai-design/proposal.repository.ts` (`GENERATION_IN_PROGRESS`), `modules/ai-design/ai-design.service.ts` (`PROPOSAL_NOT_READY`)
+**Last updated:** 2026-10-21
 
 ## Module router convention (`ApiRouter`, mounted route table)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
@@ -41,8 +41,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
-**Last updated:** 2026-10-18
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories); `ai-design-studio.test_cases.md` (CT01–CT04, IT01–IT15) — `testing/ai-design/` (`InMemoryProposalRepository`, `ScriptedDesignGenerator`, `ManualBackgroundRunner`, the provider recordings), `testing/time/` (`ManualDelay`), `testing/http/` (`RecordedProviderServer`, `CmsTestClient`)
+**Last updated:** 2026-10-21
 
 ## Module list, dependency map, collection writers
 **Canonical definition:** `.ai-context/architecture.md` → API modules · Module dependency map · Data ownership
@@ -138,8 +138,18 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## AI provider port and environment rules
 **Canonical definition:** `.ai-context/specs/ai-design-studio.spec.md` → Provider contract (the *why* is `.ai-context/decisions/ADR-0003-ai-provider-port.md`)
-**Referenced by:** `constitution.md` (dev-bypass guard), `architecture.md` (AI design flow)
-**Last updated:** 2026-10-11
+**Referenced by:** `constitution.md` (dev-bypass guard, Approved LLD patterns), `architecture.md` (AI design flow, Environment: `AI_PROVIDER`, `AI_MODEL`, the keys, the two base URLs, `AI_TIMEOUT_MS`), `ai-design-studio` plan and test cases; code that restates the table: `modules/ai-design/providers/design-generator.factory.ts` (the one implementation), `container.ts` (`DESIGN_GENERATORS`, `buildDesignGenerator`), `config/env.ts`, `apps/api/.env.example`, `main.spec.ts` (IT10)
+**Last updated:** 2026-10-21
+
+## AI generation allowance and prices
+**Canonical definition:** `.ai-context/decisions/ADR-0012-stripe-payments.md` → Decision and Owner answers 2026-10-21 (the product rule: owner unlimited, free monthly generations, then credits, refunds on platform faults); `.ai-context/specs/ai-design-studio.spec.md` → AC7, AC17, AC18 (the mechanics)
+**Referenced by:** `architecture.md` (AI design flow), `ai-design-studio` plan (Architecture Approach, Data Model `charge`), `state/next.md`; code: `container.ts` (`AI_DEFAULT_PRICES`, the seeded 5 free / 1 credit until `platform-admin`), `modules/ai-design/generation-allowance.service.ts`, `adapters/default-ai-pricing.ts`, `adapters/empty-generation-wallet.ts` (until `credits-billing`), `packages/contracts/src/ai-design` (`REFUNDABLE_FAILURES`), `apps/web/src/lib/cms/ai-studio.ts` (the screen's wording)
+**Last updated:** 2026-10-21
+
+## AI provider wire formats
+**Canonical definition:** `.ai-context/memory/ai-provider-apis.md` (confirmed against each provider's documentation 2026-10-21)
+**Referenced by:** `ai-design-studio` plan (Structured output per provider) and tasks (T06–T08); code: `modules/ai-design/providers/ollama.design-generator.ts`, `gemini.design-generator.ts`, `openrouter.design-generator.ts`, `apps/api/src/testing/ai-design/recordings/` (responses in those shapes)
+**Last updated:** 2026-10-21
 
 ## Accounts, roles, the one-time owner claim and tenant isolation
 **Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision and Owner answers (the product rule); `.ai-context/specs/account-registration.spec.md` → Roles and the owner claim · Email verification (the mechanics)

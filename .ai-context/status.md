@@ -37,6 +37,9 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-21
+- Documentation audit after `ai-design-studio`: the architecture tree and summary, project
+  context, governance status, ownership index, the AI testing rule in `generate-tests.md`, and
+  memory brought up to date with the code. No code changed.
 - `ai-design-studio` revised for ADR-0010 and ADR-0012 (per-user monthly allowance, then
   credits; refunds on platform faults), `Ready` under the standing authorisation, and implemented
   T01–T10: proposal storage with one generation in flight, the generator port, stub and

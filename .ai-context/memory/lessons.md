@@ -62,3 +62,9 @@ waits (up to 45 s) for a free database; a new Redis-backed spec needs no other c
 only the browser journey caught it. **Carry forward:** any id a reusable component renders comes
 from `useId()`.
 
+
+### 2026-10-21 — an "is absent" assertion proved nothing until the value was shown present
+`ai-design-studio.IT11` edited a hero field the schema does not have, so the text was stripped
+on save and "the provider never receives section text" passed trivially. **Carry forward:** a test
+that asserts something is absent first asserts it exists where it should (here, in the draft),
+so the absence means something.

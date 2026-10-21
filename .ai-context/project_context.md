@@ -7,16 +7,18 @@ is claimed once with a secret key. A free portfolio lives on the platform domain
 custom domain (BRD-011). The first site to publish is the reference design in `docs/design-reference/`
 (hero, about, selected work, experience, stack, contact). Turborepo monorepo: `apps/api`
 (Express, TypeScript, MongoDB) and `apps/web` (Next.js — public site and CMS). AI design
-generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: `monorepo-foundation`
-implemented 2026-10-17; `owner-auth` (revised 2026-10-17: Redis session, OTP password reset;
-⚠️ revised 2026-10-18 for multi-tenancy) implemented 2026-10-19.**
+generation runs on Gemini or OpenRouter, and on Ollama locally. **Phase: every written spec is `Implemented` (the last, `ai-design-studio`, on 2026-10-21); the three planned slugs have no spec yet.**
 
 ## Current sprint
-Spec set authored 2026-10-11. `monorepo-foundation` is `Implemented`; `owner-auth` is
-`Implemented` (T01–T05 completed 2026-10-17, T06–T08 2026-10-18, T09 2026-10-19 after the
-multi-tenant revision); the other 14 specs are `Draft`. Four more
-slugs are planned with no spec yet (`status.md` → Planned slugs). Live picture: `state/current.md`,
-`state/next.md`, `state/blockers.md`. Spec-level view: `status.md`.
+Spec set authored 2026-10-11; the whole build runs on `feat/full-build` since 2026-10-20 (owner's
+request). All 18 written specs (`status.md` rows 1–16 with 2a, 2b) are `Implemented`:
+`monorepo-foundation` (2026-10-17), `owner-auth` (2026-10-19), `account-registration`,
+`google-sign-in`, `section-engine`, `cms-panel-shell`, `media-assets`, `site-identity` and
+`design-theme` (2026-10-20), the six section specs, `publish-pipeline`, `public-site-rendering`
+and `ai-design-studio` (2026-10-21).
+Three slugs are planned with no spec yet: `platform-admin`, `credits-billing`, `custom-domains`
+(`status.md` → Planned slugs). Live picture: `state/current.md`, `state/next.md`,
+`state/blockers.md`. Spec-level view: `status.md`.
 
 ## Architecture, in one paragraph
 A class-based modular monolith in `apps/api`: each module is controller → service → repository
@@ -71,7 +73,7 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
 
 ### Decisions (`decisions/`)
 - ADR-0001 no review gates (Accepted) · ADR-0002 root context in Turborepo (Accepted) ·
-  ADR-0003 AI provider port (Accepted / mechanics Proposed) · ADR-0004 snapshot publishing
+  ADR-0003 AI provider port (Accepted; mechanics accepted 2026-10-21) · ADR-0004 snapshot publishing
   (Accepted 2026-10-20, retention amendment) · ADR-0005 section registry (Accepted 2026-10-20) ·
   ADR-0006 AI output is constrained data (Accepted 2026-10-20, variant amendment) · ADR-0007
   tooling baseline (Accepted, amended 2026-10-17) · ADR-0008 Redis session store (Accepted) ·
@@ -81,9 +83,10 @@ Full rule text: `.agent/rules/agent-role.md`, `constitution.md`, `int-standards.
   (Accepted) · ADR-0013 `publishing` owns its ports (Accepted)
 
 ### Memory (`memory/`)
-- `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only;
-  `patterns.md` is still empty, the other three hold entries from `monorepo-foundation` and
-  `owner-auth`
+- `lessons.md` · `patterns.md` · `pitfalls.md` · `review-findings.md` — real events only, from
+  every implemented spec so far
+- `ai-provider-apis.md` — the Ollama, OpenRouter and Gemini wire formats, confirmed against the
+  providers' documentation on 2026-10-21; re-confirm before changing an adapter
 
 ### Ownership Index
 - `ownership_index.md` — one canonical owner per fact referenced by 2+ files

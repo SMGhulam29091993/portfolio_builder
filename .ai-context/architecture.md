@@ -18,8 +18,11 @@ verification by one-time code, roles and the one-time owner claim; and `google-s
 OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). `section-engine` is implemented: the `portfolio`
 module (one portfolio per user, provisioned on the first CMS request; the section registry and
 engine; `resolvePortfolio`), `seed:all`, and the composer in `packages/sections`. The `assets` module
-(`media-assets`) stores files in GridFS behind `IFileStorage`. Every other feature module is ⬜
-planned.
+(`media-assets`) stores files in GridFS behind `IFileStorage`. `site-identity` (`identity`),
+`design-theme` (`design`), the six section types (`portfolio/sections/`), `publish-pipeline`
+(`publishing`), `public-site-rendering` (`public-site` and the `(site)` app) and
+`ai-design-studio` (`ai-design`, the `/cms/ai` screen) are implemented (2026-10-20 / 21).
+`platform-admin`, `credits-billing` and `custom-domains` are ⬜ planned, with no spec yet.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -44,34 +47,34 @@ draft into an immutable snapshot; the public site renders only the current snaps
 ```
 portfolio-builder/
 ├── apps/
-│   ├── api/                      🚧 Express + TypeScript + Mongoose
+│   ├── api/                      ✅ Express + TypeScript + Mongoose (every specified module built)
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy) closes both datastores again
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container → startup hooks (interrupted AI proposals) → app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy or a usable AI provider) or a failing hook closes both datastores again
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle (`IStartupHook`) ✅ · background (`IBackgroundRunner`, `InProcessBackgroundRunner`) ✅ · time (`IDelay`, `SystemDelay`) ✅ · errors (`CreditsRequiredError` 402) ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             ✅ db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle (`IStartupHook`) ✅ · background (`IBackgroundRunner`, `InProcessBackgroundRunner`) ✅ · time (`IDelay`, `SystemDelay`) ✅ · errors (`CreditsRequiredError` 402) ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` ✅ (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`, `PasswordResetService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API07), `RequireOwnerMiddleware`, `SessionCookieWriter`)
-│   │       ├── seed/             🚧 idempotent seeders behind `ISeeder`, built by `buildSeeders` in `container.ts` — `OwnerSeeder` + `seed-owner.ts` (`pnpm seed:owner`, development only; refuses in production) ✅ · `data/` (`DEV_OWNER`) ✅; the reference portfolio content seeder ⬜ `section-engine`
-│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
+│   │       ├── modules/          ✅ one folder per module (table below) — `health` · `auth` (sessions, registration, owner claim, password reset, Google sign-in, mail strategies) · `portfolio` (registry, engine, six section definitions in `sections/`, provisioning, live pointer) · `assets` (GridFS) · `identity` · `design` · `ai-design` (proposals, allowance, prompt builder, parser, `providers/` stub + Ollama + Gemini + OpenRouter, `decorators/` timeout + retry) · `publishing` (rules, pipeline, snapshots, revalidation) · `public-site` — all ✅
+│   │       ├── seed/             ✅ idempotent seeders behind `ISeeder`, built by `buildSeeders` in `container.ts` — `seed:owner` (the development account) and `seed:all` (account, portfolio, identity, sections from `data/`); both refuse in production
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; per-module fakes (`auth/`, `portfolio/`, `assets/`, `identity/`, `publishing/`, `ai-design/` incl. documented-shape provider recordings), `time/` (`ManualDelay`), `http/` (`CmsTestClient`, `RecordedProviderServer`) (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
-│   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
+│   └── web/                      ✅ Next.js App Router + Tailwind v4 — public site and CMS
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
 │       ├── e2e/                  ✅ Playwright (Chromium); `start-api.ts` boots a throwaway MongoDB, seeds the development account, runs a local SMTP server + mailbox for one-time codes, then the built API (Redis database 15)
 │       └── src/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
-│           ├── lib/api/          ✅ `ApiClient` (envelope, cross-tab refresh rule) + TanStack Query hooks (`auth`, `portfolio`)
-│           ├── lib/cms/          ✅ pure CMS rules: `safeNext`, messages, nav order, reorder, preview model, schema limits; Zustand UI store
-│           ├── components/cms/   ✅ UI kit, form kit, panel frame, editor host + registry, overview, preview pane
-│           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ — `(auth)` login, register, verify, forgot-password; `(panel)` overview, `sections/[type]`, area mount points; noindex · `api/revalidate` ⬜
+│           ├── lib/api/          ✅ `ApiClient` (envelope, cross-tab refresh rule) + TanStack Query hooks (`auth`, `portfolio`, `assets`, `identity`, `design`, `publishing`, `ai-design`)
+│           ├── lib/cms/          ✅ pure CMS rules: `safeNext`, messages, nav order, reorder, preview model, schema limits, design resolver, issue links, AI Studio badge and allowance text; Zustand UI store
+│           ├── components/cms/   ✅ UI kit, form kit, panel frame, editor host + registry, overview, preview pane; screens: assets, identity, design, publish, AI Studio (`ai/`)
+│           └── app/              ✅ `(site)` (platform home, `[slug]` portfolio pages, robots, sitemap) · `(cms)/cms` — `(auth)` login, register, verify, forgot-password; `(panel)` overview, `sections/[type]`, identity, design, assets, ai, publish, `credits` (mount point until `credits-billing`); noindex · `api/revalidate`
 ├── packages/
-│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅ · `common` (`plainText`) ✅ · `sections` (primitives, engine) ✅
-│   ├── sections/                 🚧 React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer ✅; renderers ⬜ the section specs
+│   ├── contracts/                ✅ zod schemas + inferred types (API + section payloads) — `health` · `auth` · `common` (`plainText`) · `sections` · `assets` · `identity` · `design` · `publishing` · `ai-design`
+│   ├── sections/                 ✅ React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer, `ThemeRoot`, the site shell, two variants for each of the six section types
 │   ├── design-tokens/            ✅ DesignSpec schema, variant catalogue, font allow-list, contrast maths, `validateDesign`, `toCssVariables`, `DEFAULT_DESIGN`
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)

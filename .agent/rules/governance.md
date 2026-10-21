@@ -72,5 +72,7 @@ The lifecycle is in use: `monorepo-foundation` moved `Draft → Ready → In Pro
 self-check line in `state/completed.md`. `owner-auth` moved `Draft → Ready → In Progress` on
 2026-10-17, back to `Draft` on 2026-10-18 under a `⚠️ REVISED` marker (multi-tenancy,
 ADR-0010) with T01–T08 completed, `Draft → Ready → In Progress` again on 2026-10-19 and
-`In Progress → Implemented` the same day with T09. The other specs are `Draft`. Restoring review gates later means superseding ADR-0001 and re-adding
-the reviewer roles here — nothing else needs to move.
+`In Progress → Implemented` the same day with T09. From 2026-10-20 the agent moved the remaining
+specs to `Ready` under the standing authorisation above, and by 2026-10-21 every written spec is
+`Implemented` (`status.md` holds the dates). Restoring review gates later means superseding
+ADR-0001 and re-adding the reviewer roles here — nothing else needs to move.

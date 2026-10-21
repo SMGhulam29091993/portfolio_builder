@@ -10,6 +10,9 @@ Implemented
   footnote ²); the AI rate limit is a provisional 10 per 10 minutes (T09, plan); AC18's "buy
   credits" link leads to a `/cms/credits` placeholder until `credits-billing` (T10). MT01 / MT02
   (live provider runs) remain for the owner, with real keys.
+- Clarified 2026-10-21 to match the built contract (additive, not a revision): the Proposal shape
+  lists `charge` (what it cost, and whether it was given back — AC17), and the environment table
+  lists `AI_PROVIDER=stub` outside production.
 - `Ready → In Progress` 2026-10-21: `ai-design-studio.T01` started.
 - DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`); ADR-0003 fully accepted 2026-10-21,
@@ -53,6 +56,7 @@ interface IProviderHealth { check(): Promise<{ reachable: boolean }>; }
 | Environment | `AI_PROVIDER` | Result |
 |---|---|---|
 | not production | unset | `StubDesignGenerator` (fixture answer, no network) |
+| not production | `stub` | `StubDesignGenerator` |
 | not production | `gemini` / `openrouter` / `ollama` | that adapter |
 | production | unset, `stub` or `ollama` | **startup fails** |
 | production | `gemini` / `openrouter` without its API key or without `AI_MODEL` | **startup fails** |
@@ -66,6 +70,7 @@ the contrast rules. **Never sent:** the owner's name, email, résumé, or any se
   "provider": "ollama", "model": "string",
   "design": "DesignSpec | null", "rationale": "PlainText(400) | null",
   "failure": "{ code, message } | null",
+  "charge": "{ kind: none | free | credit, credits, refunded }",
   "durationMs": 0, "createdAt": "ISO-8601", "completedAt": "ISO-8601 | null" }
 ```
 `failure.code` is one of `PROVIDER_TIMEOUT`, `PROVIDER_ERROR`, `INVALID_OUTPUT`,

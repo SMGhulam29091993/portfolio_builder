@@ -203,3 +203,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 18:30 IST] — ai-design-studio.T10
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added the `/cms/ai` screen, its hooks and display helpers with unit tests, the `/cms/credits` placeholder, and E2E01–E05; moved `ai-design-studio` to `Implemented` and updated the spec status, board, test cases and state files.
+
+### [2026-10-21 19:00 IST] — documentation audit after ai-design-studio
+**User Request:** Check that every related `.agent/` and `.ai-context/` file was updated properly.
+**Agent Action:** Audited all rule, workflow and context files against the build. Updated `architecture.md` (summary and repository tree, which stopped at `media-assets`), `project_context.md` (phase, sprint, ADR-0003, memory index), `governance.md` → Status, `ownership_index.md` (AI provider entry refreshed; AI allowance and prices, provider wire formats added; error codes and test support), `ai-design-studio.spec.md` (`charge` in the Proposal shape, the `stub` row; clarifications, not a revision), `generate-tests.md` (how AI providers are tested), `memory/patterns.md` (two recurring patterns), `memory/lessons.md` (presence before absence). No code changed.
