@@ -61,7 +61,10 @@ import { createAssetRouter } from './modules/assets/asset.routes.js';
 import { AssetService } from './modules/assets/asset.service.js';
 import type { IAssetReferenceProvider, IFileStorage } from './modules/assets/index.js';
 import { GridFsFileStorage } from './modules/assets/storage/gridfs-file-storage.js';
+import { DesignLibraryController } from './modules/design/design-library.controller.js';
+import { DesignLibraryService } from './modules/design/design-library.service.js';
 import { DesignController } from './modules/design/design.controller.js';
+import { LayoutLibraryRepository, PresetRepository } from './modules/design/layout-library.repository.js';
 import { DesignDraftContributor } from './modules/design/design-draft.contributor.js';
 import { DesignPublishCheck } from './modules/design/design-publish.check.js';
 import { DesignRepository } from './modules/design/design.repository.js';
@@ -583,8 +586,18 @@ export function buildContainer({
   const identityRouter = createIdentityRouter(new IdentityController(identityService), authGuard, resolvePortfolio);
 
   // design (`design-theme`): the default is validated when the service is built (startup).
-  const designService = new DesignService(new DesignRepository(mongo), new DesignValidator());
-  const designRouter = createDesignRouter(new DesignController(designService), authGuard, resolvePortfolio);
+  // The layout library and presets (`design-library`, ADR-0014): every design write checks that a
+  // `custom:<id>` it names is in this portfolio's library for that section.
+  const layoutLibrary = new LayoutLibraryRepository(mongo);
+  const designValidator = new DesignValidator();
+  const designService = new DesignService(new DesignRepository(mongo), designValidator, layoutLibrary);
+  const designLibrary = new DesignLibraryService(layoutLibrary, new PresetRepository(mongo), designService, designValidator, clock);
+  const designRouter = createDesignRouter(
+    new DesignController(designService),
+    new DesignLibraryController(designLibrary),
+    authGuard,
+    resolvePortfolio,
+  );
 
   // publishing (`publish-pipeline`, ADR-0004/0013): the content modules contribute the draft and
   // move the pointer through ports `publishing` owns. A rule, step or contributor is one line here.
@@ -648,7 +661,7 @@ export function buildContainer({
     proposalRepository,
     designGenerator ?? buildDesignGenerator(env),
     new DesignPromptBuilder({ variants: VARIANT_CATALOGUE, fonts: FONT_ALLOW_LIST, contrastPairs: CONTRAST_PAIRS }),
-    new DesignSpecParser(new DesignValidator()),
+    new DesignSpecParser(designValidator),
     designService,
     designService,
     {

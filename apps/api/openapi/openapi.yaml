@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.13.0
+  version: 0.14.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -1040,6 +1040,165 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design/layouts:
+    get:
+      tags: [design]
+      operationId: design-library.API01
+      x-spec-id: design-library.API01
+      summary: List the layout library
+      description: >-
+        Custom layouts saved for this portfolio, newest first.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: List the layout library.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryLayoutsEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/design/layouts/{id}:
+    delete:
+      tags: [design]
+      operationId: design-library.API02
+      x-spec-id: design-library.API02
+      summary: Delete a library layout
+      description: >-
+        Refused with LAYOUT_IN_USE while the draft design or a preset names it. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: Delete a library layout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/LayoutInUse'
+  /api/v1/cms/design/presets:
+    get:
+      tags: [design]
+      operationId: design-library.API03
+      x-spec-id: design-library.API03
+      summary: List design presets
+      description: >-
+        Saved presets, newest first.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: List design presets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetsEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+    post:
+      tags: [design]
+      operationId: design-library.API04
+      x-spec-id: design-library.API04
+      summary: Save the draft design as a preset
+      description: >-
+        Saves the current draft design under a name. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavePresetRequest'
+      responses:
+        '201':
+          description: Save the draft design as a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/LibraryFull'
+  /api/v1/cms/design/presets/{id}/apply:
+    post:
+      tags: [design]
+      operationId: design-library.API05
+      x-spec-id: design-library.API05
+      summary: Apply a preset
+      description: >-
+        Replaces the draft design with the preset when expectedRevision matches; validated like a save. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetDesignRequest'
+      responses:
+        '200':
+          description: Apply a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design/presets/{id}:
+    delete:
+      tags: [design]
+      operationId: design-library.API06
+      x-spec-id: design-library.API06
+      summary: Delete a preset
+      description: >-
+        Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: Delete a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/cms/publishing/status:
     get:
       tags: [publishing]
@@ -1982,6 +2141,62 @@ components:
                     creditCost: { type: integer, minimum: 0 }
                     balance: { type: [integer, 'null'], minimum: 0 }
                     resetsAt: { type: string, format: date-time }
+    LibraryLayout:
+      type: object
+      required: [id, section, name, layout, source, createdAt]
+      properties:
+        id: { type: string }
+        section: { enum: [hero, about, work, experience, stack, contact] }
+        name: { type: string, maxLength: 60 }
+        layout: { type: object, description: A CustomLayout (packages/design-tokens; design-library spec). }
+        source: { enum: [ai, preset] }
+        createdAt: { type: string, format: date-time }
+    LibraryLayoutsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [layouts]
+              properties:
+                layouts: { type: array, items: { $ref: '#/components/schemas/LibraryLayout' } }
+    DesignPreset:
+      type: object
+      required: [id, name, design, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string, maxLength: 60 }
+        design: { $ref: '#/components/schemas/DesignSpec' }
+        createdAt: { type: string, format: date-time }
+    DesignPresetsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [presets]
+              properties:
+                presets: { type: array, items: { $ref: '#/components/schemas/DesignPreset' } }
+    DesignPresetEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [preset]
+              properties:
+                preset: { $ref: '#/components/schemas/DesignPreset' }
+    SavePresetRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
     PublishIssue:
       type: object
       required: [rule, severity, path, message]
@@ -2759,5 +2974,35 @@ components:
             success: false
             message: The design proposal is not ready
             data: { code: PROPOSAL_NOT_READY, status: failed }
+    LayoutInUse:
+      description: The draft design or a preset names this layout; data.usedBy says which. Nothing was deleted.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, usedBy]
+                    properties:
+                      code: { const: LAYOUT_IN_USE }
+                      usedBy: { type: array, items: { enum: [draft, preset] } }
+    LibraryFull:
+      description: The library already holds its maximum (data.max). Nothing was saved.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, max]
+                    properties:
+                      code: { const: LIBRARY_FULL }
+                      max: { type: integer, minimum: 1 }
     NotModified:
       description: The client's copy is current (If-None-Match matched); no body.

@@ -56,6 +56,7 @@ export {
 } from './publishing/publishing-fixtures.js';
 export { InMemoryPointerStore, InMemorySnapshotRepository } from './publishing/in-memory-publishing.js';
 export { ManualDelay } from './time/manual-delay.js';
+export { InMemoryLayoutLibrary, InMemoryPresetRepository } from './design/in-memory-design-library.js';
 export { geminiInteractionReply, ollamaChatReply, openRouterCompletionReply } from './ai-design/provider-recordings.js';
 export { InMemoryProposalRepository } from './ai-design/in-memory-proposal-repository.js';
 export {

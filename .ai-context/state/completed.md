@@ -543,3 +543,9 @@
   block an existing component), `PortfolioPage.customLayouts`; `TimelineEntries`, `JobCards`,
   `SkillCards`, `SkillRows` extracted from their variants with no change in output. UT03; 44
   sections tests, web typecheck and unit tests pass.
+- design-library.T03 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `design` module:
+  `design_layouts` and `design_presets` (models, repositories, contract suite CT01 with
+  in-memory fakes), `DesignLibraryService` (validated layout saves, in-use refusal, presets,
+  limits 50 / 20), `DesignService` checks every `custom:` entry against the library (AC2),
+  routes API01–API06, OpenAPI 0.14.0, ports `ILayoutLibraryWriter` / `IPresetWriter` for
+  `ai-design`. Checked: typecheck, lint, 1143 API tests with the coverage floor, drift (51).

@@ -160,6 +160,8 @@ One writing module per collection. Field-level schemas live in the owning plan's
 | `identities` | `identity` | One per portfolio |
 | `designs` | `design` | One per portfolio: `theme`, `layout`, `revision` |
 | `design_proposals` | `ai-design` | AI proposals and their status |
+| `design_layouts` | `design` | Custom layouts in a portfolio's library (`design-library`, ADR-0014); `ai-design` saves through `ILayoutLibraryWriter` |
+| `design_presets` | `design` | Named design presets (`design-library`); `ai-design` saves through `IPresetWriter` |
 | `snapshots` | `publishing` | Immutable published content, versioned per portfolio |
 | `assets`, `asset_files.files`, `asset_files.chunks` | `assets` | File metadata + GridFS bytes |
 

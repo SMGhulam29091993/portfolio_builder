@@ -3,6 +3,7 @@ import { DEFAULT_DESIGN, type DesignSpec } from '@portfolio/design-tokens';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ConflictError, ValidationError } from '../../core/errors/index.js';
+import { InMemoryLayoutLibrary } from '../../testing/index.js';
 import type { IDesignRepository } from './design.interface.js';
 import { DesignService } from './design.service.js';
 import type { StoredDesign } from './design.types.js';
@@ -35,7 +36,7 @@ let service: DesignService;
 
 beforeEach(() => {
   designs = new FakeDesigns();
-  service = new DesignService(designs, new DesignValidator());
+  service = new DesignService(designs, new DesignValidator(), new InMemoryLayoutLibrary());
 });
 
 describe('DesignService', () => {

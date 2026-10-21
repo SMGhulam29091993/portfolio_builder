@@ -4,16 +4,17 @@
  * write creates it. Every write — API02, a reset, an AI proposal through `IDesignWriter` — goes
  * through the same validator.
  */
-import { DEFAULT_DESIGN } from '@portfolio/design-tokens';
+import { customLayoutId, DEFAULT_DESIGN } from '@portfolio/design-tokens';
 
-import { ConflictError } from '../../core/errors/index.js';
-import type { IDesignRepository, IDesignService, IDesignValidator } from './design.interface.js';
+import { ConflictError, ValidationError, type ValidationIssue } from '../../core/errors/index.js';
+import type { IDesignRepository, IDesignService, IDesignValidator, ILayoutLookup } from './design.interface.js';
 import type { CmsDesign, DesignSpec, StoredDesign } from './design.types.js';
 
 export class DesignService implements IDesignService {
   constructor(
     private readonly designs: IDesignRepository,
     private readonly validator: IDesignValidator,
+    private readonly layouts: ILayoutLookup,
   ) {
     // A default that fails its own validator is a build defect: fail startup, not a request.
     validator.validate(DEFAULT_DESIGN);
@@ -25,7 +26,28 @@ export class DesignService implements IDesignService {
   }
 
   async apply(portfolioId: string, candidate: unknown, expectedRevision: number): Promise<CmsDesign> {
-    return this.write(portfolioId, this.validator.validate(candidate), expectedRevision);
+    const design = this.validator.validate(candidate);
+    await this.checkCustomLayouts(portfolioId, design);
+    return this.write(portfolioId, design, expectedRevision);
+  }
+
+  /**
+   * Every `custom:<id>` entry must name a layout in this portfolio's library for that section
+   * (`design-library.AC2`); the validator checks only that the entry is well-formed.
+   *
+   * @throws {ValidationError} One issue per entry that does not resolve.
+   */
+  async checkCustomLayouts(portfolioId: string, design: DesignSpec): Promise<void> {
+    const issues: ValidationIssue[] = [];
+    for (const [section, entry] of Object.entries(design.layout)) {
+      const id = customLayoutId(entry);
+      if (id === undefined) continue;
+      const layout = await this.layouts.findLayout(portfolioId, id);
+      if (layout?.section !== section) {
+        issues.push({ path: `layout.${section}`, message: 'This layout is not in your library for this section' });
+      }
+    }
+    if (issues.length > 0) throw new ValidationError(issues);
   }
 
   async reset(portfolioId: string, expectedRevision: number): Promise<CmsDesign> {
