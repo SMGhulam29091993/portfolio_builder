@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { FakePasswordHasher, InMemoryUserRepository } from '../testing/index.js';
+import { FakePasswordHasher, InMemoryUserRepository, ManualClock } from '../testing/index.js';
 import { DEV_OWNER } from './data/owner.js';
 import { OwnerSeeder, type OwnerSeederEnv } from './owner.seeder.js';
 import { SeedConfigurationError, SeedRefusedError } from './seed.errors.js';
@@ -21,7 +21,15 @@ const VALID_ENV: OwnerSeederEnv = {
 function seederWith(env: Partial<OwnerSeederEnv> = {}) {
   const users = new InMemoryUserRepository();
   const hasher = new FakePasswordHasher();
-  const seeder = new OwnerSeeder(users, users, hasher, { ...VALID_ENV, ...env });
+  const seeder = new OwnerSeeder(
+    users,
+    users,
+    hasher,
+    { ...VALID_ENV, ...env },
+    users,
+    users,
+    new ManualClock(),
+  );
   return { seeder, users, hasher };
 }
 
@@ -66,10 +74,15 @@ describe('OwnerSeeder', () => {
     await seeder.run();
     const before = await users.findByEmail(VALID_ENV.OWNER_EMAIL ?? '');
 
-    const rerun = new OwnerSeeder(users, users, new FakePasswordHasher(), {
-      ...VALID_ENV,
-      OWNER_PASSWORD: 'a different long password',
-    });
+    const rerun = new OwnerSeeder(
+      users,
+      users,
+      new FakePasswordHasher(),
+      { ...VALID_ENV, OWNER_PASSWORD: 'a different long password' },
+      users,
+      users,
+      new ManualClock(),
+    );
 
     await expect(rerun.run()).resolves.toBe('unchanged');
     expect((await users.findByEmail(VALID_ENV.OWNER_EMAIL ?? ''))?.passwordHash).toBe(
@@ -163,5 +176,37 @@ describe('OwnerSeeder', () => {
     });
 
     await expect(seeder.run()).rejects.toBeInstanceOf(SeedRefusedError);
+  });
+
+  it('account-registration.AC16 — creates a verified owner while no owner exists', async () => {
+    const { seeder, users } = seederWith();
+
+    await seeder.run();
+
+    await expect(users.findByEmail(VALID_ENV.OWNER_EMAIL ?? '')).resolves.toMatchObject({
+      role: 'owner',
+      emailVerifiedAt: new ManualClock().now(),
+    });
+  });
+
+  it('account-registration.AC16 — creates a verified member once an owner exists', async () => {
+    const { seeder, users } = seederWith();
+    await users.create({ email: 'real-owner@example.test', passwordHash: 'h', displayName: 'O', role: 'owner' });
+
+    await seeder.run();
+
+    await expect(users.findByEmail(VALID_ENV.OWNER_EMAIL ?? '')).resolves.toMatchObject({
+      role: 'member',
+    });
+  });
+
+  it('account-registration.AC16 — marks an existing unverified account verified', async () => {
+    const { seeder, users } = seederWith();
+    await users.create({ email: 'owner@portfolio.test', passwordHash: 'h', displayName: 'O' });
+
+    await expect(seeder.run()).resolves.toBe('updated');
+    await expect(seeder.run()).resolves.toBe('unchanged');
+
+    expect((await users.findByEmail('owner@portfolio.test'))?.emailVerifiedAt).toBeDefined();
   });
 });

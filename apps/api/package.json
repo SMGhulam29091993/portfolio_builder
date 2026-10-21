@@ -12,13 +12,16 @@
     "lint": "eslint .",
     "test": "vitest run --coverage",
     "drift": "tsx src/openapi/check-drift.ts",
-    "seed:owner": "tsx --env-file-if-exists=.env src/seed/seed-owner.ts"
+    "seed:owner": "tsx --env-file-if-exists=.env src/seed/seed-owner.ts",
+    "seed:all": "tsx --env-file-if-exists=.env src/seed/seed-all.ts"
   },
   "dependencies": {
     "@portfolio/contracts": "workspace:*",
+    "@portfolio/design-tokens": "workspace:*",
     "@redis/client": "6.3.0",
     "argon2": "0.45.1",
     "bcryptjs": "3.0.3",
+    "busboy": "1.6.0",
     "express": "5.3.0",
     "helmet": "8.3.0",
     "jose": "6.2.12",
@@ -29,6 +32,7 @@
   "devDependencies": {
     "@portfolio/eslint-config": "workspace:*",
     "@portfolio/tsconfig": "workspace:*",
+    "@types/busboy": "1.5.4",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
     "@types/smtp-server": "3.5.13",

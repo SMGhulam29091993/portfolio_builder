@@ -74,6 +74,13 @@ const envSchema = z.object({
   GMAIL_USER: optional(z.email()),
   /** A Gmail app password for `GMAIL_USER` — never the account password. A secret. */
   GMAIL_APP_PASSWORD: optional(z.string()),
+  /**
+   * The generic SMTP mail strategy (ADR-0009, amended 2026-10-20): `smtp://` or `smtps://`, with
+   * `user:pass@` when the server needs a login. With `MAIL_FROM` it selects that strategy, ahead
+   * of Gmail. Treated as a secret: it may carry a password. The E2E harness points it at a local
+   * SMTP server so codes can be read back without a test hook.
+   */
+  SMTP_URL: optional(z.url({ protocol: /^smtps?$/ })),
   /** The sender address on outgoing mail; the Gmail strategy falls back to `GMAIL_USER`. */
   MAIL_FROM: optional(z.email()),
   /**
@@ -87,7 +94,84 @@ const envSchema = z.object({
    * API from starting — `OwnerSeeder` enforces the 12-character floor (`owner-auth.AC14`).
    */
   OWNER_PASSWORD: optional(z.string()),
+  /**
+   * The owner secret key (`account-registration`, ADR-0010): a registration carrying exactly
+   * this value while no owner exists becomes the platform owner. Optional — unset, the claim is
+   * closed. A secret: compared in constant time, never logged or stored.
+   */
+  OWNER_REGISTRATION_SECRET: optional(z.string().min(32).max(200)),
+  /**
+   * Google sign-in (`google-sign-in`, ADR-0011): the OAuth client id. With the secret and the
+   * redirect URL it switches Google on; all three unset leave it off. Setting only some is a
+   * configuration error (`GOOGLE_SETTINGS` below).
+   */
+  GOOGLE_CLIENT_ID: optional(z.string().min(1)),
+  /** The OAuth client secret. A secret: sent only to the token endpoint, never logged. */
+  GOOGLE_CLIENT_SECRET: optional(z.string().min(1)),
+  /**
+   * The callback URL as the browser reaches it, registered with Google — through the web app's
+   * `/api/v1` rewrite, e.g. `http://localhost:3000/api/v1/auth/google/callback`.
+   */
+  GOOGLE_REDIRECT_URL: optional(z.url()),
+  /**
+   * The OpenID Connect issuer whose discovery document names the endpoints. Configuration, so
+   * no provider URL is a code literal; tests point it at a local issuer.
+   */
+  GOOGLE_ISSUER: z.url().default('https://accounts.google.com'),
+  /**
+   * The web app's revalidate endpoint (`publish-pipeline.AC12`; `public-site-rendering.API03`),
+   * called after every pointer switch. Unset outside production, revalidation is a no-op that
+   * reports `ok`; production refuses to start without it (dev-bypass guard, checked in the
+   * container so the seeders do not need it).
+   */
+  WEB_REVALIDATE_URL: optional(z.url({ protocol: /^https?$/ })),
+  /**
+   * Shared with the web app; sent as `x-revalidate-secret`. Required whenever
+   * `WEB_REVALIDATE_URL` is set. A secret: never logged.
+   */
+  REVALIDATE_SECRET: optional(z.string().min(32).max(200)),
+  /**
+   * The design-generation provider (`ai-design-studio`, ADR-0003). Unset outside production
+   * selects the stub; `DesignGeneratorFactory` owns the rest of the environment table,
+   * including the production refusals.
+   */
+  AI_PROVIDER: optional(z.enum(['gemini', 'openrouter', 'ollama', 'stub'])),
+  /** The provider's model id — configuration, never a code literal (`constitution.md` → Secrets). */
+  AI_MODEL: optional(z.string().min(1).max(200)),
+  /** Gemini API key. A secret: sent in a header only, never logged or put in a URL. */
+  GEMINI_API_KEY: optional(z.string().min(1)),
+  /**
+   * The Gemini API's versioned base; the adapter calls `<base>/interactions`. Configuration, so no
+   * provider URL is a code literal; tests point it at a local server.
+   */
+  GEMINI_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://generativelanguage.googleapis.com/v1beta'),
+  /** OpenRouter API key. A secret: sent in a header only, never logged or put in a URL. */
+  OPENROUTER_API_KEY: optional(z.string().min(1)),
+  /** The OpenRouter API base; the adapter calls `<base>/chat/completions`. Configuration, not a literal. */
+  OPENROUTER_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://openrouter.ai/api/v1'),
+  /**
+   * Upper bound on one generation, retries included (`ai-design-studio.AC6`). 60 000 ms when
+   * unset or blank — provisional until each provider is measured (MT01, MT02).
+   */
+  AI_TIMEOUT_MS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(1_000).max(600_000).default(60_000),
+  ),
+  /**
+   * The most tokens one answer may use, sent by the OpenRouter adapter as `max_tokens`. Unset,
+   * OpenRouter reserves the model's full output limit against the account's credits, which a
+   * small balance refuses (HTTP 402); a design answer needs far fewer.
+   */
+  AI_MAX_OUTPUT_TOKENS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(256).max(200_000).optional(),
+  ),
+  /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */
+  OLLAMA_BASE_URL: optional(z.url({ protocol: /^https?$/ })),
 });
+
+/** The three variables that switch Google sign-in on together (`google-sign-in.AC9`). */
+const GOOGLE_SETTINGS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL'] as const;
 
 /** The validated, read-only configuration object. */
 export type Env = Readonly<z.infer<typeof envSchema>>;
@@ -120,6 +204,14 @@ export class EnvValidationError extends Error {
  */
 export function loadEnv(source: Readonly<Record<string, string | undefined>> = process.env): Env {
   const result = envSchema.safeParse(source);
+
+  // Google is all-or-nothing: some set and some not is a mistake to name, not a silent "off".
+  if (result.success) {
+    const missing = GOOGLE_SETTINGS.filter((name) => result.data[name] === undefined);
+    if (missing.length > 0 && missing.length < GOOGLE_SETTINGS.length) {
+      throw new EnvValidationError(missing);
+    }
+  }
 
   if (!result.success) {
     // Keep only the variable name of each issue; zod's messages are dropped on purpose so no

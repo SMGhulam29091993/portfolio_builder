@@ -51,6 +51,13 @@ describe('loadEnv', () => {
       REDIS_URL: VALID_SOURCE.REDIS_URL,
       JWT_ACCESS_SECRET: VALID_SOURCE.JWT_ACCESS_SECRET,
       WEB_ORIGIN: VALID_SOURCE.WEB_ORIGIN,
+      // The defaulted variables: the issuer is Google's (google-sign-in), and the Gemini and
+      // OpenRouter API bases are theirs (ai-design-studio.T07, T08), unless overridden.
+      GOOGLE_ISSUER: 'https://accounts.google.com',
+      GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
+      OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
+      // Provisional until each provider is measured (ai-design-studio.T09).
+      AI_TIMEOUT_MS: 60_000,
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -197,6 +204,67 @@ describe('loadEnv', () => {
 
     // No length rule here: a short password must not stop the API from starting.
     expect(env).toMatchObject({ OWNER_EMAIL: 'owner@portfolio.example', OWNER_PASSWORD: '  short  ' });
+  });
+
+  it('account-registration.T02 — OWNER_REGISTRATION_SECRET is optional and 32–200 characters', () => {
+    expect(loadEnv({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: '' }).OWNER_REGISTRATION_SECRET).toBeUndefined();
+    expect(
+      loadEnv({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: 's'.repeat(32) }).OWNER_REGISTRATION_SECRET,
+    ).toBe('s'.repeat(32));
+    for (const value of ['s'.repeat(31), 's'.repeat(201)]) {
+      const error = captureEnvError({ ...VALID_SOURCE, OWNER_REGISTRATION_SECRET: value });
+      expect(error.variables).toEqual(['OWNER_REGISTRATION_SECRET']);
+      expect(error.message).not.toContain(value);
+    }
+  });
+
+  it('ai-design-studio.T02 — the AI variables are optional; blank is unset; values are checked without echoing them', () => {
+    const blank = loadEnv({ ...VALID_SOURCE, AI_PROVIDER: '', AI_MODEL: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OLLAMA_BASE_URL: '' });
+    for (const name of ['AI_PROVIDER', 'AI_MODEL', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY', 'OLLAMA_BASE_URL'] as const) {
+      expect(blank[name]).toBeUndefined();
+    }
+    const set = loadEnv({ ...VALID_SOURCE, AI_PROVIDER: 'ollama', AI_MODEL: 'local', OLLAMA_BASE_URL: 'http://127.0.0.1:11434' });
+    expect(set).toMatchObject({ AI_PROVIDER: 'ollama', AI_MODEL: 'local', OLLAMA_BASE_URL: 'http://127.0.0.1:11434' });
+
+    expect(captureEnvError({ ...VALID_SOURCE, AI_PROVIDER: 'not-a-provider' }).variables).toEqual(['AI_PROVIDER']);
+    const badUrl = captureEnvError({ ...VALID_SOURCE, OLLAMA_BASE_URL: 'ftp://not-a-real-secret@host' });
+    expect(badUrl.variables).toEqual(['OLLAMA_BASE_URL']);
+    expect(badUrl.message).not.toContain('not-a-real-secret');
+  });
+
+  it('ai-design-studio.T09 — AI_TIMEOUT_MS defaults to 60000 when unset or blank and is bounded', () => {
+    expect(loadEnv(VALID_SOURCE).AI_TIMEOUT_MS).toBe(60_000);
+    expect(loadEnv({ ...VALID_SOURCE, AI_TIMEOUT_MS: '' }).AI_TIMEOUT_MS).toBe(60_000);
+    expect(loadEnv({ ...VALID_SOURCE, AI_TIMEOUT_MS: '90000' }).AI_TIMEOUT_MS).toBe(90_000);
+    for (const value of ['999', '600001', 'soon']) {
+      expect(captureEnvError({ ...VALID_SOURCE, AI_TIMEOUT_MS: value }).variables).toEqual(['AI_TIMEOUT_MS']);
+    }
+  });
+
+  it('AI_MAX_OUTPUT_TOKENS is unset when blank, a whole number when set, and bounded', () => {
+    expect(loadEnv(VALID_SOURCE).AI_MAX_OUTPUT_TOKENS).toBeUndefined();
+    expect(loadEnv({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: '' }).AI_MAX_OUTPUT_TOKENS).toBeUndefined();
+    expect(loadEnv({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: '4096' }).AI_MAX_OUTPUT_TOKENS).toBe(4_096);
+    for (const value of ['255', '200001', '12.5', 'lots']) {
+      expect(captureEnvError({ ...VALID_SOURCE, AI_MAX_OUTPUT_TOKENS: value }).variables).toEqual(['AI_MAX_OUTPUT_TOKENS']);
+    }
+  });
+
+  it('google-sign-in.AC9 — Google is all three variables or none; the issuer defaults', () => {
+    const off = loadEnv(VALID_SOURCE);
+    expect(off.GOOGLE_CLIENT_ID).toBeUndefined();
+    expect(off.GOOGLE_ISSUER).toBe('https://accounts.google.com');
+
+    const on = loadEnv({
+      ...VALID_SOURCE,
+      GOOGLE_CLIENT_ID: 'id',
+      GOOGLE_CLIENT_SECRET: 'secret-value',
+      GOOGLE_REDIRECT_URL: 'http://localhost:3000/api/v1/auth/google/callback',
+    });
+    expect(on.GOOGLE_CLIENT_ID).toBe('id');
+
+    const partial = captureEnvError({ ...VALID_SOURCE, GOOGLE_CLIENT_ID: 'id' });
+    expect(partial.variables).toEqual(['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL']);
   });
 
   it('owner-auth.T09 — rejects an OWNER_EMAIL that is not an email address, without echoing it', () => {

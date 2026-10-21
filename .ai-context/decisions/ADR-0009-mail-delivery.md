@@ -1,7 +1,8 @@
 # ADR-0009: Mail goes through one port; the sender is a strategy chosen by configuration
 **Status:** Accepted — owner, 2026-10-17 (strategy pattern, Gmail through nodemailer as the
 default, a provider such as Brevo taking over once it is set up). Amended 2026-10-18
-(`owner-auth.T08`): the port gains `ensureAvailable()`; see Decision, first bullet.
+(`owner-auth.T08`): the port gains `ensureAvailable()`; see Decision, first bullet. Amended
+2026-10-20 (`cms-panel-shell.T08`): a generic SMTP strategy; see Decision → SMTP strategy.
 
 ## Context
 The owner-auth password reset emails a one-time code. The constitution allows no external
@@ -29,6 +30,14 @@ in production (ADR-0003).
 - Messages are plain text. No HTML, no links.
 - Every strategy passes one shared contract suite. Tests use a `RecordingMailSender` fake; no
   test sends real mail.
+
+### SMTP strategy (amendment, 2026-10-20)
+`SmtpMailSender` sends through any SMTP server named by `SMTP_URL` (`smtp://` or `smtps://`,
+`user:pass@` for a login) from `MAIL_FROM`. It is registered ahead of Gmail, so setting both
+variables switches mail to it. `GmailMailSender` is now this class pointed at Gmail. It serves
+two needs with no test hook in production code: a provider's SMTP relay in production, and the
+E2E harness, whose local `smtp-server` captures the codes the browser journeys read back
+(`cms-panel-shell.T08`; the gap recorded in `state/next.md` on 2026-10-18).
 
 ## Consequences
 - A real email in local development needs a Gmail app password in `apps/api/.env`; without one,

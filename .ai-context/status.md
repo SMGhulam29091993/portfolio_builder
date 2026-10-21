@@ -1,5 +1,5 @@
 # Project Status Board
-_Last updated: 2026-10-19_
+_Last updated: 2026-10-21_
 
 Lifecycle: `Draft → Ready → In Progress → Implemented → Released` (`governance.md`). Only the
 owner moves a spec to `Ready`.
@@ -9,32 +9,104 @@ owner moves a spec to `Ready`.
 |---|---|---|---|---|---|
 | 1 | `monorepo-foundation` | Turborepo, API bootstrap, shared packages | Implemented | BRD-007 | — |
 | 2 | `owner-auth` | Sign-in, the single Redis session per user, password reset by one-time code | Implemented | BRD-002 | — |
-| 3 | `section-engine` | Section registry and draft content engine | Draft | BRD-001 | ADR-0005; revise for ADR-0010 (portfolio per user) |
-| 4 | `cms-panel-shell` | CMS layout, editor host, live preview | Draft | BRD-001 | Revise for ADR-0010 (registration and verification screens) |
-| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Draft | BRD-001 | OQ1 link targets, OQ2 SEO text; revise for ADR-0010 |
-| 6 | `media-assets` | Résumé and image uploads | Draft | BRD-006 | Revise for ADR-0010 (serves bytes to the asset's own user, not "the owner") |
-| 7 | `design-theme` | Theme tokens and layout variants | Draft | BRD-003 | OQ1 fonts, OQ2 accent; ADR-0006; revise for ADR-0010 (one design per user's portfolio) |
-| 8 | `hero-section` | Hero, code card, tech marquee | Draft | BRD-001 | OQ1 clipped values, OQ2 marquee motion |
-| 9 | `about-section` | Bio, currently, stats, process | Draft | BRD-001 | — |
-| 10 | `work-showcase` | Featured project and project cards | Draft | BRD-001 | — (OQ1 Second Brain copy blocks the first publish, not `Ready`) |
-| 11 | `experience-timeline` | Role timeline | Draft | BRD-001 | — |
-| 12 | `stack-credentials` | Skills, education, certifications | Draft | BRD-001 | — |
-| 13 | `contact-section` | Contact card | Draft | BRD-001 | — |
-| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Draft | BRD-005 | ADR-0004; revise for ADR-0010 |
-| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Draft | BRD-003 | OQ1 mobile nav, OQ2 motion; revise for ADR-0010 (portfolio per request host) |
-| 16 | `ai-design-studio` | AI design proposals | Draft | BRD-004 | ADR-0006, ADR-0003 mechanics; revise for ADR-0010 (per-user limits) |
+| 2a | `account-registration` | Registration, email verification, roles, the one-time owner claim | Implemented | BRD-009 | — |
+| 2b | `google-sign-in` | Google OpenID Connect sign-in into a `users` record | Implemented | BRD-010 | — |
+| 3 | `section-engine` | Section registry, draft content engine, per-user portfolio | Implemented | BRD-001 | — |
+| 4 | `cms-panel-shell` | CMS layout, editor host, live preview, sign-in and registration screens | Implemented | BRD-001 | — |
+| 5 | `site-identity` | Name, contact, socials, résumé link, footer, SEO | Implemented | BRD-001 | — (built after `media-assets`) |
+| 6 | `media-assets` | Résumé and image uploads | Implemented | BRD-006 | — (built before `site-identity`, which depends on it; swap recorded 2026-10-20) |
+| 7 | `design-theme` | Theme tokens and layout variants | Implemented | BRD-003 | — |
+| 8 | `hero-section` | Hero, code card, tech marquee | Implemented | BRD-001 | — |
+| 9 | `about-section` | Bio, currently, stats, process | Implemented | BRD-001 | — |
+| 10 | `work-showcase` | Featured project and project cards | Implemented | BRD-001 | — (the Second Brain copy blocks the owner's first publish, by design) |
+| 11 | `experience-timeline` | Role timeline | Implemented | BRD-001 | — |
+| 12 | `stack-credentials` | Skills, education, certifications | Implemented | BRD-001 | — |
+| 13 | `contact-section` | Contact card | Implemented | BRD-001 | — |
+| 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
+| 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
+| 16 | `ai-design-studio` | AI design proposals | Implemented | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
+| 17 | `design-library` | AI-arranged layouts, layout library, design presets | Implemented | BRD-004 | — (ADR-0014, owner 2026-10-21) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
 ## Planned slugs — no spec written yet (ADR-0010, ADR-0011)
 | Slug | Title | BRD | Place in the build order |
 |---|---|---|---|
-| `account-registration` | Registration, email verification, roles, the one-time owner claim | BRD-009 | After `owner-auth` |
-| `google-sign-in` | Google OpenID Connect sign-in into a `users` record | BRD-010 | After `account-registration` |
-| `credits-billing` | Buying credits; payment provider | BRD-011 | After `public-site-rendering`; needs a payment-provider ADR |
+| `platform-admin` | The owner's admin area (list, suspend, re-enable members) and platform settings | BRD-009, BRD-011 | After `ai-design-studio` (added 2026-10-20, ADR-0010 → Owner answers) |
+| `credits-billing` | Buying credits through Stripe; spending them on AI generations and domains | BRD-011 | After `platform-admin` (ADR-0012) |
 | `custom-domains` | Attaching a user's own domain; free portfolios on the platform domain | BRD-011 | After `credits-billing` |
 
 ## Daily Execution Log
+### 2026-10-21
+- `design-library` written from the owner's decision (ADR-0014: the AI arranges layouts as
+  validated data, never code; a layout library and presets keep them), `Ready` under the standing
+  authorisation, and implemented T01–T06: custom-layout schema and validator, the renderer,
+  library and presets in `design`, snapshot schema version 2, AI custom layouts with explore and
+  proposals as presets, and the CMS screens. `Implemented`.
+- Documentation audit after `ai-design-studio`: the architecture tree and summary, project
+  context, governance status, ownership index, the AI testing rule in `generate-tests.md`, and
+  memory brought up to date with the code. No code changed.
+- `ai-design-studio` revised for ADR-0010 and ADR-0012 (per-user monthly allowance, then
+  credits; refunds on platform faults), `Ready` under the standing authorisation, and implemented
+  T01–T10: proposal storage with one generation in flight, the generator port, stub and
+  environment table, prompt builder and parser, the service and allowance with startup recovery,
+  timeout and retry decorators, Ollama, Gemini (Interactions API) and OpenRouter adapters under
+  one contract suite, routes and OpenAPI 0.13.0, and the `/cms/ai` screen. `Implemented`.
+- Section specs: the template placeholders renamed to the `[Your …]` form and matched by the
+  shared `PLACEHOLDER_PATTERN`; the layout checks ran in the public-site journeys. All six
+  `Implemented`.
+- `publish-pipeline` revised (per-portfolio snapshots and pointer, ADR-0004 retention, ADR-0013
+  ports, template placeholders blocked), `Ready` and implemented T01–T09: snapshot repository
+  with the retention prune, contributors in `portfolio` / `identity` / `design`, canonical
+  hashing, nine rules, the pipeline (validate, persist, activate, prune, emit), history and
+  rollback, site revalidation over HTTP, OpenAPI 0.11.0, `/cms/publish`. `Implemented`.
+- `public-site-rendering` revised for ADR-0010 (portfolios at `<platform>/<slug>`, the platform
+  home at `/`, a sitemap list) and the owner's navigation and motion answers, `Ready` and
+  implemented T01–T08: the anonymous `public-site` API module (OpenAPI 0.12.0), the slug page
+  with per-slug tag caching and the revalidate route, the shell (nav with the mobile menu, skip
+  link, footer, anchor focus, fade-up), metadata and JSON-LD, robots and sitemap, the snapshot
+  version adapter and failure pages. E2E runs in its own build directory (`NEXT_DIST_DIR`) so it
+  works beside `pnpm dev`. `Implemented`.
+### 2026-10-20
+- The owner answered every open question in one session and asked for the rest of the project
+  to be built on one branch (`feat/full-build`), stopping only for a new decision. Recorded:
+  ADR-0004 (retention amendment), ADR-0005 and ADR-0006 (variant amendment) accepted; ADR-0012
+  (Stripe) and ADR-0013 (`publishing` owns its ports, which removes the map's two cycles)
+  accepted; owner answers appended to ADR-0010 and ADR-0011; BRD-001, -003, -004, -009, -010,
+  -011 updated; `design_reference.md` → Unknowns answered; standing authorisation to move specs
+  to `Ready` recorded in `governance.md`; new planned slug `platform-admin`. Build output and
+  symlinks untracked from git.
+- `account-registration` written (spec, plan, tasks, test cases), moved `Draft → Ready` under
+  the standing authorisation, and implemented: T01 (contracts, `plainText`, `users.role`,
+  `emailVerifiedAt`, the `one_owner` index, registrar ports), T02 (`OwnerClaimPolicy`,
+  `RegistrationService`, `AuthService` as session starter, login refuses unverified accounts,
+  reset verifies the email and checks the code purpose, `OWNER_REGISTRATION_SECRET`, seeder),
+  T03 (five routes, shared code-send limit, OpenAPI 0.5.0, route tests). `Implemented`.
+- `google-sign-in` written, moved to `Ready` under the standing authorisation, and implemented:
+  T01 (`googleSub`, optional password, `IGoogleLinker`, Redis OAuth state store), T02
+  (`OidcProvider` with `jose`, `LocalOidcIssuer` for tests), T03 (`GoogleSignInService`,
+  redirects-only controller, state cookie, Google variables all-or-nothing, `googleSignIn` in
+  registration options, OpenAPI 0.6.0). `Implemented`.
+- `section-engine` revised for ADR-0010 (provisioning from the template, slug, tenant isolation),
+  `Ready` under the standing authorisation, and implemented T01–T07: contracts primitives,
+  persistence, registry, `SectionService` and `PortfolioProvisioner`, routes API01–API06 with
+  `resolvePortfolio` (OpenAPI 0.7.0), `seed:all`, and the composer in `packages/sections`.
+  `Implemented`.
+- `cms-panel-shell` revised for ADR-0010/0011 (register, verify, Google, slug), `Ready` under the
+  standing authorisation, and implemented T01–T08: API client and hooks, auth screens, panel
+  frame, form kit, editor host, overview, live preview, and the browser E2E harness (generic
+  `SMTP_URL` mail strategy, ADR-0009 amended; Chromium in CI). `Implemented`.
+- `media-assets` built before `site-identity` (which validates against it): revised for
+  per-portfolio assets, `Ready` under the standing authorisation, implemented T01–T06 (GridFS
+  storage, sniffed types, streaming caps, provider-gated delete, `busboy`, OpenAPI 0.8.0,
+  `/cms/assets` with progress). `Implemented`.
+- `site-identity` revised (per-portfolio identity, account template), OQ1/OQ2 answered, `Ready`
+  under the standing authorisation, implemented T01–T07 (contracts, persistence, asset-checked
+  service, reference provider, routes, OpenAPI 0.9.0, seed step, `/cms/identity`). `Implemented`.
+- `design-theme` revised (two variants per section; per-portfolio design with the default at
+  revision 0; fonts and colours from the owner), `Ready` under the standing authorisation,
+  implemented (design-tokens package, API module and OpenAPI 0.10.0, `ThemeRoot` and fonts,
+  literal-ban lint rule, `/cms/design` with live contrast and preview). `Implemented`.
 ### 2026-10-19
 - `owner-auth.OQ1` resolved by the owner (a fixed `displayName`, `Owner`, as seed data); DoR
   re-run and passed; `owner-auth` moved `Draft → Ready` by the owner, then `In Progress`.

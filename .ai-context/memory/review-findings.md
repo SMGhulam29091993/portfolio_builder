@@ -116,3 +116,64 @@ the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in 
 **Finding:** ...
 **Resulting rule/check added:** ...
 -->
+
+### 2026-10-20 — account-registration.T01
+- **Fake threw where the real repository rejects.** `InMemoryUserRepository.updatePending` was
+  a non-async method returning `Promise.resolve`, so the owner-slot check threw synchronously;
+  the contract suite's `rejects` assertion caught it. Fixed by making the method `async`. Rule:
+  a fake method that can fail is `async`, so failure is always a rejected promise like the real
+  adapter's.
+
+### 2026-10-20 — account-registration.T02
+- **One-time-code lookups did not check the purpose.** `PasswordResetService.findRecord`
+  accepted any `otps` document a reference resolved to. Harmless while `password_reset` was the
+  only purpose; with `email_verification` added, a verification reference (whose code reached
+  the same inbox) could have completed a password reset or been resent as a reset code. Both
+  services now refuse a record of another purpose with `OTP_INVALID`; covered by AC12 tests in
+  both service specs.
+
+### 2026-10-20 — cms-panel-shell.T08 (axe, first run)
+- **Contrast and colour-only links on the overview.** axe reported `color-contrast` (Tailwind
+  `text-neutral-500` on the CMS's near-black surfaces is about 4.2:1, under 4.5:1) and
+  `link-in-text-block` (the public-address link in a sentence was distinguishable by colour
+  only). Fixed: secondary text uses `text-neutral-400`; in-text links are always underlined.
+  The axe journey (E2E11) now guards every CMS screen.
+
+### 2026-10-21 — ai-design-studio.T01
+**Finding:** Mongoose 9.11 deprecates the `new: true` option of `findOneAndUpdate()` (a runtime
+warning on every call: "Use `returnDocument: 'after'` instead"). `ProposalRepository` uses
+`returnDocument: 'after'`; the `design`, `identity`, `auth` (user), `portfolio` and `section`
+repositories still pass `new: true`. Behaviour is unchanged today, but the option will go in a
+later major.
+**Resulting rule/check added:** none yet — new repositories use `returnDocument: 'after'`; the
+existing five are switched when each is next touched, not as drive-by edits in another task.
+
+### 2026-10-21 — ai-design-studio.T02
+**Finding:** The first draft of `DesignGeneratorFactory` imported `STUB_MODEL` from the stub
+adapter's file — a concrete module reaching into a concrete adapter, which the self-review's
+"no concrete class imports another concrete class" item forbids. The container now hands the
+factory a `StubRegistration` (builder plus model name), as it hands it every other adapter.
+**Resulting rule/check added:** none — the lint boundary rules cover cross-module imports only;
+within a module this stays a self-review item.
+
+### 2026-10-21 — ai-design-studio.T02 (full-suite run)
+**Finding:** `owner-auth.CT03` "compareAndSet() resets the TTL" failed once in a full
+`pnpm test` run and passed alone three times and in the next full run. It sleeps 1.2 s twice
+against a real 2 s Redis TTL, leaving 0.8 s of margin, which a loaded machine can eat.
+**Resulting rule/check added:** none yet — left unchanged in this task (auth scope); if it
+fails again, widen the TTL and sleeps in proportion rather than retrying the test.
+
+### 2026-10-21 — design-library.T04
+**Finding:** the `design-valid` publish check required a catalogue variant for every visible
+section, so any design using a custom layout would have been blocked from publishing; the spec
+set did not foresee it. The check now accepts a `custom:` entry the draft resolved to a layout
+copy and names one that did not resolve.
+**Resulting rule/check added:** a new kind of design value is traced through every reader of
+`design.layout` (editor, publish rules, snapshot, site, preview) before its task is complete.
+
+### 2026-10-21 — design-library.T06 (full E2E runs)
+**Finding:** `site-identity.E2E01` failed once in four full runs (passed in the other three). It
+also cannot run twice against one database (`--repeat-each`): the second upload of
+`identity-cv.pdf` makes its text locator match two rows. Pre-existing; unrelated to this work.
+**Resulting rule/check added:** none yet — if it fails again, give the uploaded file a unique
+name per run, as `cms-ai` and `cms-design-library` do for their names.

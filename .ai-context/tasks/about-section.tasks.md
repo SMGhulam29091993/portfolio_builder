@@ -2,8 +2,9 @@
 ## Derived From
 .ai-context/plans/about-section.plan.md
 ## Sequence
-- [ ] about-section.T01 — Contract schema `about.ts` (conditional step limits), `AboutSectionDefinition`, container registration, `seed/data/sections/about.json` — Acceptance: AC1, AC2
-- [ ] about-section.T02 — Shared `SectionHeader` (derived number, eyebrow, `h2`, `aria-labelledby` wiring) — Acceptance: AC4
-- [ ] about-section.T03 — `about/bento.tsx` with `StatCard` and `ProcessCard`: bento at 1440, stacked at 390, adaptive stat grid, disabled-card handling — Acceptance: AC3, AC5, AC6, AC7
-- [ ] about-section.T04 — About editor: bio with counter, currently group, stats list, process group with steps list; register — Acceptance: AC8
-- [ ] about-section.T05 — Visual baselines at 1440 and 390, axe check — Acceptance: AC3
+- [x] about-section.T01 — Contract schema `about.ts` (conditional step limits), `AboutSectionDefinition`, container registration, `seed/data/sections/about.json` — Acceptance: AC1, AC2
+- [x] about-section.T02 — Shared `SectionHeader` (derived number, eyebrow, `h2`, `aria-labelledby` wiring) — Acceptance: AC4
+- [x] about-section.T03 — `about/bento.tsx` with `StatCard` and `ProcessCard`: bento at 1440, stacked at 390, adaptive stat grid, disabled-card handling — Acceptance: AC3, AC5, AC6, AC7
+- [x] about-section.T04 — About editor: bio with counter, currently group, stats list, process group with steps list; register — Acceptance: AC8
+- [x] about-section.T05 — Visual baselines at 1440 and 390, axe check — Acceptance: AC3 — runs in the public-site journeys (`public-site-rendering`), where the page renders at real 1440 / 390 widths; the CMS preview is a scaled frame
+  - Done 2026-10-21 in `apps/web/e2e/public-site.spec.ts`: VR01/VR02 assert the page layout at 1440 and 390 and attach full-page screenshots for the owner; E2E11 runs axe at both widths with no serious or critical violation; E2E05 covers anchor focus.

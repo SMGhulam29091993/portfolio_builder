@@ -2,7 +2,19 @@
 ## Spec ID
 design-theme
 ## Status
-Draft
+Implemented
+- `In Progress → Implemented` on 2026-10-20: T01–T04, T06, T07 completed (T05 dropped, see
+  below), each with a DoD self-check line in `state/completed.md`.
+- `Ready → In Progress` on 2026-10-20 with `design-theme.T01` started.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`). ADR-0006 accepted (with the variant
+  amendment); OQ1 and OQ2 resolved by the owner.
+- Revised 2026-10-20, before the spec was ever `Ready`: (1) ADR-0006's amendment — two variants
+  per section, the reference layout first; (2) ADR-0010 — one design per portfolio; with none
+  stored, API01 answers `DEFAULT_DESIGN` (the reference design: the owner's "design only"
+  template) at `revision: 0`, and the first API02 (`expectedRevision: 0`) creates it, so no
+  seeder is needed (T05 dropped; AC1 is met by the revision-0 default); (3) the font
+  allow-list and default colours from the owner's answers (below).
 ## Linked BRD
 .ai-context/BRD.md#BRD-003
 ## Intent
@@ -30,17 +42,33 @@ Canonical owner of `DesignSpec` (`ownership_index.md`). Defined in `packages/des
   "layout": { "hero": "VariantId", "about": "VariantId", "work": "VariantId",
               "experience": "VariantId", "stack": "VariantId", "contact": "VariantId" } }
 ```
-**Variant catalogue (version 1 — one variant per section, each the reference layout):**
-| Section | Variant id | Reference layout |
+**Variant catalogue (version 1 — two variants per section; the first is the reference layout and
+the fallback for an unknown id; ADR-0006 → Variant catalogue):**
+| Section | Variant id | Layout |
 |---|---|---|
-| `hero` | `split-code-card` | Text left, code card right, marquee below |
-| `about` | `bento` | Bio + currently, 2 × 2 stats, process card |
-| `work` | `featured-grid` | One full-width featured card, then a three-column grid |
-| `experience` | `timeline` | Dates left of a vertical line, details right |
-| `stack` | `chip-groups` | Three-column chip groups, then education and certifications |
-| `contact` | `glow-card` | One centred card with a rising glow |
-**Font allow-list:** each `FontId` belongs to exactly one role (`sans`, `display`, `mono`) and
-maps to a bundled `next/font` loader. Its contents are blocked on OQ1.
+| `hero` | `split-code-card` | Reference: text left, code card right, marquee below |
+| `hero` | `centered` | Centred text and buttons, code card below, marquee below |
+| `about` | `bento` | Reference: bio + currently, 2 × 2 stats, process card |
+| `about` | `stacked` | Bio, currently, stats in one row, process steps as a list |
+| `work` | `featured-grid` | Reference: one full-width featured card, then a three-column grid |
+| `work` | `list` | Every project as a full-width row, featured first |
+| `experience` | `timeline` | Reference: dates left of a vertical line, details right |
+| `experience` | `cards` | One card per role in a two-column grid |
+| `stack` | `chip-groups` | Reference: three-column chip groups, then education and certifications |
+| `stack` | `columns` | Chip groups as one column of labelled rows |
+| `contact` | `glow-card` | Reference: one centred card with a rising glow |
+| `contact` | `minimal` | Left-aligned heading and links, no card |
+**Font allow-list (owner, 2026-10-20):** each `FontId` belongs to exactly one role and maps to a
+`next/font/google` loader; the first in each role is the reference default.
+| Role | Fonts |
+|---|---|
+| `sans` | `inter` (Inter), `manrope` (Manrope), `space-grotesk` (Space Grotesk) |
+| `display` | `instrument-serif` (Instrument Serif, italic), `playfair-display` (Playfair Display, italic), `fraunces` (Fraunces, italic) |
+| `mono` | `jetbrains-mono` (JetBrains Mono), `ibm-plex-mono` (IBM Plex Mono), `fira-code` (Fira Code) |
+**Default colours (owner, 2026-10-20 — the samples accepted; unsampled tokens the nearest
+neutral that passes the contrast rule):** background `#09090b`, surface `#111113`, surfaceRaised
+`#151517`, border `#27272a`, text `#ededef`, textMuted `#a1a1aa`, accent `#c0f83c`, onAccent
+`#09090b`. Radius `xl`; glow, dot grid on; motion `subtle`.
 **Contrast rule** (WCAG relative-luminance ratio, computed by code):
 | Pair | Minimum |
 |---|---|
@@ -122,15 +150,12 @@ maps to a bundled `next/font` loader. Its contents are blocked on OQ1.
 | design-theme.UT07 | Edge | Hex `#ABCDEF`, `#abc`, `#aabbccdd` | Normalised; rejected; rejected |
 | design-theme.UT08 | AC1 | Default design through the validator | Valid |
 ## Open Questions
-1. **OQ1 — Fonts.** The three font families of the reference design cannot be read from the
-   export. Name them (or approve substitutes) so the allow-list and the default theme can be
-   defined. Until then `fonts` has no seedable values.
-2. **OQ2 — Exact colours.** Background `#09090b` is reliable. Accent (≈ `#c0f83c`), border and
-   muted-text values are sampled from a JPEG and approximate. Supply exact values or accept the
-   samples.
+1. ~~**OQ1 — Fonts.**~~ Resolved 2026-10-20 (owner): Inter, Instrument Serif, JetBrains Mono.
+2. ~~**OQ2 — Exact colours.**~~ Resolved 2026-10-20 (owner): accent `#c0f83c`; samples accepted.
 ## Explicitly Out of Scope
 - Generating designs — `ai-design-studio`.
-- Additional layout variants beyond the six reference ones — each new variant is its own spec.
+- Variants beyond the twelve above — each new variant is its own change to this catalogue.
+- The renderers themselves — each section spec builds both of its variants.
 - Per-section colour overrides; light/dark mode switching; custom CSS.
 - Arbitrary font URLs or uploads.
 ## Non-Functional Constraints (from constitution.md)

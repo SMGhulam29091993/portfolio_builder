@@ -3,6 +3,9 @@
 owner-auth
 ## Status
 Implemented
+- Extended 2026-10-20 by `account-registration` (not a revision of this spec): API01 answers 403
+  `EMAIL_NOT_VERIFIED` for a right password on an unverified account; `user` gains `role`;
+  API07 also verifies the email; one-time-code lookups check the code's purpose.
 - `In Progress → Implemented` on 2026-10-19: T01–T09 completed, each with a DoD self-check line
   in `state/completed.md`.
 - DoR self-check: 2026-10-19, pass (re-run after the 2026-10-18 revision; OQ1 resolved by the

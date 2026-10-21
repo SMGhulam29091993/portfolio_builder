@@ -5,7 +5,8 @@
  * Order per route follows `architecture.md` → Request lifecycle: [limiter →] validate → guard →
  * controller. The Origin allow-list runs before all of it, mounted by the app factory on the
  * whole of `/auth` and `/cms` (`owner-auth.T06`). The password-reset routes (API05–API07) joined
- * with `owner-auth.T08`.
+ * with `owner-auth.T08`; registration and verification (`account-registration.API01`–`API05`)
+ * with `account-registration.T03`.
  */
 import { EMAIL_MAX_LENGTH } from '@portfolio/contracts';
 import type { Request, RequestHandler } from 'express';
@@ -16,8 +17,12 @@ import type { IAuthGuard } from './auth.interface.js';
 import {
   forgotPasswordRequestSchema,
   loginRequestSchema,
+  registerRequestSchema,
   resendOtpRequestSchema,
   resetPasswordRequestSchema,
+  verificationCodeRequestSchema,
+  verificationResendRequestSchema,
+  verifyEmailRequestSchema,
 } from './auth.types.js';
 
 /** Stands in for `req.ip` when Express cannot tell the client address. */
@@ -46,8 +51,9 @@ export interface AuthRateLimiters {
   /** Failed sign-ins on API01, keyed by `loginAttemptKey` (`owner-auth.AC3`). */
   readonly login: RequestHandler;
   /**
-   * Code sends on API05 and API06 together, per client IP (spec → Password reset: send limit).
-   * One instance on both routes, so the two share one count.
+   * Code sends per client IP (spec → Password reset: send limit). One instance on every route
+   * that emails a code — `owner-auth.API05`/`API06` and `account-registration.API02`/`API04`/
+   * `API05` — so they share one count (`account-registration.AC14`).
    */
   readonly codeSend: RequestHandler;
 }
@@ -93,6 +99,37 @@ export function createAuthRouter(
         '/auth/password/reset',
         validate(resetPasswordRequestSchema),
         controller.resetPassword,
+      )
+      // Registration (`account-registration`): none is guarded. Every route that emails a code
+      // spends the shared send limit before validation, as the password-reset sends do.
+      .route('get', '/auth/registration/options', controller.registrationOptions)
+      .route(
+        'post',
+        '/auth/register',
+        limiters.codeSend,
+        validate(registerRequestSchema),
+        controller.register,
+      )
+      // Guessing is bounded by the five attempts per code, as on the reset.
+      .route(
+        'post',
+        '/auth/register/verify',
+        validate(verifyEmailRequestSchema),
+        controller.verifyEmail,
+      )
+      .route(
+        'post',
+        '/auth/verification/request',
+        limiters.codeSend,
+        validate(verificationCodeRequestSchema),
+        controller.requestVerificationCode,
+      )
+      .route(
+        'post',
+        '/auth/verification/resend',
+        limiters.codeSend,
+        validate(verificationResendRequestSchema),
+        controller.resendVerificationCode,
       )
   );
 }

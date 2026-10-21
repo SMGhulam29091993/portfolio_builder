@@ -6,7 +6,7 @@ Module `apps/api/src/modules/identity/`, module file pattern.
 | Class | Layer | Implements | Depends on (interfaces) |
 |---|---|---|---|
 | `IdentityController` | Controller | — | `IIdentityService` |
-| `IdentityService` | Service | `IIdentityService`, `IIdentityReader` | `IIdentityRepository`, `IAssetLookup` (from `assets`) |
+| `IdentityService` | Service | `IIdentityService`, `IIdentityReader` | `IIdentityRepository`, `IAssetLookup` (from `assets`), `IIdentityAccounts` (display name and email for the template; the container adapts `auth`'s reader) |
 | `IdentityRepository` | Repository | `IIdentityRepository` | Mongoose model |
 | `IdentityAssetReferenceProvider` | Adapter | `IAssetReferenceProvider` (owned by `assets`) | `IIdentityRepository` |
 | `IdentitySeeder` | Seed | `ISeeder` | `IIdentityRepository`, seed-data loader |
@@ -18,7 +18,7 @@ Module `apps/api/src/modules/identity/`, module file pattern.
 ## Data Model
 **`identities`** — `_id`, `portfolioId` (unique index), `revision`, `data` (the Identity shape),
 `updatedAt`.
-**Seed:** `apps/api/src/seed/data/identity.json` from `design_reference.md` plus the two résumé
+**Seed:** `apps/api/src/seed/data/identity.ts` (a step of `seed:all`) from `design_reference.md` plus the two résumé
 URLs (OQ1). `resume.assetId` is seeded `null`; the résumé PDF is uploaded through the CMS.
 ## Constitution Check
 - [x] No new datastore introduced without ADR

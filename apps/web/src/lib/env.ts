@@ -11,6 +11,11 @@
  */
 import { z } from 'zod';
 
+/** Blank (`NAME=` copied from the example) reads as "not set", not as an invalid empty value. */
+function optional<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
+}
+
 const envSchema = z.object({
   /**
    * Base URL of `apps/api` as reached from the Next.js server. The `/api/v1` rewrite proxies
@@ -18,7 +23,30 @@ const envSchema = z.object({
    * → API access).
    */
   API_INTERNAL_URL: z.url({ protocol: /^https?$/ }),
+  /**
+   * The platform's public origin (`public-site-rendering`): canonical URLs, Open Graph URLs and
+   * the sitemap are built from it. Read on the server only, although `NEXT_PUBLIC_*` names
+   * mark it as safe to show.
+   */
+  NEXT_PUBLIC_SITE_URL: z.url({ protocol: /^https?$/ }),
+  /**
+   * Shared with the API's publish step (`public-site-rendering.API03`). A secret: compared in
+   * constant time, never logged. Unset, the revalidate route refuses every call.
+   */
+  REVALIDATE_SECRET: optional(z.string().min(32).max(200)),
 });
+
+/**
+ * Where Next.js writes its build and dev files, from `NEXT_DIST_DIR` (default `.next`). Read by
+ * `next.config.ts` at load, so unlike `loadEnv` it needs no runtime variable — `next typegen`
+ * and the E2E dev server (which uses `.next-e2e` to run beside `pnpm dev`) both load it.
+ */
+export function distDirFrom(source: Readonly<Record<string, string | undefined>> = process.env): string {
+  const value = source.NEXT_DIST_DIR;
+  if (value === undefined || value === '') return '.next';
+  if (!/^\.next[\w-]*$/.test(value)) throw new WebEnvValidationError(['NEXT_DIST_DIR']);
+  return value;
+}
 
 /** The validated, read-only configuration object. */
 export type WebEnv = Readonly<z.infer<typeof envSchema>>;

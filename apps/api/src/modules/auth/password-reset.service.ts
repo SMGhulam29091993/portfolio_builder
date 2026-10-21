@@ -27,6 +27,7 @@ import type {
   ISessionStore,
   IUserPasswordWriter,
   IUserReader,
+  IUserRegistrar,
 } from './auth.interface.js';
 import type {
   ForgotPasswordRequest,
@@ -37,7 +38,7 @@ import type {
   ResetPasswordRequest,
 } from './auth.types.js';
 
-/** The one purpose a code can serve today; a code for one purpose never completes another. */
+/** This service's purpose; a code for another purpose never completes a reset. */
 const PURPOSE: OtpPurpose = 'password_reset';
 
 /** Identifier length: 32 random bytes, 64 hex characters (spec → Password reset). */
@@ -84,6 +85,8 @@ export class PasswordResetService implements IPasswordResetService {
     private readonly mail: IMailSender,
     private readonly random: ISecureRandom,
     private readonly clock: IClock,
+    /** Marks the email verified on a completed reset (`account-registration.AC13`). */
+    private readonly registrar: IUserRegistrar,
   ) {}
 
   async requestCode({ email }: ForgotPasswordRequest): Promise<OtpIssuedResponse> {
@@ -150,6 +153,8 @@ export class PasswordResetService implements IPasswordResetService {
     );
     // The user was removed after the code was issued; nothing is left to reset.
     if (!updated) throw new OtpInvalidError();
+    // The code reached the address, which proves it as well as a verification code would.
+    await this.registrar.markEmailVerified(record.userId, this.clock.now());
 
     await this.otps.deleteById(record.id);
     await this.references.delete(reference);
@@ -165,7 +170,9 @@ export class PasswordResetService implements IPasswordResetService {
     const identifier = await this.references.resolve(reference);
     if (identifier === null) throw new OtpInvalidError();
     const record = await this.otps.findByIdentifier(identifier);
-    if (!record) throw new OtpInvalidError();
+    // A verification code's reference never completes a reset, nor is it resent as one
+    // (`account-registration.AC12`): same error as an unknown reference.
+    if (record?.purpose !== PURPOSE) throw new OtpInvalidError();
     return record;
   }
 

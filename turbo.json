@@ -2,28 +2,57 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "env": ["API_INTERNAL_URL"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "API_INTERNAL_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "REVALIDATE_SECRET"
+      ]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.ai-context/architecture.md"],
-      "outputs": ["coverage/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.ai-context/architecture.md"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "test:e2e": {
-      "dependsOn": ["^build", "@portfolio/api#build"],
+      "dependsOn": [
+        "^build",
+        "@portfolio/api#build"
+      ],
       "cache": false
     },
     "drift": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "dev": {
       "cache": false,
@@ -38,9 +67,38 @@
         "GMAIL_USER",
         "GMAIL_APP_PASSWORD",
         "MAIL_FROM",
+        "SMTP_URL",
         "OWNER_EMAIL",
         "OWNER_PASSWORD",
+        "OWNER_REGISTRATION_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_REDIRECT_URL",
+        "GOOGLE_ISSUER",
+        "WEB_REVALIDATE_URL",
+        "REVALIDATE_SECRET",
+        "AI_PROVIDER",
+        "AI_MODEL",
+        "GEMINI_API_KEY",
+        "GEMINI_BASE_URL",
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_BASE_URL",
+        "OLLAMA_BASE_URL",
+        "AI_TIMEOUT_MS",
+        "AI_MAX_OUTPUT_TOKENS",
         "API_INTERNAL_URL"
+      ]
+    },
+    "@portfolio/web#typecheck": {
+      "dependsOn": [
+        "^build",
+        "@portfolio/web#build"
+      ]
+    },
+    "@portfolio/web#lint": {
+      "dependsOn": [
+        "^build",
+        "@portfolio/web#build"
       ]
     }
   }

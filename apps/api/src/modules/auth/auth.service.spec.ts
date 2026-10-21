@@ -20,7 +20,7 @@ import {
   SequenceSecureRandom,
 } from '../../testing/index.js';
 import { JwtTokenIssuer } from './adapters/jwt-token-issuer.js';
-import { SessionExpiredError } from './auth.errors.js';
+import { EmailNotVerifiedError, SessionExpiredError } from './auth.errors.js';
 import { AuthService } from './auth.service.js';
 import type { SessionCookies, SignedInSession, User } from './auth.types.js';
 import { SessionAuthorizer } from './session-authorizer.service.js';
@@ -64,6 +64,7 @@ beforeEach(async () => {
     email: 'owner@example.test',
     passwordHash: await hasher.hash(PASSWORD),
     displayName: 'Owner',
+    emailVerifiedAt: new Date(),
   });
   // Seeding is not part of any case under test.
   hasher.verifyCalls = 0;
@@ -87,6 +88,7 @@ describe('AuthService.login', () => {
       id: owner.id,
       email: owner.email,
       displayName: owner.displayName,
+      role: 'member',
     });
     // 256-bit refresh token, 128-bit jti, base64url without padding.
     expect(signedIn.tokens.refreshToken).toMatch(/^[\w-]{43}$/);
@@ -137,6 +139,44 @@ describe('AuthService.login', () => {
     expect((wrong as Error).message).toBe((unknown as Error).message);
     expect(hasher.verifyCalls).toBe(2);
     await expect(sessions.get(owner.id)).resolves.toBeNull();
+  });
+
+  it('account-registration.UT06 / AC9 — an unverified account is refused only after a correct password', async () => {
+    const pending = await users.create({
+      email: 'pending@example.test',
+      passwordHash: await hasher.hash(PASSWORD),
+      displayName: 'Pending',
+    });
+
+    await expect(
+      service.login({ email: pending.email, password: PASSWORD }),
+    ).rejects.toBeInstanceOf(EmailNotVerifiedError);
+    await expect(
+      service.login({ email: pending.email, password: 'wrong password' }),
+    ).rejects.toBeInstanceOf(UnauthenticatedError);
+    await expect(sessions.get(pending.id)).resolves.toBeNull();
+  });
+
+  it('google-sign-in.AC10 — a Google-only account answers like a wrong password', async () => {
+    const googleOnly = await users.create({
+      email: 'google.only@example.test',
+      displayName: 'Google Only',
+      googleSub: 'sub-only',
+      emailVerifiedAt: new Date(),
+    });
+
+    const result = service.login({ email: googleOnly.email, password: PASSWORD });
+
+    await expect(result).rejects.toBeInstanceOf(UnauthenticatedError);
+    // Verified against the decoy, so the work matches a wrong password.
+    expect(hasher.verifyCalls).toBe(1);
+  });
+
+  it('account-registration.AC7 — startFor() mints and stores a session like a sign-in', async () => {
+    const signedIn = await service.startFor(owner);
+
+    expect(signedIn.user).toMatchObject({ id: owner.id, role: 'member' });
+    await expect(sessions.get(owner.id)).resolves.toMatchObject({ jti: signedIn.tokens.jti });
   });
 
   it('hashes the decoy password once and reuses it for every unknown email', async () => {
@@ -353,6 +393,7 @@ describe('AuthService.me', () => {
       id: owner.id,
       email: owner.email,
       displayName: owner.displayName,
+      role: 'member',
     });
   });
 

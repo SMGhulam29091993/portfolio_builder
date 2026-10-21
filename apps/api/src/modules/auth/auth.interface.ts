@@ -24,7 +24,11 @@ import type {
   NewUser,
   OtpIssue,
   OtpIssuedResponse,
+  OAuthState,
   OtpRecord,
+  PendingUserUpdate,
+  RegisterRequest,
+  RegistrationOptionsResponse,
   ResendOtpRequest,
   ResetPasswordRequest,
   SessionCookies,
@@ -32,6 +36,10 @@ import type {
   SessionTokens,
   SignedInSession,
   User,
+  UserRole,
+  VerificationCodeRequest,
+  VerificationResendRequest,
+  VerifyEmailRequest,
 } from './auth.types.js';
 
 /** Looks users up. Used by sign-in, refresh, `me` and the password-reset request. */
@@ -42,12 +50,148 @@ export interface IUserReader {
   findById(id: string): Promise<User | null>;
 }
 
-/** Creates users. Used by the owner seeder only — there is no sign-up. */
+/** Creates users. Used by registration (`account-registration`) and the development seeder. */
 export interface IUserCreator {
   /**
-   * @throws {ConflictError} When a user with the same email already exists.
+   * @throws {ConflictError} `USER_EXISTS` when a user with the same email already exists;
+   *   `OWNER_EXISTS` when `role` is `owner` and an owner already exists.
    */
   create(user: NewUser): Promise<User>;
+}
+
+/**
+ * The writes registration and verification make to an existing account
+ * (`account-registration.T01`).
+ */
+export interface IUserRegistrar {
+  /**
+   * Replaces the password hash and display name (and the role, when given) of an account whose
+   * email is **not yet verified** (`account-registration.AC3`). Conditional in one update, so a
+   * verification landing in between is never overwritten.
+   *
+   * @returns The updated user, or `null` when no unverified account has this id.
+   * @throws {ConflictError} `OWNER_EXISTS` when `role` is `owner` and another owner exists.
+   */
+  updatePending(id: string, update: PendingUserUpdate): Promise<User | null>;
+  /**
+   * Sets `emailVerifiedAt` when it is unset; an already-verified account keeps its first date.
+   *
+   * @returns `false` when no user has this id.
+   */
+  markEmailVerified(id: string, at: Date): Promise<boolean>;
+}
+
+/** The Google link on `users` (`google-sign-in` → Resolving the user). */
+export interface IGoogleLinker {
+  /** The user linked to this Google subject id. */
+  findByGoogleSub(sub: string): Promise<User | null>;
+  /**
+   * Links the Google subject to an account that has no link yet, and sets `emailVerifiedAt`
+   * when it is unset — Google reported the email verified (`google-sign-in.AC3`).
+   *
+   * @returns `false` when no user has this id or it is already linked (to any subject).
+   */
+  linkGoogle(id: string, sub: string, verifiedAt: Date): Promise<boolean>;
+}
+
+/**
+ * The Google flow's state between its two requests (`google-sign-in` → Flow; ADR-0008: Redis
+ * for the `auth` module only).
+ */
+export interface IOAuthStateStore {
+  /** Stores `value` under `state` with the store's TTL. */
+  put(state: string, value: OAuthState): Promise<void>;
+  /** Returns and deletes the value in one step, so a callback can never be replayed. */
+  take(state: string): Promise<OAuthState | null>;
+}
+
+/** What the authorization redirect carries (`google-sign-in` → Flow, step 1). */
+export interface OidcAuthorizationRequest {
+  readonly state: string;
+  readonly nonce: string;
+  /** `BASE64URL(SHA-256(code_verifier))` — PKCE S256. */
+  readonly codeChallenge: string;
+}
+
+/** The verified identity an ID token carried (`google-sign-in` → Flow, step 4). */
+export interface OidcIdentity {
+  /** The issuer's stable subject id. */
+  readonly sub: string;
+  /** Lower-cased. */
+  readonly email: string;
+  /** Whether the issuer reports the email as verified. */
+  readonly emailVerified: boolean;
+  /** The display name claim, when present. Untrusted text: cleaned before it is stored. */
+  readonly name?: string;
+}
+
+/**
+ * The OpenID Connect provider — Google (ADR-0011). Chosen by the container from configuration:
+ * `OidcProvider` when configured, `DisabledOidcProvider` otherwise. No provider-specific type or
+ * error crosses this port.
+ */
+export interface IOidcProvider {
+  /** `false` for the disabled provider; read by the registration options (`googleSignIn`). */
+  isEnabled(): boolean;
+  /**
+   * The authorization endpoint URL with every parameter of the flow.
+   *
+   * @throws {ServiceUnavailableError} Not configured (503).
+   * @throws {UpstreamError} The issuer's discovery document could not be read (`provider: "google"`).
+   */
+  authorizationUrl(request: OidcAuthorizationRequest): Promise<string>;
+  /**
+   * Exchanges the code (with the PKCE verifier) and verifies the ID token: signature against
+   * the issuer's keys, `iss`, `aud`, expiry and `nonce`.
+   *
+   * @throws {ServiceUnavailableError} Not configured (503).
+   * @throws {UpstreamError} The exchange failed or the ID token did not verify (`provider: "google"`).
+   */
+  exchange(code: string, codeVerifier: string, expectedNonce: string): Promise<OidcIdentity>;
+}
+
+/** The redirect that starts a Google sign-in, and the state its cookie must carry. */
+export interface GoogleSignInStart {
+  readonly redirectUrl: string;
+  readonly state: string;
+}
+
+/** What the callback hands the service. */
+export interface GoogleCallback {
+  /** Google's `error` parameter, when it sent one (the user cancelled). */
+  readonly error?: string;
+  readonly code?: string;
+  readonly state?: string;
+  /** The `google-state` cookie the browser carried. */
+  readonly cookieState?: string;
+}
+
+/** Google sign-in (`google-sign-in.API01`, `API02`). */
+export interface IGoogleSignInService {
+  /**
+   * Mints `state`, the PKCE verifier and the nonce, stores them and builds the redirect.
+   *
+   * @throws {GoogleSignInError} `google_unavailable` or `google_failed`.
+   */
+  start(): Promise<GoogleSignInStart>;
+  /**
+   * Checks the state, exchanges the code, resolves the user and starts their session.
+   *
+   * @throws {GoogleSignInError} With the reason the redirect carries.
+   */
+  complete(callback: GoogleCallback): Promise<SignedInSession>;
+}
+
+/** Reads, writes and clears the `google-state` cookie (`google-sign-in` → API01). */
+export interface IOAuthStateCookie {
+  read(req: Request): string | undefined;
+  write(res: Response, state: string): void;
+  clear(res: Response): void;
+}
+
+/** Whether the owner slot is taken (`account-registration` → Roles and the owner claim). */
+export interface IOwnerLookup {
+  ownerExists(): Promise<boolean>;
 }
 
 /** Replaces a password hash. Used by the password reset only. */
@@ -263,6 +407,63 @@ export interface IAuthService {
    * @throws {UnauthenticatedError} The user no longer exists.
    */
   me(userId: string): Promise<AuthUser>;
+}
+
+/**
+ * Starts the one session a user may hold, exactly as a sign-in does (three new values, the
+ * Redis session replaced). Implemented by `AuthService`, whose `login` uses it, so a verified
+ * registration signs in through the same code path (`account-registration.AC7`).
+ */
+export interface ISessionStarter {
+  startFor(user: User): Promise<SignedInSession>;
+}
+
+/** The owner claim rule (`account-registration` spec → Roles and the owner claim). */
+export interface IOwnerClaimPolicy {
+  /** `true` while no owner exists and a secret is configured. */
+  isOpen(): Promise<boolean>;
+  /**
+   * The role a registration gets: `member` when no secret was given; `owner` when the claim is
+   * open and the secret matches.
+   *
+   * @throws {OwnerClaimRefusedError} A secret was given and the claim is closed or it differs.
+   */
+  decide(ownerSecret: string | undefined): Promise<UserRole>;
+}
+
+/**
+ * Registration and email verification (`account-registration.API01`–`API05`). Business rules
+ * only; the controller sets the cookies of the session `verify` starts.
+ */
+export interface IRegistrationService {
+  options(): Promise<RegistrationOptionsResponse>;
+  /**
+   * Creates or refreshes an unverified account and emails a code; a decoy for a verified
+   * address (`account-registration.AC1`–`AC5`).
+   *
+   * @throws {OwnerClaimRefusedError} The owner secret was refused (403).
+   * @throws {ConflictError} `OWNER_EXISTS` — the claim lost a race (409).
+   * @throws {UpstreamError} The mail provider refused the send (502).
+   * @throws {ServiceUnavailableError} Mail disabled outside production, or Redis down (503).
+   */
+  register(request: RegisterRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Proves the email and signs the user in (`account-registration.AC7`, `AC8`).
+   *
+   * @throws {OtpInvalidError} Unknown reference, wrong purpose, attempts used up or wrong code.
+   * @throws {OtpExpiredError} The code has expired.
+   */
+  verify(request: VerifyEmailRequest): Promise<SignedInSession>;
+  /** A fresh code for an unverified address; a decoy otherwise (`account-registration.AC10`). */
+  requestCode(request: VerificationCodeRequest): Promise<OtpIssuedResponse>;
+  /**
+   * Replaces the code a reference names (`account-registration.AC11`).
+   *
+   * @throws {OtpInvalidError} The reference names no verification code, or the account is
+   *   already verified.
+   * @throws {RateLimitedError} Less than 60 seconds since the last send.
+   */
+  resend(request: VerificationResendRequest): Promise<OtpIssuedResponse>;
 }
 
 /**

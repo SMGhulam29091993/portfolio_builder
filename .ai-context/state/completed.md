@@ -167,3 +167,419 @@
   changed, so OpenAPI stays 0.4.0. One self-review finding, kept by design
   (`memory/review-findings.md`, 2026-10-19). With T09, `owner-auth` is `Implemented`. CI not
   yet run on this branch.
+- account-registration.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck,
+  lint, contracts 54 tests, API auth 282 tests against real mongod and Redis). `plainText` /
+  `cleanPlainText` in `packages/contracts/src/common`; registration payloads; `role` on
+  `AuthUser` (additive); `users.role`, `users.emailVerifiedAt`, the `one_owner` partial unique
+  index; `IUserRegistrar`, `IOwnerLookup` on `UserRepository` and the in-memory fake, both in
+  CT10 (AC3, AC6 cases). Self-review finding fixed: the fake threw synchronously on a refused
+  owner slot instead of rejecting (`memory/review-findings.md`, 2026-10-20).
+- account-registration.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck,
+  lint, API auth + seed 327 tests). `OwnerClaimPolicy` (constant-time compare via
+  `core/crypto` `constantTimeEquals`), `RegistrationService`, `AuthService` as `ISessionStarter`
+  with the `EMAIL_NOT_VERIFIED` check, `EmailNotVerifiedError` / `OwnerClaimRefusedError`;
+  `PasswordResetService` verifies the email on reset and refuses another purpose's reference
+  (found while designing AC12: before this, a verification reference would have completed a
+  reset — `memory/review-findings.md`, 2026-10-20); `OWNER_REGISTRATION_SECRET` in `env.ts`,
+  `.env.example`, `turbo.json`, `architecture.md`; seeder creates a verified owner (or member)
+  and verifies an existing unverified account (`updated` outcome). Deviation from the plan:
+  no separate `SessionStarter` class — the plan was corrected.
+- account-registration.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local:
+  `pnpm turbo run build typecheck lint test drift` — 20 of 20 tasks; the web build with
+  `API_INTERNAL_URL` set as CI does). Routes API01–API05 in `auth.routes.ts` with the one
+  shared code-send limiter, controller handlers, container wiring, OpenAPI 0.5.0
+  (`LoginForbidden`, `RegistrationForbidden`, `OwnerExists`, `role` on `AuthUser`), the two
+  pinned route-table tests, `registration.routes.spec.ts` (IT01–IT15 against real mongod and
+  Redis, recorded mail). With T03, `account-registration` is `Implemented`. CI not yet run on
+  this branch.
+- google-sign-in.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck, lint,
+  API auth + seed 359 tests). `users.googleSub` (unique, sparse), optional `passwordHash`;
+  `IGoogleLinker` (`findByGoogleSub`, `linkGoogle`) on `UserRepository` and the fake, in CT10;
+  `IOAuthStateStore` → `RedisOAuthStateStore` (`GETDEL`) and `InMemoryOAuthStateStore` with
+  contract suite CT01; sign-in treats a passwordless account like a wrong password (AC10).
+- google-sign-in.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local: typecheck, lint,
+  `oidc-provider.spec.ts` 13 tests against `LocalOidcIssuer`). `IOidcProvider` with
+  `OidcProvider` (discovery once per process, PKCE authorization URL, code exchange, `jose`
+  remote-JWKS verification of signature, `iss`, `aud`, expiry and nonce; every failure
+  `UPSTREAM_FAILED` provider `google`) and `DisabledOidcProvider` (503); test-only
+  `LocalOidcIssuer` with generated RS256 keys and fault injection. Recorded late (the records
+  step of the T02 commit stopped at a lint failure; fixed in the T03 records commit).
+- google-sign-in.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (local:
+  `pnpm turbo run build typecheck lint test drift` — 20 of 20). `GoogleSignInService` (state
+  check, single-use stored state, user resolution: subject → verified email link → new verified
+  member), `GoogleAuthController` (redirects only, targets from `WEB_ORIGIN`, unexpected errors
+  logged by class name), `OAuthStateCookie` (`SameSite=Lax`), `createGoogleAuthRouter` with one
+  20-per-15-minutes limiter, `pkceChallenge` in `core/crypto`, Google variables in `env.ts`
+  (all-or-nothing, issuer default), `googleSignIn` in registration options, OpenAPI 0.6.0,
+  `google-sign-in.service.spec.ts` and `google-sign-in.routes.spec.ts` against the real
+  provider and `LocalOidcIssuer`. Spec deviation recorded in the spec: the limiter answers a
+  JSON 429 like every limiter, not a redirect. With T03, `google-sign-in` is `Implemented`.
+- section-engine.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate: build, typecheck,
+  lint, test, drift). Spec revised for ADR-0010 before it was ever `Ready` (provisioning, slug,
+  tenant isolation, AC15–AC18, API06), DoR passed, `Ready` under the standing authorisation.
+  `packages/contracts/src/sections`: primitives (`safeUrlSchema` https/mailto only,
+  `emphasisHeadingSchema`, `sectionMetaSchema`, `metricSchema`, `tagSchema`, `itemIdSchema`,
+  `listItem`, `linkTargetSchema`) and engine schemas for API01–API06 with the slug rules and
+  reserved list; 27 new schema tests.
+- section-engine.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `portfolios`
+  (`userId`, `slug` unique) and `sections` (`{ portfolioId, type }` unique, `data` Mixed with
+  `minimize: false`) models; `PortfolioRepository` (create with `PORTFOLIO_EXISTS` /
+  `SLUG_TAKEN`, conditional `updateOrder` / `updateSlug`), `SectionRepository` (scoped by
+  portfolio, conditional `update`, insert-only `createMissing` via `$setOnInsert` upserts);
+  in-memory fakes; contract suite CT02 on both (AC2, AC3, AC9, AC12, AC15–AC17 at the store).
+- section-engine.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `ISectionDefinition`,
+  `ISectionRegistry`, `IIdGenerator`, `IUserDirectory`; `SectionRegistry` (duplicate, malformed
+  type id, defaults failing their schema, orderable-but-not-hideable all fail construction,
+  naming the type); `CryptoIdGenerator` (Node `crypto`, no `nanoid`); test-only
+  `FakeSectionDefinition` / `FakeHeroDefinition`. UT09, UT10.
+- section-engine.T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `SectionService`
+  (read draft with hidden defaults at revision 0 for a missing type, update with schema
+  validation paths relative to `data`, generic list-item id assignment and duplicate refusal,
+  visibility with `SECTION_NOT_HIDEABLE`, reorder as an exact permutation; every missed write
+  `REVISION_CONFLICT` with `currentRevision`), `PortfolioProvisioner` (get-or-create from the
+  template, `initialSlug`, suffix on a taken slug, race-safe, `changeSlug` with the reserved
+  list), `portfolio.mappers.ts`. UT01–UT08, UT13–UT16; 51 portfolio tests.
+- section-engine.T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PortfolioController`,
+  `portfolio.routes.ts` (API01–API06, each `requireOwner` → `resolvePortfolio`),
+  `ResolvePortfolioMiddleware` (sets `req.portfolio`; provisions on first use), container
+  wiring with `SECTION_DEFINITIONS` (empty until the section specs) and a test-only
+  `sectionDefinitions` override, the user directory adapted from `auth` in the container (no
+  module edge), OpenAPI 0.7.0 (portfolio tag, six operations, `RevisionConflict`,
+  `SectionConflict`, `SlugConflict`, `NotFound`), `portfolio.routes.spec.ts` (IT02–IT10,
+  IT12, IT14–IT17 incl. tenant isolation between two signed-in users).
+- section-engine.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PortfolioSeeder`
+  (the development account's portfolio, slug from `seed/data/portfolio.ts`), `SectionSeeder`
+  (reference content from `seed/data/sections/index.ts`, validated against each schema and
+  required to carry fixed item ids, template defaults for the rest, insert-only), `SeedAll`
+  orchestrator, `SeedDataError`, `buildSeeders().all`, `seed-all.ts` and `pnpm seed:all` (API
+  and root), README. Both seeders refuse in production. IT11 and AC12 in
+  `content-seeders.spec.ts`.
+- section-engine.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate).
+  `packages/sections`: `SectionRendererRegistry` (type + variant, `default` fallback,
+  duplicate refusal, `variantsOf`), `composeSections` (hero first, order, hidden dropped,
+  consecutive numbering, unlisted visible types appended), `PortfolioPage` (pure; unknown types
+  skipped and reported through `onUnknownType`); React 19.3.1 as a peer; tests render with
+  `react-dom/server` (UT11, UT12, UT17). With T07, `section-engine` is `Implemented`.
+- cms-panel-shell.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010/0011 before it was ever `Ready` (register, verify, Google, slug; AC16–AC20; AC11 data
+  and the editing E2E deferred to `publish-pipeline` / `about-section`, recorded in the spec),
+  `Ready` under the standing authorisation. Pinned and installed TanStack Query, react-hook-form,
+  @hookform/resolvers, Zustand, @axe-core/playwright (ADR-0007). `lib/api/client.ts`
+  (`ApiClient`, `ApiError`, in-lock retry → one refresh → one retry, `SESSION_EXPIRED` never
+  refreshes, `/auth/**` never refreshes), `lib/api/context.tsx`, `auth.ts` and `portfolio.ts`
+  hooks, `lib/cms/navigation.ts` (`safeNext`, `loginUrl`), CMS providers in the `/cms` layout.
+  UT01, UT02, UT03, UT08 — 33 web unit tests.
+- cms-panel-shell.T02 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate incl. `next build`).
+  `/cms/login` (generic error, 429 countdown, `EMAIL_NOT_VERIFIED` → send code → code entry,
+  Google button and `?error=` notices, `?notice=` messages, sanitised `next`), `/cms/register`
+  (owner key only while the claim is open, inline `OWNER_CLAIM_REFUSED` / `OWNER_EXISTS`),
+  `/cms/verify`, `/cms/forgot-password`; shared `VerifyCodeStep`, `GoogleButton`, CMS UI kit
+  (`TextInput`, `Button`, `Notice`, `TextLink`), `useCountdown`, `lib/cms/messages.ts`
+  (UT11). Deviation: no `proxy.ts` — the session cookies' `Path=/api/v1` keeps them off `/cms`
+  page requests, so AC1's redirect is client-side (spec Status). Found and fixed: the client
+  must refresh on `/auth/me`. `ownerSecret`'s contract changed to a transform inside
+  `optional()` so its input type is a string (behaviour unchanged, 81 contract tests).
+- cms-panel-shell.T03 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate incl. `next build`).
+  `(panel)` route group: `PanelShell` (loads `owner-auth.API04`; a dead session goes to sign-in
+  through the client's session-loss handler; loading and retryable error states; sign-out;
+  `beforeunload` guard while anything is dirty), `CmsNav` (Overview, sections in portfolio
+  order via `lib/cms/nav.ts`, fixed areas), `GuardedLink` (AC8 confirm), `PublishStatusSlot`
+  (filled by `publish-pipeline`), `Toasts` (polite live region), mount points for identity,
+  design, assets, AI, publish; `lib/cms/ui-store.ts` (Zustand: toasts, dirty registry, preview
+  viewport). `noindex` stays on the `/cms` layout (AC12).
+- cms-panel-shell.T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Form kit in
+  `components/cms/form/`: `TextField`, `TextAreaField` (counters from the schema),
+  `SwitchField`, `ListField` (add, confirmed remove, drag and Move up / Move down, Add/Remove
+  disabled at the schema's max/min), `EmphasisHeadingField`, `MetricListField`,
+  `TagListField`, `LinkTargetField`; `FormSchemaProvider` / `useFieldLimits` over
+  `lib/cms/schema-limits.ts` (`fieldLimits` reads zod v4 limits through `plainText` pipes, so
+  the CMS never restates a number). UT07, UT12.
+- cms-panel-shell.T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Editor registry
+  (`createEditorRegistry`, empty `SECTION_EDITORS` in `sections/_editors/registry.ts` until the
+  section specs), `SectionEditorHost` (loading / error / missing / no-editor states; form with
+  the section's contract schema; Save only when dirty and valid; save with `expectedRevision`;
+  reset to the stored data with server ids; success toast; 400 mapped onto fields with focus on
+  the first; 409 `ConflictDialog` with Load latest / Overwrite with mine / Keep editing; network
+  failure with Retry; dirty state registered for the guard), `/cms/sections/[type]`. UT04, UT05.
+  The editing E2E (E2E05–E2E07) runs with `about-section`, the first registered editor.
+- cms-panel-shell.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Overview:
+  `AddressCard` (public address from the CMS's own origin + slug; slug change with the contract
+  schema, inline `SLUG_TAKEN`, conflict notice), section list in page order (non-orderable
+  first, no switch or arrows for it), visibility switch (`API04`), Move up / Move down and drag
+  reorder (`API05`), loading / error with Retry; conflicts refetch the draft and say so.
+  `lib/cms/order.ts` (`moveBy`, `moveTo`) unit-tested.
+- cms-panel-shell.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `PreviewPane`
+  (draft + this section's unsaved values via `buildPreviewModel`, debounced 250 ms; renders
+  `PortfolioPage` with the shared `rendererRegistry` from `packages/sections` — the new
+  `catalog.ts` the section specs fill; 1440 / 390 frames scaled to the pane with a
+  `ResizeObserver`; hidden behind a toggle below 1280 px), `SectionErrorBoundary` (the one class
+  component, which React requires for boundaries; resets when the data changes),
+  `useDebouncedValue`; `PortfolioPage` gained `wrapSection`. UT06; preview E2E (E2E08) runs with
+  `about-section`.
+- cms-panel-shell.T08 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; `pnpm test:e2e` 10
+  passed locally in Chromium). `SmtpMailSender` (`SMTP_URL`, ahead of Gmail; `GmailMailSender`
+  now a subclass; in CT06), `SMTP_URL` in `env.ts`, `.env.example`, `turbo.json`, architecture,
+  ADR-0009 amended; E2E harness: local SMTP server + mailbox endpoint, `seed:all` before the API,
+  one worker; `e2e/cms-auth.spec.ts` (E2E01–E2E03, E2E10–E2E12, E2E14, E2E15, registration);
+  CI installs Playwright Chromium. axe found contrast and colour-only-link issues on the overview
+  (fixed; `memory/review-findings.md`). With T08, `cms-panel-shell` is `Implemented`.
+- media-assets.T01–T05 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010 (per-portfolio assets, AC13), `Ready` under the standing authorisation, built before
+  `site-identity` (swap in `status.md`). Contracts (`ASSET_KINDS`, `ASSET_RULES`,
+  `assetReferenceSchema`); `assets` model (unique `{ portfolioId, sha256, kind }`),
+  `AssetRepository`; `IFileStorage` → `GridFsFileStorage` (hashes while streaming, removes
+  partial objects) and `InMemoryFileStorage`, contract suite CT01; `MagicByteContentTypeDetector`,
+  streaming size cap, `sanitizeFilename`; `AssetService` (dedupe, race-safe, provider-gated
+  delete failing closed, `IAssetLookup`, `IAssetReader`); `AssetController` with `busboy`,
+  routes API01–API04, container wiring (empty provider list + test-only extras), OpenAPI 0.8.0.
+  UT01–UT08, IT01–IT11, AC13. No `FileStorageFactory` (one backend; recorded in the task).
+- media-assets.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 12 passed).
+  `/cms/assets`: one upload control per kind with its rule text from `ASSET_RULES`, progress
+  through `XMLHttpRequest` (refresh-and-retry once on 401 via the shared client), 413 / 415
+  explained with the limit / accepted types, file list, Delete disabled with its reason while in
+  use; `lib/api/assets.ts`, `lib/cms/assets.ts` (unit-tested), `e2e/cms-assets.spec.ts` (E2E01,
+  E2E02). With T06, `media-assets` is `Implemented`.
+- site-identity.T01–T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised for
+  ADR-0010 (per-portfolio identity, the account template at revision 0, AC11), OQ1/OQ2 resolved
+  by the owner, `Ready` under the standing authorisation. `identitySchema` (https socials, one
+  per platform, monogram rule, no phone); `identities` model and `IdentityRepository`;
+  `IdentityService` (template from the account via a container-adapted `IIdentityAccounts`;
+  asset kinds checked through `IAssetLookup` within the portfolio, all paths in one 400);
+  `IdentityAssetReferenceProvider` registered with `assets` (deleting the résumé in use → 409
+  `draft identity`); controller, routes API01–API02, OpenAPI 0.9.0; `IdentitySeeder` +
+  `seed/data/identity.ts` as a `seed:all` step. UT01–UT07, IT02–IT08, AC11 isolation.
+- site-identity.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 13 passed).
+  `/cms/identity`: one form over the identity with the contract schema, socials list with
+  platform select, availability switch, footer tags, SEO fields, résumé and social-image selects
+  listing only uploaded assets of that kind (`SelectField`, new in the form kit), template notice
+  at revision 0, the shell's save / 400 / 409 behaviour; `lib/api/identity.ts`;
+  `e2e/cms-identity.spec.ts` (E2E01). CMS forms expose `data-dirty` / `data-valid` (pitfall
+  recorded). With T07, `site-identity` is `Implemented`.
+- design-theme.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). Spec revised (ADR-0006
+  variant amendment: two variants per section; ADR-0010: per-portfolio design, default at
+  revision 0, no seeder — T05 dropped; fonts and colours from the owner's answers), `Ready`
+  under the standing authorisation. `packages/design-tokens`: `designSpecSchema` (hex
+  normalised), `VARIANT_CATALOGUE`, `FONT_ALLOW_LIST`, `contrastRatio` / `checkContrast` /
+  `CONTRAST_PAIRS`, `validateDesign` (shape, font roles, variants, contrast — all issues with
+  paths), `toCssVariables`, `DEFAULT_DESIGN` (passes its own validator). UT01–UT03, UT06–UT08.
+- design-theme.T02–T04 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `designs` model,
+  `DesignRepository`; `DesignValidator` (wraps `validateDesign` — the CMS's own check),
+  `DesignService` (default at revision 0, create / update / reset, default validated at
+  construction so a bad default fails startup; implements reader, writer, validator ports for
+  `ai-design`); controller, routes API01–API03 (catalogue in API01), OpenAPI 0.10.0; contracts
+  envelopes. UT04, UT05, IT01–IT06, CT01 (validator vs HTTP on 13 designs).
+- design-theme.T06 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate). `ThemeRoot` /
+  `themeStyle` in `packages/sections` (tokens as CSS custom properties through `style`,
+  `data-motion`); renderer registry falls back to each type's first registered variant (its
+  reference layout); `apps/web/src/lib/fonts.ts` (`next/font/google` loaders for all nine
+  allowed fonts, variables on `<html>`); `globals.css` Tailwind theme keys with neutral
+  placeholders, `@source` for `packages/sections`, motion gating for `motion: none` and
+  reduced motion; `portfolio/no-style-literals` lint rule + `@portfolio/eslint-config/sections`
+  config enabled for `packages/sections` (UT10 rule test), plugin types (`plugin/index.d.ts`).
+- design-theme.T07 — 2026-10-20 — DoD self-check: 2026-10-20, pass (gate; E2E 15 passed).
+  `/cms/design`: colour pickers + hex fields, live contrast list with ratios (Save disabled
+  while any fails), font selects per role, radius / motion / effects, a variant select per
+  section, reset to reference (confirmed), conflict dialog, live preview in the edited design;
+  `designResolver` (form validation through `validateDesign`), `lib/api/design.ts`; the preview
+  pane renders through `ThemeRoot` with the saved design and its variants. E2E01, E2E02. With
+  T07, `design-theme` is `Implemented`.
+- hero-section.T01, about-section.T01, work-showcase.T01, experience-timeline.T01,
+  stack-credentials.T01, contact-section.T01 — 2026-10-20 — DoD self-check: 2026-10-20, pass
+  (gate). The six specs revised together (ADR-0010 template defaults, ADR-0006 two variants,
+  identity through the page context, layout assertions instead of pixel baselines) and moved to
+  `Ready` / `In Progress` under the standing authorisation. Payload schemas in
+  `packages/contracts/src/sections/` (every array object a `listItem`; each rule on the
+  narrowest schema so all problems report together — found while testing about AC2, zod skips
+  an object's refinements once a field failed); `httpsUrlSchema`, `identifierSchema`,
+  `reportDuplicates` primitives; six `*SectionDefinition` classes with bracketed template
+  defaults, registered in `SECTION_DEFINITIONS`; reference seed data for all six (the Second
+  Brain placeholder kept). CT01 over every definition, each AC1 and AC2 —
+  `section-definitions.spec.ts` (22 tests).
+- Section renderers — hero-section.T02–T04, about-section.T02–T03, work-showcase.T02–T03,
+  experience-timeline.T02–T03, stack-credentials.T02–T03, contact-section.T02–T03 — 2026-10-20 —
+  DoD self-check: 2026-10-20, pass (gate). `packages/sections/src/shared` (`SectionContext`,
+  `SectionShell` / `SectionHeader` with derived numbers and `aria-labelledby`, emphasis heading,
+  `Card`, `Glow`, `DotGrid`, icons, availability badge, social rows, `CtaButton` moving focus to
+  the target heading, CSS `Marquee` with the duplicate half `aria-hidden`); twelve renderers (both
+  variants per section, registered in `catalog.ts`, reference first); `dates.ts`
+  (`orderEntries`, `formatMonth`, `machineMonth`); `CopyEmailChip` (clipboard, live region,
+  selection fallback); `mailtoHref`; marquee keyframes and effect switches in `globals.css`;
+  the CMS preview passes the identity. 28 renderer tests over static markup. Implementation
+  names differ from the task lines (e.g. `FeaturedCard`, `orderEntries`), same scope.
+- Section editors — hero-section.T05, about-section.T04, work-showcase.T04,
+  experience-timeline.T04, stack-credentials.T04, contact-section.T04 — 2026-10-21 — DoD
+  self-check: 2026-10-21, pass (gate; E2E 20 passed). Six editors registered in
+  `SECTION_EDITORS` (hero text/list switch per code-card value, optional secondary button; about
+  stats and steps; work exclusive featured switch and metric hint; experience month/year
+  pickers and "Current role"; stack groups, education and certifications; contact read-only
+  identity email with a link); form kit gains `StringListField`, `YearField`,
+  `MonthYearField`; `MetaFields`. `e2e/cms-editing.spec.ts` runs the editing journeys
+  E2E05–E2E09 handed on by `cms-panel-shell`. The layout tasks (hero T06, others T05) stay
+  in progress until the public site renders the page at real widths.
+- Publish pipeline — publish-pipeline.T01–T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass
+  (gate; E2E01–E2E03 pass). Spec revised for ADR-0010 / ADR-0004 retention / ADR-0013 and the
+  `[Your …]` template placeholders (AC20, AC21). `SnapshotRepository` (insert, reads, delivery
+  update, retention prune; AC14 enumerated); `PublishedPointerStore` (compare-and-swap, revision
+  untouched), `SectionsDraftContributor`, `IdentityDraftContributor`, `DesignDraftContributor`,
+  `DesignPublishCheck`; content walker, `CanonicalHasher`, `SnapshotBuilder`, `DraftAssembler`;
+  nine rule classes and `PublishRuleRegistry`; `PublishPipeline` with five steps (prune added for
+  AC20); `PublishingService`; `SiteRevalidationListener` with HTTP / no-op clients under the
+  dev-bypass guard; routes, OpenAPI 0.11.0, `SnapshotAssetReferenceProvider`; `/cms/publish`
+  with grouped issues, confirmation, history and "Make live". Deviations in the test cases file
+  (IT13 accepts either 409, IT14 at service level).
+- Public site — public-site-rendering.T01–T08 — 2026-10-21 — DoD self-check: 2026-10-21, pass
+  (gate; E2E 35 passed). Spec revised for `<platform>/<slug>`, `/` as the platform home and the
+  owner's motion answers. API: `public-site` module over `ISnapshotReader` and `IAssetReader`
+  only (architecture test checks named imports), ETag / 304, public limiter, API04 for the
+  sitemap, OpenAPI 0.12.0. Web: `PublishedSource` (per-slug tag, 300 s fallback, last good copy),
+  `adaptSnapshot`, `/<slug>` page with not-found and error pages, `/` home, `/api/revalidate`
+  (constant-time secret, `{ expire: 0 }`), robots and sitemap, metadata and JSON-LD; shell in
+  `packages/sections/src/shell`. Fixed on the way: duplicate dialog title ids on `/cms/publish`
+  and a keyboard-unreachable scrolling code card (both found by the E2E run). Deviations in the
+  spec's Status.
+- Section layout checks — hero-section.T06, about-section.T05, work-showcase.T05,
+  experience-timeline.T05, stack-credentials.T05, contact-section.T05 — 2026-10-21 — DoD
+  self-check: 2026-10-21, pass. Run as `public-site-rendering` VR01/VR02 and E2E11 at real
+  widths; screenshots are attached to the test results for the owner's review.
+- ai-design-studio.T01 — 2026-10-21 — DoD self-check: 2026-10-21, pass. Contracts in
+  `packages/contracts/src/ai-design`; `design_proposals` model with the history index and the
+  partial unique index on `pending`; `ProposalRepository` (conditional status changes, the
+  once-only refund flag, the monthly free count, pending list for recovery) with 11 tests on
+  real MongoDB, including the concurrent-insert race (IT14 at the storage layer). Checked
+  locally: API typecheck, lint, 890 tests with the coverage floor, OpenAPI drift (no route
+  change). Not wired into `container.ts` yet: that is T09.
+- ai-design-studio.T02 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `IDesignGenerator`,
+  `IProviderHealth`, `GenerationRequest` / `GenerationResult`; `StubDesignGenerator` with
+  `stub.fixture.json` (a valid light design that differs from the default);
+  `DesignGeneratorFactory` implementing the environment table, with adapters as registrations
+  (none yet: T06–T08 add one entry each; a named provider with no entry refuses on
+  `AI_PROVIDER`). Run in `buildContainer` after mail and revalidation, so production refuses to
+  start (IT10, three process boots). `env.ts` reads `AI_PROVIDER`, `AI_MODEL`,
+  `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` (example and `turbo.json` updated).
+  Checked locally: typecheck, lint, 924 API tests with the coverage floor, drift (no route).
+- ai-design-studio.T03 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `DesignPromptBuilder`
+  (catalogue, fonts, contrast rules, scope, visible sections, the current design on request;
+  input type with no field for a name, email or section text; the one repair turn) with the
+  answer's JSON Schema derived from the `DesignSpec` zod schema, narrowed to the catalogue and
+  closed for strict modes. `DesignSpecParser` (first JSON object, markup and URL refusal in any
+  string or key, scope merge, `IDesignValidator`, `CONTRAST_FAILED` only when every issue is a
+  contrast pair). UT03–UT06, UT14. Deviation, harmless: an object inside a JSON array is found
+  and then fully validated, rather than refused. Checked locally: typecheck, lint, 951 API tests
+  with the coverage floor, drift (no route).
+- ai-design-studio.T04 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `AiDesignService`
+  (create with charge then background run, one repair attempt, timeout / error mapping, crash
+  recorded as `PROVIDER_ERROR`, get, list with cursor, apply claimed-then-written through
+  `IDesignWriter` with rollback, discard, provider info, `recoverInterrupted`);
+  `MonthlyGenerationAllowance` (owner unlimited, monthly UTC free count, credits, once-only
+  refunds); `DefaultAiPricing`, `EmptyGenerationWallet`; `InterruptedProposalRecovery`;
+  `core/background` runner, `IStartupHook`, `CreditsRequiredError`; ports `ISectionTypeLister`,
+  `IUserRoleReader`, `IAiPricing`, `IGenerationWallet` owned by `ai-design`. CT04 contract suite
+  (real repository and `InMemoryProposalRepository`). Deviations in the plan (recovery hook
+  dependency; `deletePending`). Container and `main.ts` wiring of the hook and the service is
+  T09. Checked locally: typecheck, lint, 1013 API tests with the coverage floor (service 100%
+  lines, 87% branches), drift (no route).
+- ai-design-studio.T05 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `TimeoutDesignGenerator`
+  (aborts the inner call at `timeoutMs`, rejects with `ProviderTimeoutError`) and
+  `RetryDesignGenerator` (bounded attempts, exponential backoff, no retry for
+  `ProviderRejectedError`, non-upstream errors or an aborted caller), both on the new
+  `core/time` `IDelay` with `ManualDelay` in tests; UT09, UT10. One real bug found and fixed
+  (the timeout lost its own race; `memory/pitfalls.md`). CT02 (decorators in the generator
+  contract suite) joins with the suite in T06. Checked locally: typecheck, lint, 1026 API tests
+  with the coverage floor.
+- ai-design-studio.T06 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `OllamaDesignGenerator`
+  (`/api/chat`, `format` = the schema, system turn first, `/api/tags` health) on the new
+  `IHttpClient` port and `FetchHttpClient` (4xx other than 429 → `ProviderRejectedError`;
+  network, abort, 429, 5xx, non-JSON → `UpstreamError`; bodies never logged). The shared
+  contract suite `design-generator.contract.spec.ts`: CT01 (Ollama, stub), CT02 (Ollama through
+  retry and timeout), CT03 (health), over `RecordedProviderServer` on the loopback with responses
+  in the documented shape (`testing/ai-design/recordings`; shaped from the docs, not captured
+  live — MT01 is the live run). Registered in `container.ts`. Checked locally: typecheck, lint,
+  1052 API tests with the coverage floor, drift (no route).
+- ai-design-studio.T07 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `GeminiDesignGenerator`
+  on the Interactions API (key in `x-goog-api-key`, `system_instruction`, the conversation as
+  `user_input` / `model_output` steps, top-level `response_format` with the schema; text from
+  the last `model_output` step; health `GET /models`). Multi-turn input re-read from the API
+  reference before building (`memory/ai-provider-apis.md`). `GEMINI_BASE_URL` (default the
+  documented base) read by `env.ts`, in the example, `turbo.json` and `architecture.md`. Added to
+  CT01–CT03 and registered in the container. Checked locally: typecheck, lint, 1079 API tests.
+- ai-design-studio.T08 — 2026-10-21 — DoD self-check: 2026-10-21, pass.
+  `OpenRouterDesignGenerator` (`/chat/completions`, bearer key in a header, strict
+  `json_schema` response format named by the request, `provider.require_parameters`, text from
+  `choices[0].message.content`, health `GET /models`); `OPENROUTER_BASE_URL` with the documented
+  default (env, example, `turbo.json`, `architecture.md`). Added to CT01–CT03 and registered;
+  all three providers and the stub now pass one suite. Checked locally: typecheck, lint, 1105
+  API tests.
+- ai-design-studio.T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `AiDesignController`,
+  `ai-design.routes.ts` (API01–API06; the AI rate limit on API01), container wiring (factory →
+  retry → timeout; prompt builder, parser, allowance with the seeded prices and the empty
+  wallet; the section lister and role reader adapted from `portfolio` and `auth`),
+  `designGenerator` test override, `Container.startupHooks` run by `main.ts` before listening
+  (the lifecycle now accepts an async listener builder), `AI_TIMEOUT_MS` (60 000 ms default,
+  bounded), OpenAPI 0.13.0 with every `$ref` resolving. Route tests IT01–IT09, IT11–IT15 plus
+  400, 403, 404 isolation and 429 (IT10 is the process boot in `main.spec.ts`). Provisional AI
+  rate limit recorded in the plan. Checked locally: typecheck (every workspace), lint, 1123 API
+  tests with the coverage floor, drift (45 routes).
+- ai-design-studio.T10 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `/cms/ai`
+  (`AiScreen`): provider badge and allowance before submitting, the prompt form on the API's own
+  schema, polling while pending, the ready proposal in the shell's `PreviewPane` at both widths
+  without applying, Apply (with the draft revision) and Discard, failures in the server's plain
+  language, history; "Not enough credits" with a link to the new `/cms/credits` placeholder.
+  Hooks in `lib/api/ai-design.ts`, display rules in `lib/cms/ai-studio.ts` (unit-tested). E2E01–
+  E05 (E05 added: four widths and axe). Checked locally: web typecheck, lint, 101 unit tests,
+  `next build`; the full Playwright suite (39 journeys before E05, then E05).
+- `ai-design-studio` spec — 2026-10-21 — `In Progress → Implemented` (every task completed with
+  its DoD line above).
+- CMS wording pass — 2026-10-21 (owner request, outside the task lists): plain labels and a hint
+  on every section-editor, identity, design and AI Studio field; the form kit's group fields
+  (`ListField`, `StringListField`, emphasis heading, metrics, tags, link target, year fields)
+  accept `hint`; the AI Studio says when the development stub is answering and previews applied
+  proposals. Checked: web typecheck, lint, 101 unit tests, 40 E2E journeys (axe included), build.
+- design-library.T01 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `packages/design-tokens`
+  `layout.ts`: fixed-depth `customLayoutSchema`, `LAYOUT_BLOCKS` (existing components' options
+  only), `validateCustomLayout` (section, styles, columns pairing, every block exactly once),
+  `isCustomLayoutRef` / `customLayoutId`; `validateDesign` accepts `custom:<id>`. UT01, UT02.
+- design-library.T02 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `packages/sections`:
+  `CustomLayoutRenderer` (the section frame, stacks and columns from fixed class strings, each
+  block an existing component), `PortfolioPage.customLayouts`; `TimelineEntries`, `JobCards`,
+  `SkillCards`, `SkillRows` extracted from their variants with no change in output. UT03; 44
+  sections tests, web typecheck and unit tests pass.
+- design-library.T03 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `design` module:
+  `design_layouts` and `design_presets` (models, repositories, contract suite CT01 with
+  in-memory fakes), `DesignLibraryService` (validated layout saves, in-use refusal, presets,
+  limits 50 / 20), `DesignService` checks every `custom:` entry against the library (AC2),
+  routes API01–API06, OpenAPI 0.14.0, ports `ILayoutLibraryWriter` / `IPresetWriter` for
+  `ai-design`. Checked: typecheck, lint, 1143 API tests with the coverage floor, drift (51).
+- design-library.T04 — 2026-10-21 — DoD self-check: 2026-10-21, pass. Snapshot schema version
+  2: `design.customLayouts` copies, resolved by `DesignDraftContributor` and cloned by the
+  builder; the `design-valid` publish check accepts a resolved `custom:` entry and names one that
+  did not resolve (found during the task: it would otherwise have blocked every custom layout);
+  the web adapter reads version 2 (unreadable layouts fall back) and version 1 unchanged; the
+  site passes the copies to `PortfolioPage`. Checked: 1146 API tests, 103 web unit tests, 41 E2E.
+- design-library.T05 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `ai-design`: answer
+  schema with a nullable fixed-depth tree per section (no recursion), instructions listing every
+  section's blocks, `explore` on requests and stored on proposals (default false for older
+  ones); the parser validates custom layouts per section (scope theme drops them; invalid ones go
+  to the repair attempt); apply checks the revision first, saves layouts through
+  `ILayoutLibraryWriter`, writes the design naming them and records the references on the
+  proposal; API07 saves a proposal as a preset. OpenAPI 0.15.0. Checked: lint, 1159+ API tests.
+- design-library.T06 — 2026-10-21 — DoD self-check: 2026-10-21, pass. CMS: the preview draws
+  library layouts a design names and a proposal's own; the Design screen offers library layouts
+  in each section's layout choice, a My layouts panel (delete, with the in-use explanation) and
+  Saved designs (presets: save current, apply with confirmation over unsaved edits, delete); the
+  AI Studio has Explore new layouts, names the sections a proposal re-arranged, and Save as
+  preset. The stub fixture carries a custom Work layout. E2E01, E2E02; 43 journeys, 103 web unit
+  tests, web build, 1159 API tests.
+- `design-library` spec — 2026-10-21 — `In Progress → Implemented`.
+- cms-panel-shell.T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass. AC21: the signed-out
+  screens send a browser with a usable session on to `next` or `/cms` (`SignedOutOnly` in the
+  `(auth)` layout). UT13 and E2E16 added; E2E10 now waits for the form before pressing Tab.
+  Verified: web typecheck, lint, 111 unit tests, the full E2E suite (44 journeys; the auth spec
+  run five times in a row), and a production build (the static auth pages prerender behind the
+  Suspense fallback). No API change, so no OpenAPI change.
+- design-library.T07 — 2026-10-21 — DoD self-check: 2026-10-21, pass. The answer schema carries
+  custom layout trees only for an explore request, one per visible section (2 025 bytes without
+  explore, was 11 169); `AI_MAX_OUTPUT_TOKENS` (env, `.env.example`, `turbo.json`,
+  `architecture.md`) is sent by OpenRouter as `max_tokens`; a failed provider call logs
+  `design provider call failed` with its `HTTP` status or error type, never in the user message.
+  UT04 added. Verified: API typecheck, lint, 1174 API tests with coverage. No route change, so no
+  OpenAPI change. Open: exploring all six sections on Gemini (`state/blockers.md`).

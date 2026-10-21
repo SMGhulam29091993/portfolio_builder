@@ -17,6 +17,7 @@ const IGNORED_PATHS = [
   '**/dist/**',
   '**/build/**',
   '**/.next/**',
+  '**/.next-e2e/**',
   '**/.turbo/**',
   '**/coverage/**',
   '**/next-env.d.ts',

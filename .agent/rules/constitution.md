@@ -70,10 +70,10 @@ stop, raise it, and fix the spec.
   provider URLs are configuration, never literals in code.
 - **Security hardening backlog** (kept current, not aspirational):
   - `helmet()` — ✅ built `monorepo-foundation.T05` (`createSecurityHeaders`), mounted `monorepo-foundation.T06` (`app.ts`)
-  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; login limiter ✅ `owner-auth.T06` (5 failed sign-ins per IP + email in 15 min); code-send limiter ✅ `owner-auth.T08` (5 per hour per IP, API05 and API06 together); AI and public limiters ⬜ their own specs. Per-client keys need Express `trust proxy` set for the deployment target ⬜ (`memory/review-findings.md`, 2026-10-18)
+  - Rate limiters (auth, AI, public) — `RateLimiterFactory` ✅ `monorepo-foundation.T05`; `/health` limiter ✅ `monorepo-foundation.T06`; login limiter ✅ `owner-auth.T06` (5 failed sign-ins per IP + email in 15 min); code-send limiter ✅ `owner-auth.T08` (5 per hour per IP, API05 and API06 together); AI limiter ✅ `ai-design-studio.T09` (10 generation requests per 10 min per client, provisional); public limiter ✅ `public-site-rendering.T01`. Per-client keys need Express `trust proxy` set for the deployment target ⬜ (`memory/review-findings.md`, 2026-10-18)
   - Origin allow-list on state-changing requests — ✅ `owner-auth.T06` (`OriginAllowListMiddleware`, every non-GET under `/api/v1/auth` and `/api/v1/cms`)
   - Input sanitisation for free-text fields — ⬜ `section-engine.T03`
-  - File upload MIME / size validation before storage — ⬜ `media-assets.T03`
+  - File upload MIME / size validation before storage — ✅ `media-assets.T03`–`T05` (magic-byte detection, streaming size cap, SVG and unknown types rejected)
   - Encryption at rest for sensitive fields — not applicable yet: the only secrets at rest are
     the password hash (argon2id), SHA-256 refresh-token hashes in Redis and bcrypt one-time-code
     hashes (`owner-auth`)
@@ -145,8 +145,9 @@ is real — no interface with a single trivial implementation and no second impl
   `auth` module's sessions and one-time-code references only (ADR-0008). Gemini, OpenRouter and
   Ollama for design generation. Gmail SMTP through nodemailer for mail, behind `IMailSender`
   (ADR-0009). Google OpenID Connect for sign-in only (ADR-0011). No other datastore, queue,
-  cache or external service without an ADR — that includes any other use of Redis, S3 and any
-  payment provider (BRD-011).
+  cache or external service without an ADR — that includes any other use of Redis and S3.
+  Stripe, through Checkout and a signature-verified webhook, for buying credits only
+  (ADR-0012).
 
 ## Non-Functional Baselines
 - **Status:** any target still unset reads "not yet defined" rather than a soft adjective.

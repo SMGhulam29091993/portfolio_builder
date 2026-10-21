@@ -37,7 +37,7 @@ answered with a different product (2026-10-18):
 - **Seeder.** The `OWNER_EMAIL` / `OWNER_PASSWORD` seeder (`owner-auth.T09`) creates a local
   account for development and tests only and refuses to run when `NODE_ENV=production`.
 
-### Mechanics (*Proposed* — fixed by the `account-registration` spec, not here)
+### Mechanics (fixed by the `account-registration` spec, implemented 2026-10-20)
 - `users.role` (`owner` | `member`) and `users.emailVerifiedAt`; a unique partial index on
   `{ role: 1 }` where `role = "owner"`, so the database itself rejects a second owner when two
   registrations race.
@@ -47,6 +47,20 @@ answered with a different product (2026-10-18):
 - Email verification reuses the one-time-code machinery of `owner-auth` with a new `purpose`.
 - Registration answers identically for a new and an already-registered email (no enumeration),
   behind the Origin allow-list and a rate limiter.
+
+### Owner answers, 2026-10-20 (close the questions this ADR left open)
+- **What the owner role may do.** Three things a member may not: (1) an admin area that lists
+  every account and suspends or re-enables a member — a suspended member cannot sign in and
+  their published portfolio stops being served; (2) unlimited credits — the owner is never
+  charged for a custom domain or an AI generation; (3) platform settings — the owner edits the
+  platform-wide values (credit packs, prices, allowances) that would otherwise be constants.
+- **The owner claim** is made only through the registration form with the secret key. Google
+  sign-in never creates the owner (ADR-0011).
+- **A free portfolio's address** is a path on the platform's domain: `<platform>/<slug>`, where
+  `slug` is the portfolio's unique slug. The platform's own origin is configuration.
+- **Template.** Every new user's portfolio starts from the reference design (theme and layout)
+  with empty placeholder content; the reference content is seed data for the owner's
+  development account only.
 
 ## Consequences
 - BRD-001 and BRD-002 are revised; BRD-009 (registration), BRD-010 (Google sign-in) and BRD-011
@@ -67,3 +81,9 @@ answered with a different product (2026-10-18):
 - Open, recorded in `state/blockers.md`: what the owner role may do that a member may not; the
   payment provider and what credits buy; the shape of a free portfolio's address on the
   platform domain; whether the reference design becomes a template for every user.
+
+## Owner answers, 2026-10-21
+- **Suspension takes a portfolio offline.** While the owner has a member suspended, that
+  member's `/<slug>` answers the same 404 as an unpublished portfolio, and signing in is refused.
+  Re-enabling restores both; no data is deleted (`platform-admin`, `public-site-rendering`).
+

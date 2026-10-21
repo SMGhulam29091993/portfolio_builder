@@ -38,6 +38,12 @@ const CLAIM_KEY_PREFIX = 'test-harness:claim:db:';
 /** How long a claim lives without `stop()`: far beyond one spec file, short enough to self-heal. */
 const CLAIM_LEASE_SEC = 600;
 
+/** How long `start()` waits for a free database; below Vitest's 60 s hook timeout so this error wins. */
+const CLAIM_WAIT_MS = 45_000;
+
+/** Pause between claim attempts while every database is held. */
+const CLAIM_RETRY_MS = 250;
+
 /** Connect timeout for the harness's clients: a missing server must fail the file quickly. */
 const CONNECT_TIMEOUT_MS = 2_000;
 
@@ -133,15 +139,23 @@ export class RedisTestHarness {
     await this.control.close();
   }
 
-  /** Takes the first free database with `SET NX`, so two harnesses can never share one. */
+  /**
+   * Takes the first free database with `SET NX`, so two harnesses can never share one. More spec
+   * files use Redis than there are databases, so when all are held it waits for one to be
+   * released (or a stale lease to expire), up to `CLAIM_WAIT_MS`, instead of failing at once.
+   */
   private static async claimDatabase(control: RedisClient, token: string): Promise<number> {
-    for (let database = FIRST_CLAIMABLE_DB; database <= LAST_CLAIMABLE_DB; database += 1) {
-      const claimed = await control.set(`${CLAIM_KEY_PREFIX}${String(database)}`, token, {
-        condition: 'NX',
-        expiration: { type: 'EX', value: CLAIM_LEASE_SEC },
-      });
-      if (claimed === 'OK') return database;
-    }
+    const deadline = Date.now() + CLAIM_WAIT_MS;
+    do {
+      for (let database = FIRST_CLAIMABLE_DB; database <= LAST_CLAIMABLE_DB; database += 1) {
+        const claimed = await control.set(`${CLAIM_KEY_PREFIX}${String(database)}`, token, {
+          condition: 'NX',
+          expiration: { type: 'EX', value: CLAIM_LEASE_SEC },
+        });
+        if (claimed === 'OK') return database;
+      }
+      await new Promise((resolve) => setTimeout(resolve, CLAIM_RETRY_MS));
+    } while (Date.now() < deadline);
     await control.close();
     throw new Error(
       `Every test Redis database (${String(FIRST_CLAIMABLE_DB)}-${String(LAST_CLAIMABLE_DB)}) is claimed.`,

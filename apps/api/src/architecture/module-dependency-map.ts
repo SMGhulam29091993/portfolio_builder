@@ -9,14 +9,13 @@
  * Every edge is listed as written in the map, including:
  *   - the `/cms` router edges — every module with a `/cms` router may depend on `auth`
  *     (`requireOwner`) and `portfolio` (`resolvePortfolio`)
- *   - `portfolio`, `identity` and `design` → `publishing`, whose `IDraftContributor` they implement
+ *   - `portfolio`, `identity` and `design` → `publishing`, whose ports they implement
  *
- * As written, the map allows `portfolio ↔ publishing` and `design ↔ publishing` both ways, which
- * the constitution's DAG rule forbids in the actual graph (`findCycles`). No code takes either
- * edge yet; the contradiction is recorded in `.ai-context/state/blockers.md` and must be settled
- * before `publish-pipeline.T02` adds them.
+ * `publishing` owns every port it shares with `portfolio` and `design` and imports neither
+ * (ADR-0013), so the graph has no cycle. Its `/cms` router reads the portfolio id that
+ * `resolvePortfolio` sets on the request through a global type augmentation, not an import.
  */
-import type { DependencyMap } from './module-graph.js';
+import type { DependencyMap, ImportAllowList } from './module-graph.js';
 
 export const MODULE_DEPENDENCY_MAP: DependencyMap = {
   health: ['core'],
@@ -26,6 +25,17 @@ export const MODULE_DEPENDENCY_MAP: DependencyMap = {
   assets: ['core', 'auth', 'portfolio'],
   design: ['core', 'auth', 'portfolio', 'publishing'],
   'ai-design': ['core', 'design', 'auth', 'portfolio'],
-  publishing: ['core', 'portfolio', 'assets', 'design', 'auth'],
+  publishing: ['core', 'assets', 'auth'],
   'public-site': ['core', 'publishing', 'assets'],
+};
+
+/**
+ * Draft isolation at the interface level (`public-site-rendering` plan): of `publishing`, the
+ * public site may import its read port and the published shapes only — never a draft
+ * contributor, the pointer writer or the service.
+ */
+export const PUBLIC_SITE_IMPORTS: ImportAllowList = {
+  from: 'public-site',
+  to: 'publishing',
+  names: ['ISnapshotReader', 'StoredSnapshot', 'PublishedContent', 'PublishedPortfolio'],
 };

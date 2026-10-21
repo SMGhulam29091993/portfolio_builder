@@ -24,7 +24,13 @@
 | publish-pipeline.IT17 | Edge | Start in production mode without `WEB_REVALIDATE_URL` | Startup fails naming the variable |
 | publish-pipeline.IT18 | Edge | Development mode without `WEB_REVALIDATE_URL` | Publish → `revalidation: "ok"`; no HTTP call made |
 | publish-pipeline.IT19 | AC2 | Call validate on a draft with errors; compare every collection before and after | Issues and draft hash returned; no document created or changed |
-| publish-pipeline.IT20 | AC14 | Enumerate `ISnapshotRepository` members; attempt to change `content` through `updateDelivery` | Only insert / read / update-delivery exist; content, hash and version are unchanged in the DB |
+| publish-pipeline.IT20 | AC14 | Enumerate `ISnapshotRepository` members; attempt to change `content` through `updateDelivery`; prune with the live version outside the window | Only insert / reads / update-delivery / prune exist; content, hash and version are unchanged in the DB; the live snapshot survives |
+
+Implementation notes (2026-10-21): IT13 accepts `NOTHING_TO_PUBLISH` as the loser's 409 when
+the two requests happen to run one after the other; the interleaved race and its
+`PUBLISH_CONFLICT` are pinned by the service tests (AC16) and the pointer store's
+compare-and-swap test. IT14 is covered in `publishing.service.spec.ts` (UT11 / AC15) with an
+injected failing pointer writer, which the HTTP container does not expose.
 
 ## Contract suites
 | Test ID | Interface | Asserts |

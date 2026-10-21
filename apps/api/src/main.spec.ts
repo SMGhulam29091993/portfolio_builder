@@ -203,6 +203,41 @@ describe('main', () => {
     expect(api.output()).not.toContain(JWT_ACCESS_SECRET);
   });
 
+  it.each([
+    ['AI_PROVIDER unset', {}, 'AI_PROVIDER'],
+    ['AI_PROVIDER=ollama', { AI_PROVIDER: 'ollama', OLLAMA_BASE_URL: 'http://127.0.0.1:1', AI_MODEL: 'local' }, 'AI_PROVIDER'],
+    ['gemini without AI_MODEL', { AI_PROVIDER: 'gemini', GEMINI_API_KEY: FAKE_SECRET }, 'AI_MODEL'],
+  ])('ai-design-studio.IT10 — production with %s exits 1 naming %s, never the key', async (_row, ai, variable) => {
+    const port = await findFreePort();
+    const api = startApi({
+      NODE_ENV: 'production',
+      PORT: String(port),
+      MONGODB_URI: mongo.getUri(),
+      REDIS_URL: redis.url,
+      JWT_ACCESS_SECRET,
+      WEB_ORIGIN,
+      // Mail and revalidation are configured, so the AI rule is the one that refuses.
+      SMTP_URL: 'smtp://127.0.0.1:1',
+      MAIL_FROM: 'noreply@example.test',
+      WEB_REVALIDATE_URL: 'http://127.0.0.1:1/api/revalidate',
+      REVALIDATE_SECRET: 'r'.repeat(32),
+      ...ai,
+    });
+
+    await expect(api.exited).resolves.toBe(1);
+    expect(api.lines.map((line) => line.msg)).not.toContain('http server listening');
+    const failure = api.lines.find((line) => line.msg === 'startup failed');
+    expect(failure).toEqual(
+      expect.objectContaining({
+        error: expect.objectContaining({
+          name: 'EnvValidationError',
+          message: `Invalid environment configuration: ${variable}`,
+        }) as unknown,
+      }),
+    );
+    expect(api.output()).not.toContain(FAKE_SECRET);
+  });
+
   it('monorepo-foundation.AC4 / AC13 — serves /api/v1/health, then on SIGTERM closes Redis and MongoDB and exits 0', async () => {
     const port = await findFreePort();
     const api = startApi({

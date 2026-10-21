@@ -9,10 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { MODULE_DEPENDENCY_MAP } from './module-dependency-map.js';
+import { MODULE_DEPENDENCY_MAP, PUBLIC_SITE_IMPORTS } from './module-dependency-map.js';
 import {
   collectEdges,
   findCycles,
+  findDisallowedImports,
   findUndeclaredEdges,
   findUnmappedModules,
   readSourceFiles,
@@ -131,8 +132,37 @@ describe('apps/api', () => {
     expect(findCycles(edges)).toEqual([]);
   });
 
+  it('public-site-rendering.IT09 — public-site imports nothing from publishing but its read port', () => {
+    expect(findDisallowedImports(files, PUBLIC_SITE_IMPORTS)).toEqual([]);
+  });
+
   it('reads the real source tree, including the health module', () => {
     expect(files.some((source) => source.path === 'modules/health/index.ts')).toBe(true);
+  });
+});
+
+describe('findDisallowedImports', () => {
+  const rule = { from: 'public-site', to: 'publishing', names: ['ISnapshotReader'] };
+
+  it('public-site-rendering.IT09 — reports a draft interface imported into public-site (fixture)', () => {
+    const fixture: SourceFile = {
+      path: 'modules/public-site/public-site.service.ts',
+      text: "import type { IDraftContributor, ISnapshotReader } from '../publishing/index.js';\nexport * from '../publishing/index.js';",
+    };
+    expect(findDisallowedImports([fixture], rule)).toEqual([
+      'modules/public-site/public-site.service.ts: IDraftContributor',
+      'modules/public-site/public-site.service.ts: *',
+    ]);
+  });
+
+  it('accepts the allowed name, other modules and specs', () => {
+    const files: SourceFile[] = [
+      { path: 'modules/public-site/a.ts', text: "import type { ISnapshotReader as Reader } from '../publishing/index.js';" },
+      { path: 'modules/public-site/b.ts', text: "import * as assets from '../assets/index.js';" },
+      { path: 'modules/public-site/a.spec.ts', text: "import { PublishingService } from '../publishing/publishing.service.js';" },
+      { path: 'modules/design/c.ts', text: "import type { IDraftContributor } from '../publishing/index.js';" },
+    ];
+    expect(findDisallowedImports(files, rule)).toEqual([]);
   });
 });
 

@@ -1,3 +1,3 @@
-import { createBaseConfig } from '@portfolio/eslint-config/base';
+import { createSectionsConfig } from '@portfolio/eslint-config/sections';
 
-export default createBaseConfig({ tsconfigRootDir: import.meta.dirname });
+export default createSectionsConfig({ tsconfigRootDir: import.meta.dirname });

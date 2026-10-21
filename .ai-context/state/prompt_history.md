@@ -143,3 +143,91 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-19 23:30 IST] — owner-auth (records audit, T09)
 **User Request:** Check that every related `.agent/` and `.ai-context/` file was updated for T09.
 **Agent Action:** Swept both folders for T09, the seeder, `seed:owner`, `ISeeder`, OQ1, the seeder variables and `owner-auth` status lines. Fixed: `owner-auth` spec Error Handling (a lost seeder race reports unchanged instead of surfacing `USER_EXISTS`) and Edge Cases (the 200-character cap, an existing account left as is, the fixed display name); test cases (IT14 and IT26 name their spec files; seeder password data variations); `section-engine` tasks T06 and plan (`ISeeder` exists since T09, built by `buildSeeders`); `architecture.md` (`auth` module marked complete in the tree; `users` row notes the seeder writes through `IUserCreator`); ownership index (new seeder-port entry; the accounts entry names the seeder). Checked and already current: constitution, agent role, governance, workflows, int-standards, BRD, ADR-0010, plan, tasks, status, project context, current, next, completed, blockers, lessons, review findings.
+
+### [2026-10-20 17:24 IST] — build kick-off (owner decisions)
+**User Request:** Stop creating a branch per task; build the whole project on one branch, following every spec and task, stopping only for a decision.
+**Agent Action:** Asked the owner every open question before writing code (ADR-0004/5/6, the module cycles, untracking build output, owner role, Google owner claim, free portfolio address, template, payment provider, what credits buy, fonts, accent, navigation and motion, Second Brain copy, clipped hero lists, link targets and SEO, standing `Ready` authorisation, pricing as configuration, BRD-008). New branch `feat/full-build` off `master` (PR #17 merged). Accepted ADR-0004 (retention), ADR-0005, ADR-0006 (variants); wrote ADR-0012 (Stripe) and ADR-0013 (publishing owns its ports); appended owner answers to ADR-0010 and ADR-0011; updated BRD, `design_reference.md`, `architecture.md` dependency map and `module-dependency-map.ts`, `constitution.md` (Stripe approved), `governance.md` (standing authorisation), status, project context, blockers, current, next. Untracked `.turbo/`, `packages/*/dist`, `packages/*/node_modules` from git.
+
+### [2026-10-20 17:50 IST] — account-registration (T01–T03)
+**User Request:** Build the whole project in one go on one branch (continuing).
+**Agent Action:** Wrote the `account-registration` spec, plan, tasks and test cases from ADR-0010 and its owner answers; DoR passed; moved to `Ready` under the standing authorisation. T01: `plainText` in contracts, registration payloads, `role` on `AuthUser`, `users.role` / `emailVerifiedAt` / `one_owner` index, `IUserRegistrar` / `IOwnerLookup`, CT10 extended. T02: `OwnerClaimPolicy`, `constantTimeEquals`, `RegistrationService`, `AuthService.startFor`, `EMAIL_NOT_VERIFIED`, purpose check and email verification in the password reset, `OWNER_REGISTRATION_SECRET`, seeder update. T03: five routes, shared limiter, OpenAPI 0.5.0, route tests. Updated int-standards error table, architecture, ownership index, owner-auth spec note, status, patterns, review findings.
+
+### [2026-10-20 18:25 IST] — google-sign-in (T01–T03)
+**User Request:** Build the whole project in one go on one branch (continuing).
+**Agent Action:** Wrote the `google-sign-in` spec set from ADR-0011 and the owner's answer (no owner claim through Google); DoR passed; `Ready` under the standing authorisation. T01: `users.googleSub`, optional `passwordHash`, `IGoogleLinker`, `RedisOAuthStateStore` + fake + CT01. T02: `IOidcProvider`, `OidcProvider` (discovery, PKCE, `jose`), `DisabledOidcProvider`, test-only `LocalOidcIssuer`. T03: service, controller, cookie, routes, env (four variables), container selection, OpenAPI 0.6.0, route tests. Updated ADR-0010/0011 mechanics status, architecture, ownership index, status.
+
+### [2026-10-20 19:10 IST] — section-engine (T01–T07)
+**User Request:** Build the whole project in one go on one branch (continuing).
+**Agent Action:** Revised `section-engine` for ADR-0010 (per-user portfolio provisioned from the template, slug and API06, tenant isolation, AC15–AC18); `Ready` under the standing authorisation. Built contracts primitives and engine schemas; `portfolios` / `sections` persistence with fakes and CT02; `SectionRegistry`, `CryptoIdGenerator`, `SectionService`, `PortfolioProvisioner`; controller, routes, `resolvePortfolio`, container wiring, OpenAPI 0.7.0, route tests with two-user isolation; `seed:all` with portfolio and section seeders; `packages/sections` registry and composer. Updated ADR-0007, architecture, ownership index, status, README.
+
+### [2026-10-20 20:45 IST] — cms-panel-shell (T01–T08)
+**User Request:** Build the whole project in one go on one branch (continuing).
+**Agent Action:** Revised `cms-panel-shell` for ADR-0010/0011 (register, verify, Google, slug; AC16–AC20); `Ready` under the standing authorisation. Pinned TanStack Query, react-hook-form, resolvers, Zustand, axe (newest releases at least two weeks old). Built the API client with the cross-tab refresh rule, query hooks, auth screens, panel frame, form kit with schema-read limits, editor registry and host with conflict dialog, overview with visibility/reorder/slug, live preview with error boundaries, and the browser E2E harness (generic `SMTP_URL` mail strategy, local SMTP mailbox, seeded account, Chromium in CI). Recorded deviations: no `proxy.ts` (cookie paths), AC11 data to `publish-pipeline`, editing E2E to `about-section`; turbo serialises web typecheck/lint after its build (pitfall).
+
+### [2026-10-21 14:51 IST] — ai-design-studio.T01
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Moved `ai-design-studio` `Ready → In Progress`. Added the `ai-design` module's types, `IProposalRepository`, the `design_proposals` model (history index, partial unique index on `pending`) and `ProposalRepository` with its real-MongoDB spec; the contracts written in the previous session are part of this task. Recorded the Mongoose `new: true` deprecation in `memory/review-findings.md`.
+
+### [2026-10-21 15:40 IST] — ai-design-studio.T02
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added the generator port and health port, the stub generator and its fixture, and `DesignGeneratorFactory` (environment table, adapter registrations, production refusals), run in `buildContainer`; `env.ts` reads five AI variables (`.env.example`, `turbo.json`, `architecture.md` updated); factory, stub, env and process-boot tests. Two self-review findings recorded.
+
+### [2026-10-21 15:55 IST] — ai-design-studio.T03
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `DesignPromptBuilder` (instructions from the catalogue, the derived and closed JSON Schema, the repair turn) and `DesignSpecParser` (JSON extraction, markup and URL refusal, scope merge, validation through `IDesignValidator`, contrast classification), with UT03–UT06 and UT14.
+
+### [2026-10-21 16:20 IST] — ai-design-studio.T04
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `AiDesignService`, `MonthlyGenerationAllowance`, the pricing and wallet placeholders, `InterruptedProposalRecovery`, `ProviderTimeoutError`; `core/background` (runner) and `IStartupHook`; `CreditsRequiredError`; `deletePending`. Turned the repository spec into contract suite CT04 with `InMemoryProposalRepository` and added the ai-design test doubles. Recorded two plan deviations and corrected the task text for `ISectionTypeLister`.
+
+### [2026-10-21 16:45 IST] — ai-design-studio.T05
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `core/time` (`IDelay`, `SystemDelay`), `ManualDelay`, `ProviderRejectedError`, `TimeoutDesignGenerator` and `RetryDesignGenerator` with UT09 and UT10; fixed the timeout race found by UT09 and recorded it in `memory/pitfalls.md`.
+
+### [2026-10-21 17:05 IST] — ai-design-studio.T06
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `IHttpClient` and `FetchHttpClient`, `OllamaDesignGenerator` (registered in the container), `RecordedProviderServer`, documented-shape Ollama recording, and the shared generator contract suite (CT01 stub and Ollama, CT02 through the decorators, CT03 health).
+
+### [2026-10-21 17:20 IST] — ai-design-studio.T07
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Re-read the Gemini Interactions API reference for the multi-turn input form; added `GeminiDesignGenerator`, its documented-shape recording, `GEMINI_BASE_URL`, contract-suite subject and wire-format tests, and the container registration.
+
+### [2026-10-21 17:30 IST] — ai-design-studio.T08
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `OpenRouterDesignGenerator`, its documented-shape recording, `OPENROUTER_BASE_URL`, contract-suite subject and wire-format tests, and the container registration.
+
+### [2026-10-21 17:55 IST] — ai-design-studio.T09
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added the ai-design controller and routes, the container wiring and startup hook run, `AI_TIMEOUT_MS`, OpenAPI 0.13.0 and the route integration tests; updated the module map prose, AI flow, security backlog and plan (provisional AI rate limit).
+
+### [2026-10-21 18:30 IST] — ai-design-studio.T10
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added the `/cms/ai` screen, its hooks and display helpers with unit tests, the `/cms/credits` placeholder, and E2E01–E05; moved `ai-design-studio` to `Implemented` and updated the spec status, board, test cases and state files.
+
+### [2026-10-21 19:00 IST] — documentation audit after ai-design-studio
+**User Request:** Check that every related `.agent/` and `.ai-context/` file was updated properly.
+**Agent Action:** Audited all rule, workflow and context files against the build. Updated `architecture.md` (summary and repository tree, which stopped at `media-assets`), `project_context.md` (phase, sprint, ADR-0003, memory index), `governance.md` → Status, `ownership_index.md` (AI provider entry refreshed; AI allowance and prices, provider wire formats added; error codes and test support), `ai-design-studio.spec.md` (`charge` in the Proposal shape, the `stub` row; clarifications, not a revision), `generate-tests.md` (how AI providers are tested), `memory/patterns.md` (two recurring patterns), `memory/lessons.md` (presence before absence). No code changed.
+
+### [2026-10-21 19:40 IST] — CMS form wording and the AI Studio stub
+**User Request:** Make the CMS form titles and fields plain and self-explanatory, and find out why no designs could be seen or generated.
+**Agent Action:** Diagnosed the AI Studio from the dev database (statuses only): generation worked, but `AI_PROVIDER` is unset so the stub answered with its one fixed sample, already applied. Added a stub notice and the preview of applied proposals to `/cms/ai`. Relabelled every section editor, the identity, design and AI screens in plain words with hints; added optional `hint` to every form-kit group field; updated the E2E selectors. Full E2E (40), web unit tests and build pass.
+
+### [2026-10-21 20:10 IST] — empty CMS preview
+**User Request:** What are the Desktop and Mobile buttons for (the preview beside them was empty)?
+**Agent Action:** Found the dev portfolio predated the section types, so the hero was stored hidden through AC18 and nothing was visible. Fixed the hero to be always visible on read, save and publish (regression tests), added a preview message when every section is hidden, and sized the preview frame to the scaled page (it had an empty tail). Clarified `section-engine.AC18`; pitfall recorded.
+
+### [2026-10-21 20:35 IST] — filled sections not showing
+**User Request:** Sections were filled in but do not show in the preview or the site.
+**Agent Action:** Confirmed from the dev database that every section except the hero was hidden (saving never changes visibility) and that placeholders remained in About, Work and Stack. Added a visibility bar to the section editor (shown / hidden, with Show on my site and Hide from my site, revision kept in step for the next save) and an E2E journey for it.
+
+### [2026-10-21 23:30 IST] — design-library (T01–T06)
+**User Request:** Let the AI create different layouts and keep them for reuse (chose structured layouts plus more variety and presets; the "AI writes HTML" option was offered and not chosen).
+**Agent Action:** Wrote ADR-0014 (amends ADR-0006) and the `design-library` spec set; built the custom-layout schema and validator (design-tokens), `CustomLayoutRenderer` (sections), the layout library and presets (`design` module, API01–API06), snapshot schema version 2, AI custom layouts with explore and API07, and the CMS screens; E2E01–E02. Fixed the publish check that would have blocked custom layouts.
+
+### [2026-10-21 22:55 IST] — cms-panel-shell.T09
+**User Request:** Opening the app again after signing in earlier asked for sign-in again; add redirection for a signed-in browser, like a private / public-only route pair.
+**Agent Action:** Diagnosed: the session was alive in Redis; `/` and the signed-out screens never checked for one. Added AC21, UT13 and E2E16 to `cms-panel-shell`; built `components/cms/signed-out-only.tsx` (guard in the `(auth)` layout, via `/auth/me` with the refresh rule, decided once, skipped on `?notice=`), `useMe({ enabled })`, `isPublicCmsPath` in `navigation.ts`, and made `providers.tsx` ignore a session loss on those screens. Pitfall recorded (the URL lags a client-side `router.replace`).
+
+### [2026-10-21 23:45 IST] — design-library.T07
+**User Request:** Fix the proposed AI provider failures: shrink the answer schema, add a max output token setting for OpenRouter, log the upstream cause, and add a schema-size test.
+**Agent Action:** `design-prompt.builder.ts` builds the schema per request (custom layout trees only under explore, per visible section, cached per section set); `AI_MAX_OUTPUT_TOKENS` in `env.ts`, `.env.example`, `turbo.json`, `architecture.md`, sent by `openrouter.design-generator.ts`; `ai-design.service.ts` logs the sanitised upstream cause; tests in the builder, service, contract and env specs (design-library.UT04). Pitfall and provider notes recorded; explore across all six sections on Gemini left open in `blockers.md`.

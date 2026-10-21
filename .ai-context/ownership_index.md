@@ -16,8 +16,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## Response envelope and canonical error codes
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Standardised response shape
-**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`)
-**Last updated:** 2026-10-18
+**Referenced by:** every spec's API Contract (exception tables name a code, not a shape); code: `apps/api/src/core/errors/` (generic codes), feature codes beside their thrower — `modules/auth/auth.errors.ts` (`SESSION_EXPIRED`, `OTP_INVALID`, `OTP_EXPIRED`, `EMAIL_NOT_VERIFIED`, `OWNER_CLAIM_REFUSED`), `modules/auth/user.repository.ts` (`OWNER_EXISTS`, `USER_EXISTS`), `core/http/origin-allow-list.middleware.ts` (`ORIGIN_NOT_ALLOWED`), `core/errors/http-errors.ts` (`CreditsRequiredError`, 402 `CREDITS_REQUIRED`, ADR-0012), `modules/ai-design/proposal.repository.ts` (`GENERATION_IN_PROGRESS`), `modules/ai-design/ai-design.service.ts` (`PROPOSAL_NOT_READY`)
+**Last updated:** 2026-10-21
 
 ## Module router convention (`ApiRouter`, mounted route table)
 **Canonical definition:** `.agent/rules/int-standards.express.md` → Adding a feature, step 5
@@ -41,8 +41,8 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## API test support (`MongoTestHarness`, `RedisTestHarness`, `FixtureFactory`, `RecordingLogger`)
 **Canonical definition:** `.agent/workflows/generate-tests.md` step 5 (usage); `apps/api/src/testing/` (code)
-**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories)
-**Last updated:** 2026-10-18
+**Referenced by:** `int-standards.express.md` (Per-module file pattern → Tests), `architecture.md` → Repository layout, `monorepo-foundation.test_cases.md` (IT16, UT13), `owner-auth.test_cases.md` (IT13, CT03, CT04, CT07, CT10, CT11), `README.md` → Local development (which Redis databases the harnesses use); `apps/api/src/testing/auth/` (auth fakes and fixture factories); `ai-design-studio.test_cases.md` (CT01–CT04, IT01–IT15) — `testing/ai-design/` (`InMemoryProposalRepository`, `ScriptedDesignGenerator`, `ManualBackgroundRunner`, the provider recordings), `testing/time/` (`ManualDelay`), `testing/http/` (`RecordedProviderServer`, `CmsTestClient`)
+**Last updated:** 2026-10-21
 
 ## Module list, dependency map, collection writers
 **Canonical definition:** `.ai-context/architecture.md` → API modules · Module dependency map · Data ownership
@@ -108,7 +108,7 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## One-time-code contract (code, identifier, reference, expiry, attempts, cooldown, send limit)
 **Canonical definition:** `.ai-context/specs/owner-auth.spec.md` → Password reset by one-time code
-**Referenced by:** ADR-0008 (the reference key and its TTL), `owner-auth` plan → Architecture Approach and Data Model, `architecture.md` → Request lifecycle (the shared send limiter), `cms-panel-shell` spec AC15 (what the screen shows for each outcome); code that restates its values: `apps/api/src/modules/auth/password-reset.service.ts` (code length, identifier bytes, 10-minute expiry, 24-hour purge, 60-second cooldown, 5 attempts), `apps/api/src/container.ts` (`CODE_SEND_RATE_LIMIT`, `OTP_REFERENCE_TTL_SEC`), `apps/api/src/modules/auth/otp.model.ts` (indexes), `apps/api/openapi/openapi.yaml` (API05–API07, `CodeSendRateLimited`, `OtpRejected`)
+**Referenced by:** `account-registration` spec (Email verification: the same contract, purpose `email_verification`), `memory/patterns.md` (one-time code issuance), ADR-0008 (the reference key and its TTL), `owner-auth` plan → Architecture Approach and Data Model, `architecture.md` → Request lifecycle (the shared send limiter), `cms-panel-shell` spec AC15 (what the screen shows for each outcome); code that restates its values: `apps/api/src/modules/auth/password-reset.service.ts` (code length, identifier bytes, 10-minute expiry, 24-hour purge, 60-second cooldown, 5 attempts) and `registration.service.ts` (the same values), `apps/api/src/container.ts` (`CODE_SEND_RATE_LIMIT`, `OTP_REFERENCE_TTL_SEC`), `apps/api/src/modules/auth/otp.model.ts` (indexes), `apps/api/openapi/openapi.yaml` (API05–API07, `CodeSendRateLimited`, `OtpRejected`)
 **Last updated:** 2026-10-18
 
 ## Redis unreachable at runtime → 503, never fail open
@@ -138,13 +138,28 @@ owner — it never restates the full definition. Paths are relative to the repos
 
 ## AI provider port and environment rules
 **Canonical definition:** `.ai-context/specs/ai-design-studio.spec.md` → Provider contract (the *why* is `.ai-context/decisions/ADR-0003-ai-provider-port.md`)
-**Referenced by:** `constitution.md` (dev-bypass guard), `architecture.md` (AI design flow)
-**Last updated:** 2026-10-11
+**Referenced by:** `constitution.md` (dev-bypass guard, Approved LLD patterns), `architecture.md` (AI design flow, Environment: `AI_PROVIDER`, `AI_MODEL`, the keys, the two base URLs, `AI_TIMEOUT_MS`), `ai-design-studio` plan and test cases; code that restates the table: `modules/ai-design/providers/design-generator.factory.ts` (the one implementation), `container.ts` (`DESIGN_GENERATORS`, `buildDesignGenerator`), `config/env.ts`, `apps/api/.env.example`, `main.spec.ts` (IT10)
+**Last updated:** 2026-10-21
+
+## AI generation allowance and prices
+**Canonical definition:** `.ai-context/decisions/ADR-0012-stripe-payments.md` → Decision and Owner answers 2026-10-21 (the product rule: owner unlimited, free monthly generations, then credits, refunds on platform faults); `.ai-context/specs/ai-design-studio.spec.md` → AC7, AC17, AC18 (the mechanics)
+**Referenced by:** `architecture.md` (AI design flow), `ai-design-studio` plan (Architecture Approach, Data Model `charge`), `state/next.md`; code: `container.ts` (`AI_DEFAULT_PRICES`, the seeded 5 free / 1 credit until `platform-admin`), `modules/ai-design/generation-allowance.service.ts`, `adapters/default-ai-pricing.ts`, `adapters/empty-generation-wallet.ts` (until `credits-billing`), `packages/contracts/src/ai-design` (`REFUNDABLE_FAILURES`), `apps/web/src/lib/cms/ai-studio.ts` (the screen's wording)
+**Last updated:** 2026-10-21
+
+## Custom layouts, the block catalogue and the design library
+**Canonical definition:** `.ai-context/specs/design-library.spec.md` → Custom layout · Block catalogue (the *why* is ADR-0014, amending ADR-0006)
+**Referenced by:** `architecture.md` (AI design flow, Data ownership), `ai-design-studio` (proposals carry custom layouts; API07), `publish-pipeline` (snapshot schema version 2); code: `packages/design-tokens/src/layout.ts` (schema, `LAYOUT_BLOCKS`, `validateCustomLayout` — the one verdict), `packages/sections/src/custom/custom-layout.tsx`, `apps/api/src/modules/design/design-library.service.ts`, `ai-design/design-prompt.builder.ts` and `design-spec.parser.ts`, `apps/web/src/lib/site/snapshot-adapter.ts`
+**Last updated:** 2026-10-21
+
+## AI provider wire formats
+**Canonical definition:** `.ai-context/memory/ai-provider-apis.md` (confirmed against each provider's documentation 2026-10-21)
+**Referenced by:** `ai-design-studio` plan (Structured output per provider) and tasks (T06–T08); code: `modules/ai-design/providers/ollama.design-generator.ts`, `gemini.design-generator.ts`, `openrouter.design-generator.ts`, `apps/api/src/testing/ai-design/recordings/` (responses in those shapes)
+**Last updated:** 2026-10-21
 
 ## Accounts, roles, the one-time owner claim and tenant isolation
-**Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision (the `account-registration` spec takes over the mechanics once written)
-**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`, `apps/api/src/seed/owner.seeder.ts` (the production refusal)
-**Last updated:** 2026-10-19
+**Canonical definition:** `.ai-context/decisions/ADR-0010-multi-tenant-accounts.md` → Decision and Owner answers (the product rule); `.ai-context/specs/account-registration.spec.md` → Roles and the owner claim · Email verification (the mechanics)
+**Referenced by:** `BRD.md` (BRD-001, BRD-002, BRD-009, BRD-011), `agent-role.md` (Route audiences), `constitution.md` (Tenant isolation), `int-standards.express.md` (Persistence conventions), `.agent/workflows/code-review.md` (Security), `architecture.md` (System overview, Data ownership, Environment), `owner-auth` spec (Status, Intent, AC13, AC14, AC23, Out of Scope) and plan, `apps/api/.env.example`; code that restates its rules: `modules/auth/owner-claim.policy.ts`, `user.model.ts` (`one_owner` index), `auth.service.ts` (the `EMAIL_NOT_VERIFIED` check), `registration.service.ts`, `seed/owner.seeder.ts` (production refusal; verified owner or member)
+**Last updated:** 2026-10-20
 
 ## Seeder port and seed data (`ISeeder`, `SeedOutcome`, `buildSeeders`, `apps/api/src/seed/data/`)
 **Canonical definition:** `apps/api/src/seed/seeder.interface.ts` (the port); `apps/api/src/container.ts` → `buildSeeders` (wiring); `constitution.md` → Security Posture (seed data lives in `seed/data/`)
@@ -157,6 +172,36 @@ owner — it never restates the full definition. Paths are relative to the repos
 **Last updated:** 2026-10-19
 
 ## Google sign-in boundary
-**Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the `google-sign-in` spec takes over the mechanics once written)
-**Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan
-**Last updated:** 2026-10-18
+**Canonical definition:** `.ai-context/decisions/ADR-0011-google-sign-in.md` → Decision (the rule); `.ai-context/specs/google-sign-in.spec.md` → Flow · Resolving the user (the mechanics)
+**Referenced by:** `BRD.md` (BRD-010), `agent-role.md` (Auth), `constitution.md` (Infrastructure), `owner-auth` spec (Out of Scope) and plan, `architecture.md` (Environment, Data ownership); code that restates it: `modules/auth/google-sign-in.service.ts`, `adapters/oidc-provider.ts`, `oauth-state-cookie.ts`, `container.ts` (`GOOGLE_STATE_TTL_SEC`, `GOOGLE_RATE_LIMIT`, `buildOidcProvider`), `config/env.ts` (all-or-nothing rule)
+**Last updated:** 2026-10-20
+
+## Free-text cleaning (`plainText`)
+**Canonical definition:** `packages/contracts/src/common/plain-text.ts` (`plainText`, `cleanPlainText`)
+**Referenced by:** `int-standards.express.md` → Input validation, `constitution.md` → Plain text only, `account-registration` (`displayName`), every section payload schema
+**Last updated:** 2026-10-20
+
+## Portfolio provisioning, slug rules and the reference template
+**Canonical definition:** `.ai-context/specs/section-engine.spec.md` → Portfolio provisioning · Slug rules
+**Referenced by:** ADR-0010 (Owner answers: template, path address), `public-site-rendering` (serves `<platform>/<slug>`), `publish-pipeline` (the placeholder rule blocks unedited template content), every section spec (`defaults()` is the template); code: `packages/contracts/src/sections/engine.ts` (`SLUG_PATTERN`, `RESERVED_SLUGS`), `modules/portfolio/portfolio.provisioner.ts`, `resolve-portfolio.middleware.ts`
+**Last updated:** 2026-10-20
+
+## Section payload primitives (`listItem`, `safeUrlSchema`, …)
+**Canonical definition:** `.ai-context/specs/section-engine.spec.md` → Shared payload primitives; code `packages/contracts/src/sections/primitives.ts`
+**Referenced by:** the six section specs, `site-identity`, `publish-pipeline` (URL re-check), `modules/portfolio/section.service.ts` (item-id assignment), `seed/section.seeder.ts` (fixed ids)
+**Last updated:** 2026-10-20
+
+## Asset reference, kinds and limits
+**Canonical definition:** `.ai-context/specs/media-assets.spec.md` → Asset reference; code `packages/contracts/src/assets/assets-contracts.ts` (`ASSET_RULES`)
+**Referenced by:** `site-identity` (résumé and OG image ids), `publish-pipeline` (snapshot references), `public-site-rendering` (public delivery); code: `modules/assets/asset.service.ts`, `apps/web/src/lib/cms/assets.ts` (screen text from the same limits)
+**Last updated:** 2026-10-20
+
+## Identity shape and the identity template
+**Canonical definition:** `.ai-context/specs/site-identity.spec.md` → API Contract (shape) and Status (template); code `packages/contracts/src/identity/identity-contracts.ts`, `modules/identity/identity.service.ts` (`identityTemplate`)
+**Referenced by:** `hero-section`, `contact-section`, `public-site-rendering` (nav, footer, metadata), `publish-pipeline` (identity contributor); `apps/api/src/seed/data/identity.ts` (reference values)
+**Last updated:** 2026-10-20
+
+## DesignSpec, variant catalogue, font allow-list, contrast rule
+**Canonical definition:** `.ai-context/specs/design-theme.spec.md` → Design payload; code `packages/design-tokens/src/` (`VARIANT_CATALOGUE`, `FONT_ALLOW_LIST`, `CONTRAST_PAIRS`, `validateDesign`, `DEFAULT_DESIGN`)
+**Referenced by:** ADR-0006 (variant amendment), `ai-design-studio` (proposals validated by `IDesignValidator`), every section spec (two variants each), `public-site-rendering` (`ThemeRoot`); code: `modules/design/design.validator.ts`, `apps/web/src/lib/cms/design-resolver.ts`, `apps/web/src/lib/fonts.ts`, `apps/web/src/app/globals.css`
+**Last updated:** 2026-10-20

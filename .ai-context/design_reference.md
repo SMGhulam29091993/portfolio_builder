@@ -177,3 +177,16 @@ the hero and inside the contact card, mono eyebrows with wide letter-spacing.
 7. **Behaviour between 390 and 1440** — only the two widths were designed.
 
 Each unknown is carried as an Open Question in the spec that needs it.
+
+### Owner answers, 2026-10-20
+| # | Answer |
+|---|---|
+| 1 | Sans: **Inter** · italic display serif: **Instrument Serif** · mono: **JetBrains Mono** (Google Fonts, loaded through `next/font`) |
+| 2 | Accent **`#c0f83c`**. Borders and muted text stay the sampled values above, adjusted only where the 4.5:1 contrast check needs it |
+| 3 | The nav pill is fixed while scrolling; `Contact` is a permanent filled pill (not an active state); sections fade up once on entering the viewport; the marquee loops leftward in about 40 s and pauses on hover and focus; buttons and cards brighten their border on hover. All motion is off under `prefers-reduced-motion` and when the theme's motion is `none` |
+| 4 | Mobile shows a menu button that opens the section links |
+| 5 | GitHub `https://github.com/SMGhulam29091993`, LinkedIn `https://linkedin.com/in/s-m-ghulam-ghaus-faiyaz`, Second Brain `https://app.second-brain.live` — confirmed. SEO title is `<fullName> — <roleTitle>`; description is the hero intro |
+| 6 | Code-card `stack`: `TypeScript`, `NestJS`, `Next.js`, `Postgres`, `MongoDB`, `Redis`. Marquee: TypeScript · Node.js · NestJS · Next.js · PostgreSQL · Prisma · Redis · BullMQ · MongoDB · RAG · GPT-4 · Claude · Gemini · FastAPI · Docker · AWS. Both editable in the CMS |
+| 7 | Layouts are fluid between the two widths and are checked at 768 and 1024 |
+The Second Brain placeholder stays in seed data; the owner fills it in from the CMS, and
+publishing stays blocked until then (`publish-pipeline.AC4`).

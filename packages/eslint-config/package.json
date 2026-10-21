@@ -7,11 +7,14 @@
   "files": [
     "base.js",
     "api.js",
-    "plugin"
+    "plugin",
+    "sections.js"
   ],
   "exports": {
     "./base": "./base.js",
-    "./api": "./api.js"
+    "./api": "./api.js",
+    "./sections": "./sections.js",
+    "./plugin": "./plugin/index.js"
   },
   "scripts": {
     "lint": "eslint ."

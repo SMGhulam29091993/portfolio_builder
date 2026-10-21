@@ -14,8 +14,9 @@ change. Each change should be a form edit in a panel, not a code change and rede
 portfolio.~~ Revised 2026-10-18 (owner; ADR-0010): the product serves many users, and each
 user builds their own portfolio — see BRD-009 and BRD-011.
 **Open at BRD stage:** ~~Whether the product will later serve other users (multi-tenant).~~
-Resolved 2026-10-18: yes. Still open: whether the reference design becomes a starting
-template for every user's portfolio.
+Resolved 2026-10-18: yes. ~~Still open: whether the reference design becomes a starting
+template for every user's portfolio.~~ Resolved 2026-10-20 (owner): every new portfolio starts
+from the reference design with empty placeholder content (ADR-0010 → Owner answers).
 **Notes:** Scope is the six sections and the shell in `design_reference.md`. A blog, a contact
 form and analytics are not part of the reference design and are out of scope.
 
@@ -41,8 +42,9 @@ and phone (390) widths, and stay usable in between.
 **Priority:** P0
 **Decided:** The two boards in `docs/design-reference/` are the visual source of truth. The
 footer of the design names the front-end stack: Next.js, Tailwind, Motion.
-**Open at BRD stage:** Font families, exact accent colour, all motion and hover behaviour, and
-mobile navigation — none is recoverable from the export (`design_reference.md` → Unknowns).
+**Open at BRD stage:** ~~Font families, exact accent colour, all motion and hover behaviour, and
+mobile navigation — none is recoverable from the export.~~ Resolved 2026-10-20 (owner):
+`design_reference.md` → Unknowns → Owner answers.
 **Notes:** The design is expressed as theme tokens and layout variants so it can change without
 code.
 
@@ -52,9 +54,9 @@ code.
 **Sponsor:** Owner
 **Priority:** P1
 **Decided:** Gemini or OpenRouter in deployed environments; Ollama models for local development.
-**Open at BRD stage:** What "UI design" covers. This spec set reads it as theme tokens plus a
-choice among built layout variants, validated before use (ADR-0006, *Proposed*). Free-form
-generated markup is the alternative and is not specified.
+**Open at BRD stage:** ~~What "UI design" covers.~~ Resolved 2026-10-20 (owner): theme tokens
+plus a choice among built layout variants, validated before use, with two or three variants per
+section in version 1 (ADR-0006, accepted and amended).
 **Notes:** Switching provider is configuration, not a code change.
 
 ### BRD-005: Publishing is deliberate, checked and reversible
@@ -97,7 +99,7 @@ Gate 2 reviewers on this project (ADR-0001).
 **Sponsor:** None yet
 **Priority:** Unprioritised
 **Decided:** Nothing. No spec exists and none may be written until the owner confirms this is
-wanted.
+wanted. Owner, 2026-10-20: stays parked.
 **Open at BRD stage:** Whether it is wanted at all.
 **Notes:** In this spec set the résumé is used only as the source of link targets and to
 cross-check the reference content.
@@ -111,7 +113,10 @@ self-service. The platform owner needs an account that no one else can take.
 **Decided:** One registration form for every user. Email verification is required before an
 account can use the CMS. The owner registers with an owner secret key; once it has been given
 and validated, the key is refused for good and the form no longer offers it (ADR-0010).
-**Open at BRD stage:** What the owner role may do that a member may not.
+**Open at BRD stage:** ~~What the owner role may do that a member may not.~~ Resolved
+2026-10-20 (owner): an admin area (list, suspend, re-enable members), unlimited credits and the
+platform settings (ADR-0010 → Owner answers). Spec: `account-registration` (roles and the claim)
+and `platform-admin` (the admin area and settings).
 **Notes:** Spec slug `account-registration` (not yet written). Builds on `owner-auth`.
 
 ### BRD-010: Users can sign in with Google
@@ -121,7 +126,8 @@ and validated, the key is refused for good and the form no longer offers it (ADR
 **Priority:** P1
 **Decided:** Google sign-in is offered alongside email and password. It always resolves to one
 `users` record; a Google-verified email counts as verified (ADR-0011).
-**Open at BRD stage:** Whether the owner claim (BRD-009) can be made through Google.
+**Open at BRD stage:** ~~Whether the owner claim (BRD-009) can be made through Google.~~
+Resolved 2026-10-20 (owner): no, the registration form only (ADR-0011 → Owner answer).
 **Notes:** Spec slug `google-sign-in` (not yet written).
 
 ### BRD-011: Credits buy a custom domain; free portfolios live on the platform domain
@@ -132,9 +138,11 @@ public portfolio.
 **Priority:** P1 — no deadline set
 **Decided:** A user buys credits to publish on their own domain. A free user's portfolio is
 served on the CMS's own domain (ADR-0010).
-**Open at BRD stage:** The payment provider (an external service: needs an ADR); what credits
-buy besides a domain, and their price; the shape of a free portfolio's address (sub-domain or
-path); how a custom domain is verified and gets TLS, which depends on the hosting target
-(BRD-007, open).
+**Open at BRD stage:** ~~The payment provider; what credits buy besides a domain, and their
+price; the shape of a free portfolio's address.~~ Resolved 2026-10-20 (owner): Stripe
+(ADR-0012); credits buy a custom domain and AI generations beyond a free monthly allowance, at
+prices the owner edits as platform settings; a free portfolio is a path, `<platform>/<slug>`
+(ADR-0010 → Owner answers). Still open: how a custom domain gets TLS, which depends on the
+hosting target (BRD-007, open).
 **Notes:** Spec slugs `credits-billing` and `custom-domains` (not yet written), after
 `public-site-rendering`.

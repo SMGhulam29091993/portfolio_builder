@@ -5,11 +5,10 @@
  *   1. load and validate the environment — exit 1, naming the bad variables (AC2)
  *   2. connect to MongoDB, then Redis (ADR-0008), confirming each answered — exit 1 without
  *      opening a port, closing whatever did open (AC3, `owner-auth.IT13`)
- *   3. build the container and the Express app
+ *   3. build the container, run its startup hooks — interrupted AI proposals are failed
+ *      (`ai-design-studio.AC10`) — and build the Express app
  *   4. listen
  *   5. on SIGTERM / SIGINT, drain in-flight requests, close Redis then MongoDB, exit 0 (AC13)
- *
- * Recovering interrupted AI work joins between steps 3 and 4 with `ai-design-studio`.
  */
 import { createApp } from './app.js';
 import { EnvValidationError, loadEnv, type Env } from './config/env.js';
@@ -80,9 +79,16 @@ async function main(): Promise<void> {
     logger,
   });
 
-  // Built only after every datastore has answered (step 3 follows step 2).
-  const createRequestListener = () =>
-    createApp(buildContainer({ env, logger, mongo: database, redis })).handler;
+  // Built only after every datastore has answered (step 3 follows step 2). A hook that fails
+  // fails startup, and the lifecycle closes the datastores, as for a refused container.
+  const createRequestListener = async () => {
+    const container = buildContainer({ env, logger, mongo: database, redis });
+    for (const hook of container.startupHooks) {
+      await hook.run();
+      logger.info('startup hook finished', { hook: hook.name });
+    }
+    return createApp(container).handler;
+  };
 
   const lifecycle = new ApplicationLifecycle(
     [

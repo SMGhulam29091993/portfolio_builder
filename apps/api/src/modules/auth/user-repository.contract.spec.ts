@@ -3,7 +3,7 @@
  * `IUserPasswordWriter`, run against `UserRepository` on a real `mongod` and against
  * `InMemoryUserRepository`, the fake the auth services are tested with (`constitution.md` →
  * Liskov Substitution). `IUserPasswordWriter` joined in `owner-auth.T08`, when the fake gained
- * it for `PasswordResetService`. The layout check only MongoDB has (the unique index) stays in
+ * it for `PasswordResetService`; `IUserRegistrar` and `IOwnerLookup` in `account-registration.T01`. The layout check only MongoDB has (the unique index) stays in
  * `user.repository.spec.ts`.
  */
 import { Types } from 'mongoose';
@@ -15,11 +15,23 @@ import {
   MongoTestHarness,
   NewUserFactory,
 } from '../../testing/index.js';
-import type { IUserCreator, IUserPasswordWriter, IUserReader } from './auth.interface.js';
+import type {
+  IGoogleLinker,
+  IOwnerLookup,
+  IUserCreator,
+  IUserPasswordWriter,
+  IUserReader,
+  IUserRegistrar,
+} from './auth.interface.js';
 import { userModel } from './user.model.js';
 import { UserRepository } from './user.repository.js';
 
-type UserPorts = IUserReader & IUserCreator & IUserPasswordWriter;
+type UserPorts = IUserReader &
+  IUserCreator &
+  IUserPasswordWriter &
+  IUserRegistrar &
+  IOwnerLookup &
+  IGoogleLinker;
 
 interface ContractSubject {
   readonly name: string;
@@ -61,6 +73,7 @@ describe.each(subjects)('owner-auth.CT10 — user repository contract — $name'
       email: input.email,
       passwordHash: input.passwordHash,
       displayName: input.displayName,
+      role: 'member',
       createdAt: expect.any(Date) as Date,
       updatedAt: expect.any(Date) as Date,
     });
@@ -123,5 +136,117 @@ describe.each(subjects)('owner-auth.CT10 — user repository contract — $name'
       users.updatePassword(new Types.ObjectId().toString(), '$argon2id$x', changedAt),
     ).resolves.toBe(false);
     await expect(users.updatePassword('nope', '$argon2id$x', changedAt)).resolves.toBe(false);
+  });
+
+  it('account-registration.T01 — create() keeps a given role and verification date', async () => {
+    const users = subject.create();
+    const verifiedAt = new Date('2026-10-20T08:00:00.000Z');
+
+    const created = await users.create(
+      newUsers.build({ role: 'owner', emailVerifiedAt: verifiedAt }),
+    );
+
+    expect(created).toMatchObject({ role: 'owner', emailVerifiedAt: verifiedAt });
+    await expect(users.ownerExists()).resolves.toBe(true);
+  });
+
+  it('account-registration.AC6 — refuses a second owner as OWNER_EXISTS', async () => {
+    const users = subject.create();
+    await users.create(newUsers.build({ role: 'owner' }));
+    const member = await users.create(newUsers.build());
+
+    const second = users.create(newUsers.build({ role: 'owner' }));
+    await expect(second).rejects.toMatchObject({ code: 'OWNER_EXISTS' });
+    await expect(
+      users.updatePending(member.id, { passwordHash: 'h', displayName: 'n', role: 'owner' }),
+    ).rejects.toMatchObject({ code: 'OWNER_EXISTS' });
+  });
+
+  it('ownerExists() is false until an owner is created', async () => {
+    const users = subject.create();
+    await users.create(newUsers.build());
+
+    await expect(users.ownerExists()).resolves.toBe(false);
+  });
+
+  it('account-registration.AC3 — updatePending() replaces an unverified account only', async () => {
+    const users = subject.create();
+    const pending = await users.create(newUsers.build());
+    const verified = await users.create(newUsers.build({ emailVerifiedAt: new Date() }));
+
+    const updated = await users.updatePending(pending.id, {
+      passwordHash: '$argon2id$replaced',
+      displayName: 'Renamed',
+    });
+
+    expect(updated).toMatchObject({
+      id: pending.id,
+      passwordHash: '$argon2id$replaced',
+      displayName: 'Renamed',
+      role: 'member',
+    });
+    await expect(
+      users.updatePending(verified.id, { passwordHash: 'x', displayName: 'x' }),
+    ).resolves.toBeNull();
+    await expect(users.findById(verified.id)).resolves.toEqual(verified);
+    await expect(
+      users.updatePending('not-an-object-id', { passwordHash: 'x', displayName: 'x' }),
+    ).resolves.toBeNull();
+  });
+
+  it('markEmailVerified() sets the date once and answers false for an unknown id', async () => {
+    const users = subject.create();
+    const created = await users.create(newUsers.build());
+    const first = new Date('2026-10-20T08:00:00.000Z');
+
+    await expect(users.markEmailVerified(created.id, first)).resolves.toBe(true);
+    await expect(users.markEmailVerified(created.id, new Date())).resolves.toBe(true);
+
+    await expect(users.findById(created.id)).resolves.toMatchObject({ emailVerifiedAt: first });
+    await expect(
+      users.markEmailVerified(new Types.ObjectId().toString(), first),
+    ).resolves.toBe(false);
+    await expect(users.markEmailVerified('nope', first)).resolves.toBe(false);
+  });
+
+  it('google-sign-in.AC2 — creates a passwordless account linked to a Google subject', async () => {
+    const users = subject.create();
+
+    const created = await users.create({
+      email: 'google.user@example.test',
+      displayName: 'G User',
+      googleSub: 'google-sub-1',
+      emailVerifiedAt: new Date('2026-10-20T08:00:00.000Z'),
+    });
+
+    expect(created.passwordHash).toBeUndefined();
+    await expect(users.findByGoogleSub('google-sub-1')).resolves.toEqual(created);
+    await expect(users.findByGoogleSub('unknown-sub')).resolves.toBeNull();
+  });
+
+  it('google-sign-in.AC3 — linkGoogle() links once and verifies an unverified email', async () => {
+    const users = subject.create();
+    const created = await users.create(newUsers.build());
+    const at = new Date('2026-10-20T09:00:00.000Z');
+
+    await expect(users.linkGoogle(created.id, 'google-sub-2', at)).resolves.toBe(true);
+
+    await expect(users.findById(created.id)).resolves.toMatchObject({
+      googleSub: 'google-sub-2',
+      emailVerifiedAt: at,
+      role: 'member',
+    });
+  });
+
+  it('google-sign-in.AC8 — linkGoogle() never replaces a link or reuses a subject', async () => {
+    const users = subject.create();
+    const first = await users.create(newUsers.build());
+    const second = await users.create(newUsers.build());
+    await users.linkGoogle(first.id, 'sub-a', new Date());
+
+    await expect(users.linkGoogle(first.id, 'sub-b', new Date())).resolves.toBe(false);
+    await expect(users.linkGoogle(second.id, 'sub-a', new Date())).resolves.toBe(false);
+    await expect(users.linkGoogle('not-an-id', 'sub-c', new Date())).resolves.toBe(false);
+    await expect(users.findById(first.id)).resolves.toMatchObject({ googleSub: 'sub-a' });
   });
 });

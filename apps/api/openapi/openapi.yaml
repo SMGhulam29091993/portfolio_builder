@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.4.0
+  version: 0.15.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -24,7 +24,30 @@ tags:
       Tokens travel only in the three HttpOnly session cookies, never in a body; a one-time code
       travels only by email. The login rate limit and the Origin allow-list (403
       ORIGIN_NOT_ALLOWED, 429 RATE_LIMITED) are added by owner-auth.T06, the password-reset
-      routes and their send limit by owner-auth.T08.
+      routes and their send limit by owner-auth.T08. Registration, email verification and the
+      one-time owner claim by account-registration.T03. Google sign-in (two browser redirects)
+      by google-sign-in.T03.
+  - name: portfolio
+    description: >-
+      The section engine (section-engine): the signed-in user's own portfolio, its sections, their order, visibility and the portfolio slug. Every route runs requireOwner then resolvePortfolio, which provisions the portfolio on first use; no route takes a portfolio id.
+  - name: assets
+    description: >-
+      Files of the signed-in user's portfolio (media-assets): the résumé PDF and images, type detected from the bytes, size capped while streaming, deletion refused while referenced. Another user's asset id answers 404 everywhere.
+  - name: identity
+    description: >-
+      The facts several parts of the page read (site-identity): name, monogram, role, email, location, availability, socials, résumé, footer and SEO text. One per portfolio; until saved, the draft is a template from the account.
+  - name: design
+    description: >-
+      The portfolio's look as data (design-theme): theme tokens and one layout variant per section, validated against the catalogue, the font allow-list and the contrast rule. One per portfolio; the reference design until the first save.
+  - name: publishing
+    description: >-
+      Publish pipeline (publish-pipeline): check the draft against the publish rules, freeze it into an immutable snapshot, switch the live pointer, and roll back to an earlier version. Every route acts on the signed-in user's portfolio.
+  - name: ai-design
+    description: >-
+      AI design proposals (ai-design-studio): a sentence becomes a proposed theme and layout chosen from the catalogue, generated in the background by the configured provider and validated on the server. A proposal is previewed, applied to the draft design or discarded. Every route acts on the signed-in user's portfolio.
+  - name: public-site
+    description: >-
+      Public site (public-site-rendering): anonymous, read-only access to each portfolio's live snapshot and the files it lists. Never returns draft data.
 
 paths:
   /api/v1/health:
@@ -111,13 +134,13 @@ paths:
                 success: true
                 message: Signed in
                 data:
-                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner }
+                  user: { id: 65f0c0ffee0000000000abcd, email: owner@example.com, displayName: Owner, role: owner }
         '400':
           $ref: '#/components/responses/ValidationFailed'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/OriginNotAllowed'
+          $ref: '#/components/responses/LoginForbidden'
         '429':
           $ref: '#/components/responses/LoginRateLimited'
         '503':
@@ -363,6 +386,1257 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /api/v1/auth/registration/options:
+    get:
+      tags: [auth]
+      operationId: account-registration.API01
+      x-spec-id: account-registration.API01
+      summary: Whether the registration form should offer the owner key
+      description: >-
+        ownerClaimOpen is true while no owner account exists and an owner secret is configured.
+      security: []
+      responses:
+        '200':
+          description: The registration options.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationOptionsEnvelope'
+              example:
+                success: true
+                message: Registration options
+                data: { ownerClaimOpen: false, googleSignIn: true }
+
+  /api/v1/auth/register:
+    post:
+      tags: [auth]
+      operationId: account-registration.API02
+      x-spec-id: account-registration.API02
+      summary: Register an account and email a verification code
+      description: >-
+        Creates an unverified account (or refreshes the password and display name of an
+        unverified one) and emails a 6-digit code; for an address that is already verified,
+        answers identically with a decoy reference and writes and sends nothing. A non-empty
+        ownerSecret claims the platform owner account while the claim is open and the value
+        matches; otherwise it is refused with 403 OWNER_CLAIM_REFUSED and nothing is written.
+        Spends the shared code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: The reference and the code's lifetime. The same for every address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+              example:
+                success: true
+                message: Check your email for a verification code
+                data:
+                  reference: $2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+                  expiresInSec: 600
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/RegistrationForbidden'
+        '409':
+          $ref: '#/components/responses/OwnerExists'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/register/verify:
+    post:
+      tags: [auth]
+      operationId: account-registration.API03
+      x-spec-id: account-registration.API03
+      summary: Verify the email with the code and sign in
+      description: >-
+        Checks the code (5 attempts, 10 minutes), marks the email verified and starts the
+        user's session exactly as a sign-in does. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Verified and signed in. The body carries the user only.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/v1/auth/verification/request:
+    post:
+      tags: [auth]
+      operationId: account-registration.API04
+      x-spec-id: account-registration.API04
+      summary: Request a new verification code by email
+      description: >-
+        For an unverified account, issues and emails a fresh code; for an unknown or verified
+        address, answers identically with a decoy reference and writes and sends nothing. Spends
+        the shared code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: The reference and the code's lifetime. The same for every address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/verification/resend:
+    post:
+      tags: [auth]
+      operationId: account-registration.API05
+      x-spec-id: account-registration.API05
+      summary: Resend a verification code
+      description: >-
+        Replaces the verification code the reference names; the old reference and code stop
+        working. Allowed once 60 seconds have passed since the last send. Spends the shared
+        code-send limit. Requires the web app's Origin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOtpRequest'
+      responses:
+        '200':
+          description: A new reference and the code's lifetime.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpIssuedEnvelope'
+        '400':
+          $ref: '#/components/responses/OtpRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '429':
+          $ref: '#/components/responses/CodeSendRateLimited'
+        '502':
+          $ref: '#/components/responses/MailUpstreamFailed'
+        '503':
+          $ref: '#/components/responses/PasswordResetUnavailable'
+
+  /api/v1/auth/google/start:
+    get:
+      tags: [auth]
+      operationId: google-sign-in.API01
+      x-spec-id: google-sign-in.API01
+      summary: Start Google sign-in (browser navigation)
+      description: >-
+        Mints state, a PKCE verifier and a nonce, stores the verifier and nonce for 10 minutes,
+        sets the google-state cookie and redirects to Google. When Google is not configured or
+        cannot be reached, redirects to the CMS sign-in page with error=google_unavailable or
+        error=google_failed. Shares a limit of 20 requests per 15 minutes per IP with API02.
+      security: []
+      responses:
+        '302':
+          description: To Google's authorization endpoint, or to /cms/login?error=<reason>.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/v1/auth/google/callback:
+    get:
+      tags: [auth]
+      operationId: google-sign-in.API02
+      x-spec-id: google-sign-in.API02
+      summary: Complete Google sign-in (browser navigation)
+      description: >-
+        Checks the google-state cookie against the state query value, takes the stored verifier
+        and nonce once, exchanges the code and verifies the ID token, resolves the user (linked
+        subject, then a Google-verified email which links, then a new verified member) and sets
+        the three session cookies. Never answers JSON on failure: redirects to /cms/login with
+        error= one of google_unavailable, google_cancelled, google_state, google_failed,
+        google_unverified, google_conflict.
+      security: []
+      parameters:
+        - { name: code, in: query, schema: { type: string, maxLength: 2048 } }
+        - { name: state, in: query, schema: { type: string, maxLength: 2048 } }
+        - { name: error, in: query, schema: { type: string, maxLength: 2048 } }
+      responses:
+        '302':
+          description: To /cms with the session cookies set, or to /cms/login?error=<reason>.
+          headers:
+            Location: { schema: { type: string, format: uri } }
+            Set-Cookie:
+              $ref: '#/components/headers/SetSessionCookies'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/cms/portfolio:
+    get:
+      tags: [portfolio]
+      operationId: section-engine.API01
+      x-spec-id: section-engine.API01
+      summary: The signed-in user's portfolio draft
+      description: >-
+        Every registered section type in registration order, with its stored data, visibility
+        and revision; a type with no stored document is returned with its defaults, visible
+        false and revision 0. Provisions the portfolio from the template on the user's first CMS
+        request.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The draft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioDraftEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/portfolio/section-types:
+    get:
+      tags: [portfolio]
+      operationId: section-engine.API02
+      x-spec-id: section-engine.API02
+      summary: The registered section types
+      description: >-
+        Type, label and flags of every registered section type.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionTypesEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/portfolio/sections/{type}:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API03
+      x-spec-id: section-engine.API03
+      summary: Save one section
+      description: >-
+        Validates data against the type's schema (free text cleaned; paths in errors are
+        relative to data), assigns ids to list items without one, and stores it when
+        expectedRevision matches. expectedRevision 0 creates a type that has no stored document
+        yet. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9-]*$', maxLength: 32 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSectionRequest'
+      responses:
+        '200':
+          description: The saved section.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/portfolio/sections/{type}/visibility:
+    patch:
+      tags: [portfolio]
+      operationId: section-engine.API04
+      x-spec-id: section-engine.API04
+      summary: Show or hide one section
+      description: >-
+        Sets visible when expectedRevision matches. hero cannot be hidden (409
+        SECTION_NOT_HIDEABLE). Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9-]*$', maxLength: 32 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetVisibilityRequest'
+      responses:
+        '200':
+          description: The section.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SectionConflict'
+
+  /api/v1/cms/portfolio/section-order:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API05
+      x-spec-id: section-engine.API05
+      summary: Reorder the sections
+      description: >-
+        Replaces sectionOrder in one conditional write when order is an exact permutation of the
+        orderable types (hero excluded) and expectedRevision matches the portfolio. Requires the
+        web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderSectionsRequest'
+      responses:
+        '200':
+          description: The portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/portfolio/slug:
+    put:
+      tags: [portfolio]
+      operationId: section-engine.API06
+      x-spec-id: section-engine.API06
+      summary: Change the portfolio address
+      description: >-
+        Replaces the slug (3 to 40 lower-case letters, digits and single inner hyphens) when it
+        is neither reserved nor used by another portfolio and expectedRevision matches. Requires
+        the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeSlugRequest'
+      responses:
+        '200':
+          description: The portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/SlugConflict'
+  /api/v1/cms/assets:
+    post:
+      tags: [assets]
+      operationId: media-assets.API01
+      x-spec-id: media-assets.API01
+      summary: Upload a file
+      description: >-
+        multipart/form-data with a kind field (resume or image) before one file part. The type
+        is detected from the bytes (never the name or header); resume accepts PDF up to 5 MB,
+        image PNG, JPEG or WebP up to 2 MB. An identical file already uploaded as the same kind
+        answers 200 with that asset. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind: { enum: [resume, image] }
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Uploaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    get:
+      tags: [assets]
+      operationId: media-assets.API02
+      x-spec-id: media-assets.API02
+      summary: List files
+      description: >-
+        The portfolio's assets, newest first, optionally of one kind, each with inUse.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: kind, in: query, schema: { enum: [resume, image] } }
+      responses:
+        '200':
+          description: The assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+
+  /api/v1/cms/assets/{id}:
+    delete:
+      tags: [assets]
+      operationId: media-assets.API03
+      x-spec-id: media-assets.API03
+      summary: Delete a file
+      description: >-
+        Removes the bytes, then the metadata, unless some module still references the asset (409
+        ASSET_IN_USE with usedBy). Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/AssetInUse'
+
+  /api/v1/cms/assets/{id}/content:
+    get:
+      tags: [assets]
+      operationId: media-assets.API04
+      x-spec-id: media-assets.API04
+      summary: Read a file
+      description: >-
+        The bytes with the stored Content-Type, X-Content-Type-Options nosniff,
+        Content-Disposition inline and Cache-Control private, no-store. Only the asset's own
+        user can read it.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: The file bytes.
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cms/identity:
+    get:
+      tags: [identity]
+      operationId: site-identity.API01
+      x-spec-id: site-identity.API01
+      summary: The portfolio identity
+      description: >-
+        The stored identity, or a template from the account (name, email, initials; placeholders
+        elsewhere) at revision 0 until the first save.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+    put:
+      tags: [identity]
+      operationId: site-identity.API02
+      x-spec-id: site-identity.API02
+      summary: Save the identity
+      description: >-
+        Validates the whole identity (one link per platform, https links, an uploaded résumé PDF
+        and image of this portfolio) and stores it when expectedRevision matches;
+        expectedRevision 0 creates it. Unknown keys such as phone are dropped. Requires the web
+        app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIdentityRequest'
+      responses:
+        '200':
+          description: The saved identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design:
+    get:
+      tags: [design]
+      operationId: design-theme.API01
+      x-spec-id: design-theme.API01
+      summary: The design and the catalogue
+      description: >-
+        The stored design, or the reference design at revision 0, with the variant catalogue and
+        the font allow-list.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+    put:
+      tags: [design]
+      operationId: design-theme.API02
+      x-spec-id: design-theme.API02
+      summary: Save the design
+      description: >-
+        Validates the whole design (6-digit hex, fonts in their roles, every section's variant
+        in its catalogue, the contrast pairs) and stores it when expectedRevision matches; 0
+        creates it. Every problem is listed in one 400. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDesignRequest'
+      responses:
+        '200':
+          description: The saved design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+
+  /api/v1/cms/design/reset:
+    post:
+      tags: [design]
+      operationId: design-theme.API03
+      x-spec-id: design-theme.API03
+      summary: Reset to the reference design
+      description: >-
+        Replaces the design with the reference design when expectedRevision matches. Requires
+        the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetDesignRequest'
+      responses:
+        '200':
+          description: The reset design.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design/layouts:
+    get:
+      tags: [design]
+      operationId: design-library.API01
+      x-spec-id: design-library.API01
+      summary: List the layout library
+      description: >-
+        Custom layouts saved for this portfolio, newest first.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: List the layout library.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryLayoutsEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/design/layouts/{id}:
+    delete:
+      tags: [design]
+      operationId: design-library.API02
+      x-spec-id: design-library.API02
+      summary: Delete a library layout
+      description: >-
+        Refused with LAYOUT_IN_USE while the draft design or a preset names it. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: Delete a library layout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/LayoutInUse'
+  /api/v1/cms/design/presets:
+    get:
+      tags: [design]
+      operationId: design-library.API03
+      x-spec-id: design-library.API03
+      summary: List design presets
+      description: >-
+        Saved presets, newest first.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: List design presets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetsEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+    post:
+      tags: [design]
+      operationId: design-library.API04
+      x-spec-id: design-library.API04
+      summary: Save the draft design as a preset
+      description: >-
+        Saves the current draft design under a name. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavePresetRequest'
+      responses:
+        '201':
+          description: Save the draft design as a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/LibraryFull'
+  /api/v1/cms/design/presets/{id}/apply:
+    post:
+      tags: [design]
+      operationId: design-library.API05
+      x-spec-id: design-library.API05
+      summary: Apply a preset
+      description: >-
+        Replaces the draft design with the preset when expectedRevision matches; validated like a save. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetDesignRequest'
+      responses:
+        '200':
+          description: Apply a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/RevisionConflict'
+  /api/v1/cms/design/presets/{id}:
+    delete:
+      tags: [design]
+      operationId: design-library.API06
+      x-spec-id: design-library.API06
+      summary: Delete a preset
+      description: >-
+        Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: Delete a preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cms/publishing/status:
+    get:
+      tags: [publishing]
+      operationId: publish-pipeline.API01
+      x-spec-id: publish-pipeline.API01
+      summary: Publishing status
+      description: >-
+        The live version (null before the first publish), the draft's content hash, whether the
+        draft differs from what is live, and the last revalidation outcome.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingStatusEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/publishing/validate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API02
+      x-spec-id: publish-pipeline.API02
+      summary: Check the draft
+      description: >-
+        Runs every publish rule on the draft and returns every issue with the draft's hash,
+        which the publish call must echo. Writes nothing. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The issues.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReportEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+  /api/v1/cms/publishing/publish:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API03
+      x-spec-id: publish-pipeline.API03
+      summary: Publish the draft
+      description: >-
+        Validates, inserts the next snapshot, switches the live pointer in one conditional
+        write, prunes snapshots outside the newest 20 (never the live one) and asks the site to
+        revalidate. A revalidation failure is reported, never rolled back. Requires the web
+        app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishRequest'
+      responses:
+        '201':
+          description: Published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishResultEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/PublishConflict'
+        '422':
+          $ref: '#/components/responses/PublishBlocked'
+  /api/v1/cms/publishing/snapshots:
+    get:
+      tags: [publishing]
+      operationId: publish-pipeline.API04
+      x-spec-id: publish-pipeline.API04
+      summary: Version history
+      description: >-
+        Snapshots newest first, without content. Continue with nextCursor.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, required: false, description: The version to continue below., schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: One page of the history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotPageEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/publishing/snapshots/{version}/activate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API05
+      x-spec-id: publish-pipeline.API05
+      summary: Make a version live
+      description: >-
+        Switches the live pointer to an existing snapshot (rollback). No snapshot and no draft
+        document changes. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: The version is live.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivationEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ActivationConflict'
+  /api/v1/cms/publishing/revalidate:
+    post:
+      tags: [publishing]
+      operationId: publish-pipeline.API06
+      x-spec-id: publish-pipeline.API06
+      summary: Retry site revalidation
+      description: >-
+        Asks the site again to re-render the live version and records the outcome. Requires the
+        web app's Origin.
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: The outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevalidationEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/NothingPublished'
+  /api/v1/cms/ai/design-proposals:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API01
+      x-spec-id: ai-design-studio.API01
+      summary: Start a design proposal
+      description: >-
+        Stores a pending proposal and answers 202 at once; generation runs in the background (poll
+        API02). The owner is unlimited; a member has the free monthly generations, then each costs
+        credits. One proposal per portfolio may be pending. Provider failures are recorded on the
+        proposal, never answered as 5xx. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+      responses:
+        '202':
+          description: The pending proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '402':
+          $ref: '#/components/responses/CreditsRequired'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/GenerationInProgress'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API03
+      x-spec-id: ai-design-studio.API03
+      summary: Proposal history
+      description: >-
+        Proposals newest first, discarded ones excluded. Continue with nextCursor.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, required: false, description: The last proposal id of the previous page., schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: One page of proposals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalPageEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/ai/design-proposals/{id}:
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API02
+      x-spec-id: ai-design-studio.API02
+      summary: One proposal
+      description: >-
+        The proposal and its status; polled while it is pending.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: The proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [ai-design]
+      operationId: ai-design-studio.API05
+      x-spec-id: ai-design-studio.API05
+      summary: Discard a proposal
+      description: >-
+        Discards a ready or failed proposal; it leaves the history. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: The discarded proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalNotReady'
+  /api/v1/cms/ai/design-proposals/{id}/apply:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API04
+      x-spec-id: ai-design-studio.API04
+      summary: Apply a proposal to the draft design
+      description: >-
+        Replaces the draft design with a ready proposal's design when expectedDesignRevision
+        matches; the design is validated again first. The published site changes only at the
+        next publish. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyProposalRequest'
+      responses:
+        '200':
+          description: The new draft design and the applied proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppliedProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalApplyConflict'
+  /api/v1/cms/ai/design-proposals/{id}/preset:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API07
+      x-spec-id: ai-design-studio.API07
+      summary: Save a proposal as a design preset
+      description: >-
+        Saves a ready or applied proposal as a named preset (design-library); its custom layouts
+        are saved to the library first. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavePresetRequest'
+      responses:
+        '201':
+          description: The preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalNotReady'
+  /api/v1/cms/ai/provider:
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API06
+      x-spec-id: ai-design-studio.API06
+      summary: The design provider and the allowance
+      description: >-
+        The configured provider and model (or the development stub), whether it answers, and the
+        user's free generations this month, the credit cost and the balance (null for the owner).
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: Provider and allowance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProviderEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/public/portfolios:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API04
+      x-spec-id: public-site-rendering.API04
+      summary: Published portfolios
+      description: >-
+        Every portfolio with a live snapshot, by slug, for the sitemap.
+      security: []
+      responses:
+        '200':
+          description: The published portfolios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedPortfolioListEnvelope'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/public/portfolios/{slug}:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API01
+      x-spec-id: public-site-rendering.API01
+      summary: A portfolio's live snapshot
+      description: >-
+        The live snapshot's content with ETag equal to its content hash and Cache-Control
+        public, max-age=0, must-revalidate. A matching If-None-Match is a bodiless 304. An
+        unknown slug and an unpublished portfolio are the same 404.
+      security: []
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: The live snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPortfolioEnvelope'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/public/portfolios/{slug}/assets/{id}/{filename}:
+    get:
+      tags: [public-site]
+      operationId: public-site-rendering.API02
+      x-spec-id: public-site-rendering.API02
+      summary: A published file
+      description: >-
+        The bytes of a file the live snapshot lists under exactly this name, with its stored
+        type, ETag from its SHA-256, Cache-Control public, max-age=3600, X-Content-Type-Options
+        nosniff and an inline Content-Disposition. Anything else is 404.
+      security: []
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' } }
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 64 } }
+        - { name: filename, in: path, required: true, schema: { type: string, maxLength: 100 } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: The file bytes.
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
 components:
   securitySchemes:
     sessionCookies:
@@ -412,11 +1686,46 @@ components:
           additionalProperties: true
     AuthUser:
       type: object
-      required: [id, email, displayName]
+      required: [id, email, displayName, role]
       properties:
         id: { type: string }
         email: { type: string, format: email }
         displayName: { type: string }
+        role: { enum: [owner, member] }
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 12, maxLength: 200 }
+        displayName:
+          type: string
+          maxLength: 80
+          description: Plain text; HTML tags and control characters are removed, then 1..80 characters.
+        ownerSecret:
+          type: string
+          maxLength: 200
+          description: The owner secret key. An empty string is treated as absent.
+    VerifyEmailRequest:
+      type: object
+      required: [reference, otp]
+      properties:
+        reference: { type: string, minLength: 1, maxLength: 100 }
+        otp: { type: string, pattern: '^[0-9]{6}$' }
+    RegistrationOptionsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [ownerClaimOpen, googleSignIn]
+              properties:
+                ownerClaimOpen: { type: boolean }
+                googleSignIn:
+                  type: boolean
+                  description: Whether Google sign-in is configured (google-sign-in.AC9).
     UserEnvelope:
       allOf:
         - $ref: '#/components/schemas/SuccessEnvelope'
@@ -477,7 +1786,640 @@ components:
         db: { const: up }
         version: { type: string, minLength: 1 }
         uptimeSec: { type: integer, minimum: 0 }
-
+    CmsPortfolio:
+      type: object
+      required: [id, slug, revision, sectionOrder]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        revision: { type: integer, minimum: 1 }
+        sectionOrder: { type: array, items: { type: string } }
+    CmsSection:
+      type: object
+      required: [type, visible, revision, data]
+      properties:
+        type: { type: string }
+        visible: { type: boolean }
+        revision: { type: integer, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        data:
+          description: The payload owned by that section type's spec.
+    SectionTypeInfo:
+      type: object
+      required: [type, label, orderable, hideable, inNav]
+      properties:
+        type: { type: string }
+        label: { type: string }
+        orderable: { type: boolean }
+        hideable: { type: boolean }
+        inNav: { type: boolean }
+    UpdateSectionRequest:
+      type: object
+      required: [expectedRevision, data]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        data: { description: The section type's payload. }
+    SetVisibilityRequest:
+      type: object
+      required: [expectedRevision, visible]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        visible: { type: boolean }
+    ReorderSectionsRequest:
+      type: object
+      required: [expectedRevision, order]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        order: { type: array, maxItems: 64, items: { type: string } }
+    ChangeSlugRequest:
+      type: object
+      required: [expectedRevision, slug]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        slug: { type: string, pattern: '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$' }
+    PortfolioDraftEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolio, sections]
+              properties:
+                portfolio: { : '#/components/schemas/CmsPortfolio' }
+                sections: { type: array, items: { : '#/components/schemas/CmsSection' } }
+    SectionTypesEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [types]
+              properties:
+                types: { type: array, items: { : '#/components/schemas/SectionTypeInfo' } }
+    SectionEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [section]
+              properties:
+                section: { : '#/components/schemas/CmsSection' }
+    PortfolioEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolio]
+              properties:
+                portfolio: { : '#/components/schemas/CmsPortfolio' }
+    AssetReference:
+      type: object
+      required: [id, kind, filename, mime, sizeBytes, sha256, createdAt, inUse]
+      properties:
+        id: { type: string }
+        kind: { enum: [resume, image] }
+        filename: { type: string, maxLength: 100 }
+        mime: { type: string }
+        sizeBytes: { type: integer, minimum: 1 }
+        sha256: { type: string }
+        createdAt: { type: string, format: date-time }
+        inUse: { type: boolean }
+    AssetEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [asset]
+              properties:
+                asset: { : '#/components/schemas/AssetReference' }
+    AssetListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [assets]
+              properties:
+                assets: { type: array, items: { : '#/components/schemas/AssetReference' } }
+    DeletedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [deleted]
+              properties:
+                deleted: { const: true }
+    Identity:
+      type: object
+      description: The identity shape owned by site-identity (API Contract); there is no phone field.
+      required: [fullName, monogram, roleTitle, email, location, availability, socials, resume, footer, seo]
+      properties:
+        fullName: { type: string, maxLength: 80 }
+        monogram: { type: string, pattern: '^[A-Z0-9]{1,3}$' }
+        roleTitle: { type: string, maxLength: 80 }
+        email: { type: string, format: email }
+        location:
+          type: object
+          required: [label]
+          properties:
+            label: { type: string, maxLength: 60 }
+            timezoneLabel: { type: string, maxLength: 24 }
+        availability:
+          type: object
+          required: [enabled, label]
+          properties:
+            enabled: { type: boolean }
+            label: { type: string, maxLength: 48 }
+        socials:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            required: [platform, url]
+            properties:
+              id: { type: string }
+              platform: { enum: [github, linkedin, x, website] }
+              url: { type: string, format: uri }
+        resume:
+          type: object
+          required: [assetId, label]
+          properties:
+            assetId: { type: [string, 'null'] }
+            label: { type: string, maxLength: 16 }
+        footer:
+          type: object
+          required: [copyrightName, builtWith]
+          properties:
+            copyrightName: { type: string, maxLength: 80 }
+            builtWith: { type: array, maxItems: 6, items: { type: string, maxLength: 24 } }
+        seo:
+          type: object
+          required: [title, description, ogImageAssetId]
+          properties:
+            title: { type: string, maxLength: 70 }
+            description: { type: string, maxLength: 160 }
+            ogImageAssetId: { type: [string, 'null'] }
+    UpdateIdentityRequest:
+      type: object
+      required: [expectedRevision, data]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        data: { $ref: '#/components/schemas/Identity' }
+    IdentityEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [identity]
+              properties:
+                identity:
+                  type: object
+                  required: [revision, data]
+                  properties:
+                    revision: { type: integer, minimum: 0 }
+                    updatedAt: { type: string, format: date-time }
+                    data: { $ref: '#/components/schemas/Identity' }
+    DesignSpec:
+      type: object
+      description: Owned by packages/design-tokens (design-theme → Design payload).
+      required: [theme, layout]
+      properties:
+        theme:
+          type: object
+          required: [colors, fonts, radius, effects]
+          properties:
+            colors:
+              type: object
+              additionalProperties: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+            fonts:
+              type: object
+              required: [sans, display, mono]
+              properties:
+                sans: { type: string }
+                display: { type: string }
+                mono: { type: string }
+            radius: { enum: [none, sm, md, lg, xl] }
+            effects:
+              type: object
+              required: [glow, dotGrid, motion]
+              properties:
+                glow: { type: boolean }
+                dotGrid: { type: boolean }
+                motion: { enum: [none, subtle, full] }
+        layout:
+          type: object
+          additionalProperties: { type: string }
+    UpdateDesignRequest:
+      allOf:
+        - $ref: '#/components/schemas/DesignSpec'
+        - type: object
+          required: [expectedRevision]
+          properties:
+            expectedRevision: { type: integer, minimum: 0 }
+    ResetDesignRequest:
+      type: object
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+    DesignEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [design]
+              properties:
+                design:
+                  allOf:
+                    - $ref: '#/components/schemas/DesignSpec'
+                    - type: object
+                      required: [revision]
+                      properties:
+                        revision: { type: integer, minimum: 0 }
+                        updatedAt: { type: string, format: date-time }
+                catalogue:
+                  type: object
+                  description: The variant catalogue and font allow-list (API01 only).
+    CreateProposalRequest:
+      type: object
+      required: [prompt, scope]
+      properties:
+        prompt: { type: string, minLength: 1, maxLength: 600, description: Plain text; tags are stripped. }
+        scope: { enum: [theme, layout, both] }
+        basedOnCurrent: { type: boolean, default: true }
+        explore: { type: boolean, default: false, description: Ask for a new custom layout for every section in scope (design-library). }
+    ApplyProposalRequest:
+      type: object
+      required: [expectedDesignRevision]
+      properties:
+        expectedDesignRevision: { type: integer, minimum: 0 }
+    Proposal:
+      type: object
+      required: [id, status, prompt, scope, basedOnCurrent, explore, provider, model, design, rationale, failure, charge, durationMs, createdAt, completedAt]
+      properties:
+        id: { type: string }
+        status: { enum: [pending, ready, failed, applied, discarded] }
+        prompt: { type: string }
+        scope: { enum: [theme, layout, both] }
+        basedOnCurrent: { type: boolean }
+        explore: { type: boolean }
+        provider: { enum: [gemini, openrouter, ollama, stub] }
+        model: { type: string }
+        design:
+          oneOf:
+            - allOf:
+                - $ref: '#/components/schemas/DesignSpec'
+                - type: object
+                  properties:
+                    customLayouts:
+                      type: object
+                      description: A CustomLayout per section the AI arranged (design-library); saved to the library on apply.
+                      additionalProperties: { type: object }
+            - type: 'null'
+        rationale: { type: [string, 'null'], maxLength: 400 }
+        failure:
+          oneOf:
+            - type: object
+              required: [code, message]
+              properties:
+                code: { enum: [PROVIDER_TIMEOUT, PROVIDER_ERROR, INVALID_OUTPUT, CONTRAST_FAILED, INTERRUPTED] }
+                message: { type: string }
+            - type: 'null'
+        charge:
+          type: object
+          required: [kind, credits, refunded]
+          properties:
+            kind: { enum: [none, free, credit] }
+            credits: { type: integer, minimum: 0 }
+            refunded: { type: boolean }
+        durationMs: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+    ProposalEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [proposal]
+              properties:
+                proposal: { $ref: '#/components/schemas/Proposal' }
+    ProposalPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [proposals, nextCursor]
+              properties:
+                proposals:
+                  type: array
+                  items: { $ref: '#/components/schemas/Proposal' }
+                nextCursor: { type: [string, 'null'] }
+    AppliedProposalEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [design, proposal]
+              properties:
+                design:
+                  allOf:
+                    - $ref: '#/components/schemas/DesignSpec'
+                    - type: object
+                      required: [revision]
+                      properties:
+                        revision: { type: integer, minimum: 1 }
+                        updatedAt: { type: string, format: date-time }
+                proposal: { $ref: '#/components/schemas/Proposal' }
+    AiProviderEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [provider, model, isStub, reachable, allowance]
+              properties:
+                provider: { enum: [gemini, openrouter, ollama, stub] }
+                model: { type: string }
+                isStub: { type: boolean }
+                reachable: { type: boolean }
+                allowance:
+                  type: object
+                  required: [unlimited, freeMonthly, freeUsed, creditCost, balance, resetsAt]
+                  properties:
+                    unlimited: { type: boolean }
+                    freeMonthly: { type: integer, minimum: 0 }
+                    freeUsed: { type: integer, minimum: 0 }
+                    creditCost: { type: integer, minimum: 0 }
+                    balance: { type: [integer, 'null'], minimum: 0 }
+                    resetsAt: { type: string, format: date-time }
+    LibraryLayout:
+      type: object
+      required: [id, section, name, layout, source, createdAt]
+      properties:
+        id: { type: string }
+        section: { enum: [hero, about, work, experience, stack, contact] }
+        name: { type: string, maxLength: 60 }
+        layout: { type: object, description: A CustomLayout (packages/design-tokens; design-library spec). }
+        source: { enum: [ai, preset] }
+        createdAt: { type: string, format: date-time }
+    LibraryLayoutsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [layouts]
+              properties:
+                layouts: { type: array, items: { $ref: '#/components/schemas/LibraryLayout' } }
+    DesignPreset:
+      type: object
+      required: [id, name, design, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string, maxLength: 60 }
+        design: { $ref: '#/components/schemas/DesignSpec' }
+        createdAt: { type: string, format: date-time }
+    DesignPresetsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [presets]
+              properties:
+                presets: { type: array, items: { $ref: '#/components/schemas/DesignPreset' } }
+    DesignPresetEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [preset]
+              properties:
+                preset: { $ref: '#/components/schemas/DesignPreset' }
+    SavePresetRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+    PublishIssue:
+      type: object
+      required: [rule, severity, path, message]
+      properties:
+        rule: { type: string, example: no-placeholder-text }
+        severity: { type: string, enum: [error, warning] }
+        path: { type: string, example: 'sections.work.projects[3].description' }
+        message: { type: string }
+    PublishRequest:
+      type: object
+      required: [expectedDraftHash]
+      properties:
+        expectedDraftHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+        note: { type: string, maxLength: 200 }
+    PublishingStatusEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [published, draft, hasUnpublishedChanges, revalidation]
+              properties:
+                published:
+                  type: [object, 'null']
+                  required: [version, publishedAt, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    publishedAt: { type: string, format: date-time }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                draft:
+                  type: object
+                  required: [contentHash]
+                  properties:
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                hasUnpublishedChanges: { type: boolean }
+                revalidation:
+                  type: [object, 'null']
+                  required: [status, at]
+                  properties:
+                    status: { type: string, enum: [ok, failed, pending] }
+                    at: { type: string, format: date-time }
+    ValidationReportEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [publishable, draftContentHash, issues]
+              properties:
+                publishable: { type: boolean }
+                draftContentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                issues:
+                  type: array
+                  items: { $ref: '#/components/schemas/PublishIssue' }
+    PublishResultEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshot, warnings, revalidation]
+              properties:
+                snapshot:
+                  type: object
+                  required: [version, publishedAt, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    publishedAt: { type: string, format: date-time }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                warnings:
+                  type: array
+                  items: { $ref: '#/components/schemas/PublishIssue' }
+                revalidation: { type: string, enum: [ok, failed] }
+    SnapshotPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshots, nextCursor]
+              properties:
+                snapshots:
+                  type: array
+                  items:
+                    type: object
+                    required: [version, publishedAt, note, contentHash, isCurrent, revalidation]
+                    properties:
+                      version: { type: integer, minimum: 1 }
+                      publishedAt: { type: string, format: date-time }
+                      note: { type: [string, 'null'] }
+                      contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                      isCurrent: { type: boolean }
+                      revalidation: { type: string, enum: [ok, failed, pending] }
+                nextCursor: { type: [string, 'null'] }
+    ActivationEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [snapshot, revalidation]
+              properties:
+                snapshot:
+                  type: object
+                  required: [version, contentHash]
+                  properties:
+                    version: { type: integer, minimum: 1 }
+                    contentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+                revalidation: { type: string, enum: [ok, failed] }
+    RevalidationEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [revalidation]
+              properties:
+                revalidation: { type: string, enum: [ok, failed] }
+    PublicPortfolioEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [slug, version, publishedAt, content]
+              properties:
+                slug: { type: string }
+                version: { type: integer, minimum: 1 }
+                publishedAt: { type: string, format: date-time }
+                content:
+                  type: object
+                  description: PublishedContent (publish-pipeline → Published content).
+                  required: [schemaVersion, identity, sections, design, assets]
+                  properties:
+                    schemaVersion: { type: integer, minimum: 1 }
+                    identity: { $ref: '#/components/schemas/Identity' }
+                    sections:
+                      type: array
+                      items:
+                        type: object
+                        required: [type, data]
+                        properties:
+                          type: { type: string }
+                          data: { type: object }
+                    design: { type: object }
+                    assets: { type: array, items: { type: object } }
+    PublishedPortfolioListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [portfolios]
+              properties:
+                portfolios:
+                  type: array
+                  items:
+                    type: object
+                    required: [slug, publishedAt]
+                    properties:
+                      slug: { type: string }
+                      publishedAt: { type: string, format: date-time }
   responses:
     ValidationFailed:
       description: The request failed its schema.
@@ -697,6 +2639,63 @@ components:
             success: false
             message: Upstream provider failed
             data: { code: UPSTREAM_FAILED, provider: mail }
+    LoginForbidden:
+      description: >-
+        ORIGIN_NOT_ALLOWED — the Origin is not the web app's. EMAIL_NOT_VERIFIED — the password was right but the email has not been verified yet; no session is created.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ORIGIN_NOT_ALLOWED, EMAIL_NOT_VERIFIED] }
+          example:
+            success: false
+            message: Verify your email address before signing in
+            data: { code: EMAIL_NOT_VERIFIED }
+    RegistrationForbidden:
+      description: >-
+        ORIGIN_NOT_ALLOWED — the Origin is not the web app's. OWNER_CLAIM_REFUSED — an owner secret was sent while the owner claim is closed, or it does not match; nothing is written or sent.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ORIGIN_NOT_ALLOWED, OWNER_CLAIM_REFUSED] }
+          example:
+            success: false
+            message: The owner key was not accepted
+            data: { code: OWNER_CLAIM_REFUSED }
+    OwnerExists:
+      description: >-
+        Another registration claimed the owner account first; nothing was written for this one.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: OWNER_EXISTS }
+          example:
+            success: false
+            message: The platform owner has already been claimed
+            data: { code: OWNER_EXISTS }
     PasswordResetUnavailable:
       description: >-
         No mail strategy is configured (outside production only; production refuses to start
@@ -717,3 +2716,338 @@ components:
             success: false
             message: Mail delivery is not configured
             data: { code: SERVICE_UNAVAILABLE }
+    NotFound:
+      description: >-
+        The resource does not exist (for a section, the type is not registered).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: NOT_FOUND }
+          example:
+            success: false
+            message: Resource not found
+            data: { code: NOT_FOUND }
+    RevisionConflict:
+      description: >-
+        expectedRevision is stale; data.currentRevision holds the stored revision. Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: REVISION_CONFLICT }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: This was changed elsewhere. Reload to see the latest version
+            data: { code: REVISION_CONFLICT }
+    SectionConflict:
+      description: >-
+        REVISION_CONFLICT (with currentRevision) or SECTION_NOT_HIDEABLE (hero). Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [REVISION_CONFLICT, SECTION_NOT_HIDEABLE] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: This section cannot be hidden
+            data: { code: SECTION_NOT_HIDEABLE }
+    SlugConflict:
+      description: >-
+        SLUG_TAKEN (reserved, or used by another portfolio) or REVISION_CONFLICT (with currentRevision). Nothing was written.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [SLUG_TAKEN, REVISION_CONFLICT] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: That address is already taken
+            data: { code: SLUG_TAKEN }
+    PayloadTooLarge:
+      description: >-
+        The file is over its kind's limit; data.maxBytes holds it. Nothing was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: PAYLOAD_TOO_LARGE }
+                      maxBytes: { type: integer }
+          example:
+            success: false
+            message: Request body is too large
+            data: { code: PAYLOAD_TOO_LARGE }
+    UnsupportedMediaType:
+      description: >-
+        The detected type is not accepted for the kind; data.allowed lists what is. Nothing was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: UNSUPPORTED_MEDIA_TYPE }
+                      allowed: { type: array, items: { type: string } }
+          example:
+            success: false
+            message: Unsupported media type
+            data: { code: UNSUPPORTED_MEDIA_TYPE }
+    AssetInUse:
+      description: >-
+        The asset is referenced; data.usedBy names where. Nothing was deleted.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: ASSET_IN_USE }
+                      usedBy: { type: array, items: { type: string } }
+          example:
+            success: false
+            message: This file is in use and cannot be deleted
+            data: { code: ASSET_IN_USE }
+    PublishConflict:
+      description: >-
+        The draft changed since it was checked (with draftContentHash), it is already live, or another publish switched the live version first.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [DRAFT_CHANGED, NOTHING_TO_PUBLISH, PUBLISH_CONFLICT] }
+                      draftContentHash: { type: string, pattern: '^[0-9a-f]{64}$' }
+          example:
+            success: false
+            message: The draft changed since it was checked
+            data: { code: DRAFT_CHANGED }
+    PublishBlocked:
+      description: >-
+        At least one publish rule reported an error; every issue is listed.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: PUBLISH_BLOCKED }
+                      issues:
+                        type: array
+                        items: { $ref: '#/components/schemas/PublishIssue' }
+          example:
+            success: false
+            message: Fix the listed problems before publishing
+            data: { code: PUBLISH_BLOCKED }
+    ActivationConflict:
+      description: >-
+        That version is already live, or another publish switched the live version first.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [ALREADY_CURRENT, PUBLISH_CONFLICT] }
+          example:
+            success: false
+            message: That version is already live
+            data: { code: ALREADY_CURRENT }
+    NothingPublished:
+      description: >-
+        Nothing has been published yet.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: NOTHING_PUBLISHED }
+          example:
+            success: false
+            message: Nothing is published yet
+            data: { code: NOTHING_PUBLISHED }
+    CreditsRequired:
+      description: >-
+        The free monthly generations are used up and the credits do not cover one more. Nothing
+        was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, creditsRequired, balance]
+                    properties:
+                      code: { const: CREDITS_REQUIRED }
+                      creditsRequired: { type: integer, minimum: 0 }
+                      balance: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: Not enough credits
+            data: { code: CREDITS_REQUIRED, creditsRequired: 1, balance: 0 }
+    GenerationInProgress:
+      description: >-
+        A proposal for this portfolio is already pending; data.proposalId names it.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: GENERATION_IN_PROGRESS }
+                      proposalId: { type: [string, 'null'] }
+          example:
+            success: false
+            message: A design proposal is already being generated
+            data: { code: GENERATION_IN_PROGRESS }
+    ProposalNotReady:
+      description: >-
+        The proposal is not in a state that allows this; data.status holds its status.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, status]
+                    properties:
+                      code: { const: PROPOSAL_NOT_READY }
+                      status: { enum: [pending, ready, failed, applied, discarded] }
+          example:
+            success: false
+            message: The design proposal is not ready
+            data: { code: PROPOSAL_NOT_READY, status: pending }
+    ProposalApplyConflict:
+      description: >-
+        PROPOSAL_NOT_READY (with status) or REVISION_CONFLICT (with currentRevision). The design
+        is unchanged.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [PROPOSAL_NOT_READY, REVISION_CONFLICT] }
+                      status: { enum: [pending, ready, failed, applied, discarded] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: The design proposal is not ready
+            data: { code: PROPOSAL_NOT_READY, status: failed }
+    LayoutInUse:
+      description: The draft design or a preset names this layout; data.usedBy says which. Nothing was deleted.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, usedBy]
+                    properties:
+                      code: { const: LAYOUT_IN_USE }
+                      usedBy: { type: array, items: { enum: [draft, preset] } }
+    LibraryFull:
+      description: The library already holds its maximum (data.max). Nothing was saved.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, max]
+                    properties:
+                      code: { const: LIBRARY_FULL }
+                      max: { type: integer, minimum: 1 }
+    NotModified:
+      description: The client's copy is current (If-None-Match matched); no body.

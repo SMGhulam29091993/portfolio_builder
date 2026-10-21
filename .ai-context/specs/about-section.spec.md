@@ -2,7 +2,21 @@
 ## Spec ID
 about-section
 ## Status
-Draft
+Implemented
+- `In Progress → Implemented` on 2026-10-21: the last task, the layout check at 1440 and 390 with
+  axe, ran in `public-site-rendering`'s journeys, where the page renders at real widths.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`), then `Ready → In Progress`.
+- Revised 2026-10-20, before the spec was ever `Ready`: (1) ADR-0010 — the definition's
+  `defaults()` is the reference template (this layout with bracketed placeholder text,
+  e.g. `[Your headline]`) for every new portfolio; the reference content below is seed data for
+  the development account only (`seed:all`); (2) ADR-0006 amendment — this spec builds both
+  catalogue variants of `about`: `bento` (the reference layout, the fallback) and `stacked`
+  (`design-theme` → Variant catalogue), with the same payload; (3) renderers receive the
+  identity through the page context (`packages/sections` `SectionContext`); (4) visual
+  baselines are replaced by layout assertions in Playwright (element positions at 1440 and 390)
+  plus axe: pixel baselines differ between macOS and CI's Linux and would need per-platform
+  snapshots nobody has reviewed.
 ## Linked BRD
 .ai-context/BRD.md#BRD-001
 ## Intent

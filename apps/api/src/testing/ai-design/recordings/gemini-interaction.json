@@ -1,0 +1,14 @@
+{
+  "id": "v1_recorded-interaction",
+  "object": "interaction",
+  "model": "recorded-model",
+  "status": "completed",
+  "created": "2026-10-21T10:00:00Z",
+  "updated": "2026-10-21T10:00:04Z",
+  "role": "model",
+  "steps": [
+    { "type": "thought", "summary": [{ "type": "text", "text": "Considering the catalogue." }] },
+    { "type": "model_output", "content": [{ "type": "text", "text": "REPLACED_BY_THE_TEST" }] }
+  ],
+  "usage": { "total_input_tokens": 812, "total_output_tokens": 214, "total_tokens": 1026 }
+}

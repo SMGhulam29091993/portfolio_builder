@@ -5,12 +5,14 @@
  */
 import type { ReactNode } from 'react';
 
+import { FONT_VARIABLE_CLASSES } from '../lib/fonts';
 import './globals.css';
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     // The document language is fixed until `site-identity` stores one.
-    <html lang="en">
+    // Every allowed font's variable is defined at the root; a theme picks among them.
+    <html lang="en" className={FONT_VARIABLE_CLASSES}>
       <body>{children}</body>
     </html>
   );

@@ -29,3 +29,17 @@ export class SeedConfigurationError extends Error {
     this.variable = variable;
   }
 }
+
+/**
+ * Seed data that does not satisfy its section's schema, or a list item without the stable id
+ * seed data must carry (`section-engine.T06`). A bug in `seed/data/`, never in the environment.
+ */
+export class SeedDataError extends Error {
+  constructor(
+    readonly sectionType: string,
+    problem: string,
+  ) {
+    super(`Seed data for section "${sectionType}" ${problem}`);
+    this.name = 'SeedDataError';
+  }
+}

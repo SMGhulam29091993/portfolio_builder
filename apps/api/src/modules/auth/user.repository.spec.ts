@@ -40,6 +40,7 @@ describe('UserRepository', () => {
       email: input.email,
       passwordHash: input.passwordHash,
       displayName: input.displayName,
+      role: 'member',
       createdAt: expect.any(Date) as Date,
       updatedAt: expect.any(Date) as Date,
     });

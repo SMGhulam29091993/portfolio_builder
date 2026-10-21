@@ -61,6 +61,7 @@ function serviceWith(mailSender: IMailSender = mail): PasswordResetService {
     mailSender,
     new SequenceSecureRandom(),
     clock,
+    users,
   );
 }
 
@@ -224,6 +225,29 @@ describe('PasswordResetService.reset (owner-auth.API07)', () => {
     await expect(otps.findByIdentifier(record?.identifier ?? '')).resolves.toBeNull();
     await expect(references.resolve(issued.reference)).resolves.toBeNull();
     await expect(sessions.get(owner.id)).resolves.toBeNull();
+  });
+
+  it('account-registration.AC13 — a completed reset marks an unverified email verified', async () => {
+    expect((await users.findById(owner.id))?.emailVerifiedAt).toBeUndefined();
+
+    await service.reset({ reference: issued.reference, otp: code, newPassword: NEW_PASSWORD });
+
+    expect((await users.findById(owner.id))?.emailVerifiedAt).toEqual(clock.now());
+  });
+
+  it('account-registration.AC12 — a verification code reference never completes a reset', async () => {
+    const record = await recordFor(issued.reference);
+    if (!record) throw new Error('the code was not stored');
+    // Re-label the stored code with the other purpose, as if it had been issued for it.
+    await otps.upsert({ ...record, purpose: 'email_verification' });
+
+    await expect(
+      service.reset({ reference: issued.reference, otp: code, newPassword: NEW_PASSWORD }),
+    ).rejects.toBeInstanceOf(OtpInvalidError);
+    clock.advance(61_000);
+    await expect(service.resend({ reference: issued.reference })).rejects.toBeInstanceOf(
+      OtpInvalidError,
+    );
   });
 
   it('owner-auth.AC18 — the same reference sent again is OTP_INVALID', async () => {

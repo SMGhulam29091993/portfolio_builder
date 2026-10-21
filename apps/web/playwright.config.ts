@@ -10,6 +10,8 @@
  */
 import { defineConfig } from '@playwright/test';
 
+import { E2E_MAILBOX_PORT, E2E_REVALIDATE_SECRET } from './e2e/support-constants.ts';
+
 /** API port used only by E2E runs. */
 const E2E_API_PORT = 4100;
 
@@ -27,9 +29,13 @@ export default defineConfig({
   forbidOnly: true,
   reporter: 'list',
   use: { baseURL: webOrigin },
+  // `next dev` compiles each route on first visit; give journeys room for that.
+  timeout: 60_000,
+  // One worker: the journeys share one API, one mailbox and one rate-limit count per IP.
+  workers: 1,
   webServer: [
     {
-      command: `node e2e/start-api.ts ${String(E2E_API_PORT)} ${webOrigin}`,
+      command: `node e2e/start-api.ts ${String(E2E_API_PORT)} ${webOrigin} ${String(E2E_MAILBOX_PORT)}`,
       url: `${apiOrigin}/api/v1/health`,
       reuseExistingServer: false,
       timeout: SERVER_START_TIMEOUT_MS,
@@ -41,7 +47,8 @@ export default defineConfig({
       url: webOrigin,
       reuseExistingServer: false,
       timeout: SERVER_START_TIMEOUT_MS,
-      env: { API_INTERNAL_URL: apiOrigin },
+      // Its own build directory, so the journeys run even while `pnpm dev` holds `.next`.
+      env: { API_INTERNAL_URL: apiOrigin, NEXT_PUBLIC_SITE_URL: webOrigin, REVALIDATE_SECRET: E2E_REVALIDATE_SECRET, NEXT_DIST_DIR: '.next-e2e' },
     },
   ],
 });

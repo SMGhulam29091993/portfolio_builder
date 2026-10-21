@@ -1,6 +1,7 @@
 /**
  * HTTP in/out for sign-in, refresh, sign-out and the current user (`owner-auth.T05`;
- * `owner-auth.API01`–`API04`), and for the password reset (`owner-auth.T08`; `API05`–`API07`).
+ * `owner-auth.API01`–`API04`), for the password reset (`owner-auth.T08`; `API05`–`API07`), and
+ * for registration and email verification (`account-registration.T03`; its `API01`–`API05`).
  *
  * No rules live here: each handler reads the validated body or the cookies, delegates to
  * `IAuthService` or `IPasswordResetService`, and turns the result into cookies plus the standard
@@ -16,14 +17,19 @@ import { SessionExpiredError } from './auth.errors.js';
 import type {
   IAuthService,
   IPasswordResetService,
+  IRegistrationService,
   ISessionCookieWriter,
 } from './auth.interface.js';
 import type {
   ForgotPasswordRequest,
   LoginRequest,
+  RegisterRequest,
   ResendOtpRequest,
   ResetPasswordRequest,
   SignedInSession,
+  VerificationCodeRequest,
+  VerificationResendRequest,
+  VerifyEmailRequest,
 } from './auth.types.js';
 
 /**
@@ -32,11 +38,18 @@ import type {
  */
 const CODE_REQUESTED_MESSAGE = 'If the address is registered, a code has been sent';
 
+/** `account-registration.API02`'s message: one for new, unverified and verified addresses. */
+const REGISTERED_MESSAGE = 'Check your email for a verification code';
+
+/** `account-registration.API04`'s message: one for every address. */
+const VERIFICATION_REQUESTED_MESSAGE = 'If the address needs verifying, a code has been sent';
+
 export class AuthController {
   constructor(
     private readonly auth: IAuthService,
     private readonly cookies: ISessionCookieWriter,
     private readonly passwordReset: IPasswordResetService,
+    private readonly registration: IRegistrationService,
   ) {}
 
   /** `POST /api/v1/auth/login` — `owner-auth.API01`. The body passed `loginRequestSchema`. */
@@ -102,6 +115,40 @@ export class AuthController {
     await this.passwordReset.reset(req.validatedBody as ResetPasswordRequest);
     this.cookies.clear(res);
     ok(res, 'Password updated');
+  };
+
+  /** `GET /api/v1/auth/registration/options` — `account-registration.API01`. */
+  readonly registrationOptions: RequestHandler = async (_req, res) => {
+    ok(res, 'Registration options', await this.registration.options());
+  };
+
+  /** `POST /api/v1/auth/register` — `account-registration.API02`. Body: `registerRequestSchema`. */
+  readonly register: RequestHandler = async (req, res) => {
+    const issued = await this.registration.register(req.validatedBody as RegisterRequest);
+    ok(res, REGISTERED_MESSAGE, issued);
+  };
+
+  /**
+   * `POST /api/v1/auth/register/verify` — `account-registration.API03`. Proves the email and
+   * signs the user in, setting the three cookies as a sign-in does.
+   */
+  readonly verifyEmail: RequestHandler = async (req, res) => {
+    const signedIn = await this.registration.verify(req.validatedBody as VerifyEmailRequest);
+    this.respondSignedIn(res, signedIn, 'Email verified');
+  };
+
+  /** `POST /api/v1/auth/verification/request` — `account-registration.API04`. */
+  readonly requestVerificationCode: RequestHandler = async (req, res) => {
+    const issued = await this.registration.requestCode(
+      req.validatedBody as VerificationCodeRequest,
+    );
+    ok(res, VERIFICATION_REQUESTED_MESSAGE, issued);
+  };
+
+  /** `POST /api/v1/auth/verification/resend` — `account-registration.API05`. */
+  readonly resendVerificationCode: RequestHandler = async (req, res) => {
+    const issued = await this.registration.resend(req.validatedBody as VerificationResendRequest);
+    ok(res, 'A new code has been sent', issued);
   };
 
   /** Sets the session cookies and answers 200 with the user only. */

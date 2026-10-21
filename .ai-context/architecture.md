@@ -13,7 +13,16 @@ Redis infrastructure, the `auth` module's persistence and adapters (T01–T03), 
 `requireOwner` guard wired and routed (T05), the login rate limiter and the Origin allow-list
 (T06), the mail port with its Gmail strategy and factory (T07), and password reset by one-time
 code (T08) exist, and so does the development-only owner seeder with its `seed:owner` script
-(T09, ADR-0010). Every other feature module is ⬜ planned.
+(T09, ADR-0010). `account-registration` is implemented in the same module: registration, email
+verification by one-time code, roles and the one-time owner claim; and `google-sign-in`: the
+OpenID Connect flow against a configured issuer (`OidcProvider`, `jose`). `section-engine` is implemented: the `portfolio`
+module (one portfolio per user, provisioned on the first CMS request; the section registry and
+engine; `resolvePortfolio`), `seed:all`, and the composer in `packages/sections`. The `assets` module
+(`media-assets`) stores files in GridFS behind `IFileStorage`. `site-identity` (`identity`),
+`design-theme` (`design`), the six section types (`portfolio/sections/`), `publish-pipeline`
+(`publishing`), `public-site-rendering` (`public-site` and the `(site)` app) and
+`ai-design-studio` (`ai-design`, the `/cms/ai` screen) are implemented (2026-10-20 / 21).
+`platform-admin`, `credits-billing` and `custom-domains` are ⬜ planned, with no spec yet.
 
 ## System overview
 Each registered user signs in to the CMS panel and builds their own portfolio (ADR-0010): they
@@ -26,7 +35,8 @@ draft into an immutable snapshot; the public site renders only the current snaps
 ```
  Browser (user)  ──► apps/web (cms) ──/api/v1 rewrite──► apps/api ──► MongoDB
                                                       │  └──► Redis (auth sessions, ADR-0008)
-                                                      └─────► Gmail SMTP (one-time codes, ADR-0009)
+                                                      ├─────► Gmail SMTP (one-time codes, ADR-0009)
+                                                      └─────► Google OpenID Connect (sign-in, ADR-0011)
  Browser (visitor) ─► apps/web (site) ─server fetch────► apps/api /public ─► snapshots
                           ▲                                   │
                           └── POST /api/revalidate ◄── portfolio.published event
@@ -37,32 +47,35 @@ draft into an immutable snapshot; the public site renders only the current snaps
 ```
 portfolio-builder/
 ├── apps/
-│   ├── api/                      🚧 Express + TypeScript + Mongoose
+│   ├── api/                      ✅ Express + TypeScript + Mongoose (every specified module built)
 │   │   ├── .env.example          ✅ every API variable of Environment (below); copy to `.env`
 │   │   ├── openapi/openapi.yaml  ✅ OpenAPI 3.1; `pnpm drift` compares it with the mounted routes
 │   │   └── src/
-│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container + app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy) closes both datastores again
+│   │       ├── main.ts           ✅ startup sequence — env → MongoDB → Redis → container → startup hooks (interrupted AI proposals) → app → listen → graceful shutdown; a container that cannot be built (production without a mail strategy or a usable AI provider) or a failing hook closes both datastores again
 │   │       ├── app.ts            ✅ Express app factory (middleware + router mounts + route table)
 │   │       ├── container.ts      ✅ composition root — the only place classes are instantiated
 │   │       ├── config/env.ts     ✅ zod-validated environment (`env-example.spec.ts` keeps `.env.example` in step)
-│   │       ├── core/             🚧 db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle ✅ · errors ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
+│   │       ├── core/             ✅ db ✅ · redis (`RedisConnection`, `IRedisClientProvider`, `whileRedisAvailable`) ✅ · crypto (`sha256Hex`) ✅ · logger ✅ · lifecycle (`IStartupHook`) ✅ · background (`IBackgroundRunner`, `InProcessBackgroundRunner`) ✅ · time (`IDelay`, `SystemDelay`) ✅ · errors (`CreditsRequiredError` 402) ✅ · http (respond, validate, notFound, errorHandler, JSON body, security headers, request id, `RateLimiterFactory`, `OriginAllowListMiddleware`, `ApiRouter`, `parseCookieHeader`) ✅ · events (`IEventBus`, `InProcessEventBus`) ✅
 │   │       ├── openapi/          ✅ drift check (dev tooling, excluded from the build)
 │   │       ├── architecture/     ✅ architecture test + allowed-edge table (dev tooling, excluded from the build)
-│   │       ├── modules/          🚧 one folder per module (table below) — `health` ✅ · `auth` ✅ (persistence: `users`, `otps`, Redis session + reference stores; `adapters/`: argon2id, bcrypt, JWT, random, clock, mail (`GmailMailSender`, `DisabledMailSender`, `MailSenderFactory`); services: `SessionAuthorizer`, `AuthService`, `PasswordResetService`; HTTP: `AuthController`, `auth.routes.ts` (API01–API07), `RequireOwnerMiddleware`, `SessionCookieWriter`)
-│   │       ├── seed/             🚧 idempotent seeders behind `ISeeder`, built by `buildSeeders` in `container.ts` — `OwnerSeeder` + `seed-owner.ts` (`pnpm seed:owner`, development only; refuses in production) ✅ · `data/` (`DEV_OWNER`) ✅; the reference portfolio content seeder ⬜ `section-engine`
-│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; `auth/` fakes and factories, including `RecordingMailSender` (test-only, excluded from the build)
+│   │       ├── modules/          ✅ one folder per module (table below) — `health` · `auth` (sessions, registration, owner claim, password reset, Google sign-in, mail strategies) · `portfolio` (registry, engine, six section definitions in `sections/`, provisioning, live pointer) · `assets` (GridFS) · `identity` · `design` · `ai-design` (proposals, allowance, prompt builder, parser, `providers/` stub + Ollama + Gemini + OpenRouter, `decorators/` timeout + retry) · `publishing` (rules, pipeline, snapshots, revalidation) · `public-site` — all ✅
+│   │       ├── seed/             ✅ idempotent seeders behind `ISeeder`, built by `buildSeeders` in `container.ts` — `seed:owner` (the development account) and `seed:all` (account, portfolio, identity, sections from `data/`); both refuse in production
+│   │       └── testing/          ✅ `MongoTestHarness`, `RedisTestHarness`, `FixtureFactory` base, `RecordingLogger`; per-module fakes (`auth/`, `portfolio/`, `assets/`, `identity/`, `publishing/`, `ai-design/` incl. documented-shape provider recordings), `time/` (`ManualDelay`), `http/` (`CmsTestClient`, `RecordedProviderServer`) (test-only, excluded from the build)
 │   │   └── test-fixtures/        ✅ deliberate boundary violations, linted only by the boundary-lint spec
-│   └── web/                      🚧 Next.js App Router + Tailwind v4 — scaffold
+│   └── web/                      ✅ Next.js App Router + Tailwind v4 — public site and CMS
 │       ├── .env.example          ✅ every web variable of Environment (below); copy to `.env`
 │       ├── next.config.ts        ✅ `/api/v1/:path*` rewrite to `API_INTERNAL_URL`
-│       ├── e2e/                  ✅ Playwright; `start-api.ts` boots a throwaway MongoDB + the built API (Redis database 15)
+│       ├── e2e/                  ✅ Playwright (Chromium); `start-api.ts` boots a throwaway MongoDB, seeds the development account, runs a local SMTP server + mailbox for one-time codes, then the built API (Redis database 15)
 │       └── src/
 │           ├── lib/env.ts        ✅ zod-validated environment (server-only; `env-example.spec.ts` alongside)
-│           └── app/              🚧 `(site)` ✅ placeholder · `(cms)/cms` ✅ placeholder, noindex · `api/revalidate` ⬜
+│           ├── lib/api/          ✅ `ApiClient` (envelope, cross-tab refresh rule) + TanStack Query hooks (`auth`, `portfolio`, `assets`, `identity`, `design`, `publishing`, `ai-design`)
+│           ├── lib/cms/          ✅ pure CMS rules: `safeNext`, messages, nav order, reorder, preview model, schema limits, design resolver, issue links, AI Studio badge and allowance text; Zustand UI store
+│           ├── components/cms/   ✅ UI kit, form kit, panel frame, editor host + registry, overview, preview pane; screens: assets, identity, design, publish, AI Studio (`ai/`)
+│           └── app/              ✅ `(site)` (platform home, `[slug]` portfolio pages, robots, sitemap) · `(cms)/cms` — `(auth)` login, register, verify, forgot-password; `(panel)` overview, `sections/[type]`, identity, design, assets, ai, publish, `credits` (mount point until `credits-billing`); noindex · `api/revalidate`
 ├── packages/
-│   ├── contracts/                🚧 zod schemas + inferred types (API + section payloads) — `health` ✅ · `auth` ✅
-│   ├── sections/                 🚧 React section renderers + variant registry — skeleton
-│   ├── design-tokens/            🚧 ThemeTokens, default theme, CSS-variable emitter, contrast — skeleton
+│   ├── contracts/                ✅ zod schemas + inferred types (API + section payloads) — `health` · `auth` · `common` (`plainText`) · `sections` · `assets` · `identity` · `design` · `publishing` · `ai-design`
+│   ├── sections/                 ✅ React section renderers + variant registry — `SectionRendererRegistry`, `PortfolioPage` composer, `ThemeRoot`, the site shell, two variants for each of the six section types
+│   ├── design-tokens/            ✅ DesignSpec schema, variant catalogue, font allow-list, contrast maths, `validateDesign`, `toCssVariables`, `DEFAULT_DESIGN`
 │   ├── eslint-config/            ✅ shared lint rules — baseline (`base.js`); API boundary rules (`api.js`, `plugin/`)
 │   └── tsconfig/                 ✅ shared strict TypeScript config (`base`, `node`, `library`, `react-library`, `nextjs`)
 ├── docs/design-reference/        ✅ the two reference boards
@@ -79,7 +92,7 @@ portfolio-builder/
 | Module | Responsibility | Collections it writes | Owning spec |
 |---|---|---|---|
 | `health` | Liveness + DB reachability | — | `monorepo-foundation` |
-| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code | `users`, `otps`; Redis `auth:*` keys | `owner-auth` |
+| `auth` | Sign-in, the single Redis session per user, the `requireOwner` guard, password reset by one-time code, registration, email verification and the one-time owner claim, Google sign-in | `users`, `otps`; Redis `auth:*` keys | `owner-auth`, `account-registration`, `google-sign-in` |
 | `portfolio` | Portfolio aggregate, section registry, section CRUD, order, visibility | `portfolios`, `sections` | `section-engine` |
 | `identity` | Name, monogram, contact, socials, résumé link, footer, SEO | `identities` | `site-identity` |
 | `assets` | Upload, list, delete, serve files | `assets` + GridFS `asset_files.*` | `media-assets` |
@@ -90,7 +103,7 @@ portfolio-builder/
 
 ¹ `publishing` does not touch the `portfolios` collection directly. It calls
 `IPublishedPointerWriter` / `IPublishedPointerReader`, interfaces it owns and `portfolio`
-implements, so `portfolio` remains the collection's single writer.
+implements, so `portfolio` remains the collection's single writer (ADR-0013).
 
 ## Module dependency map (allowed edges only)
 An arrow reads "depends on an interface exported by". Anything not listed is forbidden.
@@ -101,18 +114,23 @@ portfolio   → core
 identity    → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
 assets      → core
 design      → core
-ai-design   → core, design (IDesignReader, IDesignWriter, IDesignValidator),
-              portfolio (ISectionTypeLister — read-only list of visible section types)
-publishing  → core, portfolio (IPublishedPointerWriter, IPublishedPointerReader), assets (IAssetLookup; implements
-              assets' IAssetReferenceProvider), design (IDesignValidator)
-portfolio, identity, design → publishing's IDraftContributor (each implements it; the
-              interface is owned by publishing and injected as a list by the container)
+ai-design   → core, design (IDesignReader, IDesignWriter, IDesignValidator), auth (IClock;
+              the `/cms` guard). It owns `ISectionTypeLister` and `IUserRoleReader`, which
+              the container adapts from `portfolio`'s and `auth`'s repositories, so it imports
+              neither module's classes (`ai-design-studio.T09`)
+publishing  → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
+portfolio   → publishing (implements IDraftContributor, IPublishedPointerWriter,
+              IPublishedPointerReader)
+identity    → publishing (implements IDraftContributor)
+design      → publishing (implements IDraftContributor, IPublishDesignCheck)
 public-site → core, publishing (ISnapshotReader), assets (IAssetReader)
 every /cms router → auth (requireOwner) and portfolio (resolvePortfolio) middleware,
                     both injected by the container
 ```
-`IDraftContributor`, `IPublishRule`, `IPublishStep` are owned by `publishing`;
-`IAssetReferenceProvider` by `assets`. The consuming module owns the interface it depends on.
+`IDraftContributor`, `IPublishedPointerWriter`, `IPublishedPointerReader`,
+`IPublishDesignCheck`, `IPublishRule` and `IPublishStep` are owned by `publishing`, which
+imports none of the modules that implement them (ADR-0013); `IAssetReferenceProvider` is owned
+by `assets`. The consuming module owns the interface it depends on.
 
 ## Boundary enforcement
 The constitution's module and layer rules are checked mechanically on every `pnpm lint` and
@@ -134,14 +152,16 @@ use and that may use no module.
 One writing module per collection. Field-level schemas live in the owning plan's Data Model.
 | Collection | Writer | Purpose |
 |---|---|---|
-| `users` | `auth` | User accounts; password hash (roles, verification and the Google link arrive with `account-registration` and `google-sign-in`, ADR-0010, ADR-0011). The development seeder writes only through `auth`'s `IUserCreator` |
-| `otps` | `auth` | One-time codes: bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
-| Redis `auth:session:*`, `auth:otp-ref:*` | `auth` | The one session per user (`jti`, refresh-token hash) and one-time-code references, each with a TTL (ADR-0008) |
-| `portfolios` | `portfolio` | One per user (ADR-0010): slug, `sectionOrder`, `revision`, published pointer |
+| `users` | `auth` | User accounts: password hash, `role` (`owner` \| `member`; the `one_owner` partial unique index admits one owner), `emailVerifiedAt` (`account-registration`), `googleSub` (unique, sparse; `google-sign-in`, ADR-0011); `passwordHash` is absent on a Google-only account. The development seeder writes only through `auth`'s ports |
+| `otps` | `auth` | One-time codes (`password_reset`, `email_verification`): bcrypt code hash, identifier, attempts, expiry; one per user and purpose (TTL index on `purgeAt`) |
+| Redis `auth:session:*`, `auth:otp-ref:*`, `auth:google-state:*` | `auth` | The one session per user (`jti`, refresh-token hash), one-time-code references, and the Google flow's PKCE verifier and nonce (10 minutes, taken once), each with a TTL (ADR-0008) |
+| `portfolios` | `portfolio` | One per user (ADR-0010; `userId` unique), provisioned on the user's first CMS request: `slug` (unique; the free address `<platform>/<slug>`), `sectionOrder`, `revision`, published pointer |
 | `sections` | `portfolio` | One document per section type: `data`, `visible`, `revision` |
 | `identities` | `identity` | One per portfolio |
 | `designs` | `design` | One per portfolio: `theme`, `layout`, `revision` |
 | `design_proposals` | `ai-design` | AI proposals and their status |
+| `design_layouts` | `design` | Custom layouts in a portfolio's library (`design-library`, ADR-0014); `ai-design` saves through `ILayoutLibraryWriter` |
+| `design_presets` | `design` | Named design presets (`design-library`); `ai-design` saves through `IPresetWriter` |
 | `snapshots` | `publishing` | Immutable published content, versioned per portfolio |
 | `assets`, `asset_files.files`, `asset_files.chunks` | `assets` | File metadata + GridFS bytes |
 
@@ -219,7 +239,16 @@ module declares its event map in its `index.ts`; core knows no module's events.
 raw JSON → `DesignSpecParser` (schema validation, variant allow-list, contrast check) →
 `design_proposals`. Applying a proposal goes through `IDesignWriter`; a proposal never writes
 the design itself. Generation runs in-process after a `202`; proposals left `pending` by a
-restart are marked `failed` during startup.
+restart are marked `failed` by the `InterruptedProposalRecovery` startup hook, which `main.ts`
+runs before listening. Who may generate is `MonthlyGenerationAllowance`: the owner without
+limit, a member free for `freeMonthly` generations per UTC month and then for credits; prices
+come from `IAiPricing` and credits from `IGenerationWallet`, placeholders until `platform-admin`
+and `credits-billing` replace them in the container. One proposal per portfolio is `pending` at a
+time (partial unique index), and API01 has its own rate limit. A proposal may also carry custom
+layouts (`design-library`, ADR-0014): validated data arranging a section's existing blocks, drawn
+by `CustomLayoutRenderer`; applying saves them to the portfolio's layout library (owned by
+`design`) and the design names them as `custom:<id>`; a published snapshot (schema version 2)
+holds copies of the custom layouts it uses.
 
 ## Shared packages — one owner each
 | Package | Owns | Consumed by |
@@ -249,13 +278,20 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `JWT_ACCESS_SECRET` | api | Signs the access token |
 | `REDIS_URL` | api | Session and one-time-code reference store (ADR-0008) |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | api | Gmail mail strategy (ADR-0009); blank or unset outside production → mail disabled (password reset 503); in production the API refuses to start, naming them |
-| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER` |
+| `MAIL_FROM` | api | Sender address (an email address); blank or unset → `GMAIL_USER`; required by the SMTP strategy |
+| `SMTP_URL` | api | Generic SMTP mail strategy (ADR-0009, amended 2026-10-20): `smtp://` / `smtps://`, `user:pass@` for a login; with `MAIL_FROM`, it takes priority over Gmail. The E2E harness points it at a local SMTP server |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | api (development seeder only) | `pnpm seed:owner` creates one local account from them (display name `Owner`); optional, so the API starts without them; the seeder refuses when either is unset, when the password is outside 12–200 characters, and always in production (ADR-0010) |
-| `DEFAULT_PORTFOLIO_SLUG` | api | Which portfolio `/public` serves — to be revised by `public-site-rendering`, which now resolves a portfolio per request host (ADR-0010) |
-| `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
+| `OWNER_REGISTRATION_SECRET` | api | The owner secret key: a registration carrying it while no owner exists claims the owner account (`account-registration`, ADR-0010); optional, 32–200 characters; unset keeps the claim closed |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL` | api | Google sign-in (`google-sign-in`, ADR-0011): all three switch it on, none leaves it off (routes redirect with `google_unavailable`); some but not all fails startup |
+| `GOOGLE_ISSUER` | api | The OpenID Connect issuer whose discovery document gives the endpoints; default `https://accounts.google.com` |
+| `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama` \| `stub`; unset or `stub` outside production → stub; production refuses unset, `stub` and `ollama` (`DesignGeneratorFactory`) |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |
-| `AI_TIMEOUT_MS`, `AI_DAILY_PROPOSAL_LIMIT` | api | AI bounds |
+| `GEMINI_BASE_URL` | api | The Gemini API base the adapter calls `<base>/interactions` on; default `https://generativelanguage.googleapis.com/v1beta` |
+| `OPENROUTER_BASE_URL` | api | The OpenRouter API base the adapter calls `<base>/chat/completions` on; default `https://openrouter.ai/api/v1` |
+| `AI_TIMEOUT_MS` | api | Upper bound on one provider call (default 60 000 ms, provisional) |
+| `AI_MAX_OUTPUT_TOKENS` | api | Most tokens one answer may use, sent by the OpenRouter adapter as `max_tokens`; unset sends none (256–200 000) |
 | `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
 | `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_SITE_URL` | web | Server-side fetch target; canonical URL |
+| `NEXT_DIST_DIR` | web | Optional build directory (default `.next`); the E2E web server uses its own so it can run beside `pnpm dev` |

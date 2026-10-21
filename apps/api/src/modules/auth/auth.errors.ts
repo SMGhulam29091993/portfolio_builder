@@ -45,3 +45,52 @@ export class OtpExpiredError extends AppError {
     super('OTP_EXPIRED', message);
   }
 }
+
+/**
+ * 403 `EMAIL_NOT_VERIFIED` — the password was right but the account's email has not been
+ * proved yet (`account-registration.AC9`). Thrown only after a successful password check, so
+ * it tells nothing to anyone without the password.
+ */
+export class EmailNotVerifiedError extends AppError {
+  readonly status = 403;
+
+  constructor(message = 'Verify your email address before signing in') {
+    super('EMAIL_NOT_VERIFIED', message);
+  }
+}
+
+/**
+ * 403 `OWNER_CLAIM_REFUSED` — a registration carried an owner secret while the claim is
+ * closed (an owner exists, or no secret is configured) or the value differs
+ * (`account-registration.AC5`). One error for all three, so a caller cannot tell them apart.
+ */
+export class OwnerClaimRefusedError extends AppError {
+  readonly status = 403;
+
+  constructor(message = 'The owner key was not accepted') {
+    super('OWNER_CLAIM_REFUSED', message);
+  }
+}
+
+/** Why a Google sign-in failed — the word the redirect carries (`google-sign-in` → API02). */
+export const GOOGLE_FAILURE_REASONS = [
+  'google_unavailable',
+  'google_cancelled',
+  'google_state',
+  'google_failed',
+  'google_unverified',
+  'google_conflict',
+] as const;
+export type GoogleFailureReason = (typeof GOOGLE_FAILURE_REASONS)[number];
+
+/**
+ * A Google sign-in that cannot complete. The HTTP layer never sends it as JSON: it redirects to
+ * the CMS sign-in page with `error=<reason>`, so the 400 here is nominal.
+ */
+export class GoogleSignInError extends AppError {
+  readonly status = 400;
+
+  constructor(readonly reason: GoogleFailureReason) {
+    super('GOOGLE_SIGN_IN_FAILED', 'Google sign-in failed', { reason });
+  }
+}

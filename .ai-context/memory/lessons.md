@@ -37,3 +37,34 @@ fields against the spec; any field without a source is an Open Question, raised 
 **What was actually true:** ...
 **Carry forward:** ...
 -->
+
+### 2026-10-20 — a multi-line shell step does not stop at a failed line
+Two commits on `feat/full-build` (account-registration.T02, google-sign-in.T02) went in with
+lint errors or missing records, because the failing command was one line of a multi-line
+step and only the first line was chained with `&&`; `set -e` did not stop an embedded
+`python3 -` heredoc either. Approach now: run the full gate script
+(`build typecheck lint test drift`) as its own step and commit only after it exits 0; record
+edits run in a script that exits non-zero on the first miss, followed by `|| exit 1`.
+
+### 2026-10-21 — a global text replace hit code as well as copy
+Renaming template placeholders by replacing `[0]` everywhere also turned `sectionTypes[0]` into
+`sectionTypes[Your number]`; it surfaced only when the web build ran. **Carry forward:** replace
+copy inside quotes only (match the quote too), and grep afterwards for the new text next to an
+identifier (`[A-Za-z)\]][Your `) before the gate.
+
+### 2026-10-21 — the Redis test pool was smaller than the number of Redis spec files
+Sixteen spec files claim one of fourteen test databases, and crashed runs leave claims for ten
+minutes, so a full run could fail every Redis suite at once. **Carry forward:** the harness now
+waits (up to 45 s) for a free database; a new Redis-backed spec needs no other change.
+
+### 2026-10-21 — two dialogs on one screen shared a title id
+`ConfirmDialog` used a fixed `id`, so the second dialog was named by the first one's heading;
+only the browser journey caught it. **Carry forward:** any id a reusable component renders comes
+from `useId()`.
+
+
+### 2026-10-21 — an "is absent" assertion proved nothing until the value was shown present
+`ai-design-studio.IT11` edited a hero field the schema does not have, so the text was stripped
+on save and "the provider never receives section text" passed trivially. **Carry forward:** a test
+that asserts something is absent first asserts it exists where it should (here, in the draft),
+so the absence means something.

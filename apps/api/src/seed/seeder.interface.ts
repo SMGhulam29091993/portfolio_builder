@@ -8,8 +8,11 @@
  * content seeder (`apps/api/src/seed/data/`) follows with `section-engine`.
  */
 
-/** What one run did. */
-export type SeedOutcome = 'created' | 'unchanged';
+/**
+ * What one run did. `updated`: the records existed and one was brought up to date (the
+ * development account verified, `account-registration.AC16`).
+ */
+export type SeedOutcome = 'created' | 'updated' | 'unchanged';
 
 export interface ISeeder {
   /**

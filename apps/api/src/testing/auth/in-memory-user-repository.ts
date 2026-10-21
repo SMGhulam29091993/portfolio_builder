@@ -1,24 +1,38 @@
 /**
- * In-memory fake of `UserRepository`'s read, create and password-write ports, for service tests
- * (`constitution.md` → Per-layer convention: services get constructor-injected fakes).
+ * In-memory fake of `UserRepository`'s ports, for service tests (`constitution.md` → Per-layer
+ * convention: services get constructor-injected fakes).
  *
  * It passes the same contract suite as the MongoDB repository
  * (`modules/auth/user-repository.contract.spec.ts`, `owner-auth.CT10`), so a service test that
  * uses it proves what the real repository would do. `IUserPasswordWriter` joined with the
- * password reset (`owner-auth.T08`), the first service that writes a password.
+ * password reset (`owner-auth.T08`); `IUserRegistrar` and `IOwnerLookup`, with the one-owner
+ * rule of the `one_owner` index, with `account-registration.T01`; `IGoogleLinker` with
+ * `google-sign-in.T01`.
  */
 import { Types } from 'mongoose';
 
 import { ConflictError } from '../../core/errors/index.js';
 import type {
+  IGoogleLinker,
+  IOwnerLookup,
   IUserCreator,
   IUserPasswordWriter,
   IUserReader,
+  IUserRegistrar,
   NewUser,
+  PendingUserUpdate,
   User,
 } from '../../modules/auth/index.js';
 
-export class InMemoryUserRepository implements IUserReader, IUserCreator, IUserPasswordWriter {
+export class InMemoryUserRepository
+  implements
+    IUserReader,
+    IUserCreator,
+    IUserPasswordWriter,
+    IUserRegistrar,
+    IOwnerLookup,
+    IGoogleLinker
+{
   /** Users by id. */
   private readonly users = new Map<string, User>();
 
@@ -41,13 +55,22 @@ export class InMemoryUserRepository implements IUserReader, IUserCreator, IUserP
     if (await this.findByEmail(email)) {
       throw new ConflictError('USER_EXISTS', {}, 'A user with this email already exists');
     }
+    const role = user.role ?? 'member';
+    this.assertOwnerSlot(role);
+    // Same rule as the unique sparse index on `users.googleSub`.
+    if (user.googleSub && (await this.findByGoogleSub(user.googleSub))) {
+      throw new ConflictError('USER_EXISTS', {}, 'A user with this Google account already exists');
+    }
     const at = this.now();
     // An ObjectId string, so ids have the shape the real repository returns.
     const created: User = {
       id: new Types.ObjectId().toString(),
       email,
-      passwordHash: user.passwordHash,
+      ...(user.passwordHash ? { passwordHash: user.passwordHash } : {}),
       displayName: user.displayName,
+      role,
+      ...(user.googleSub ? { googleSub: user.googleSub } : {}),
+      ...(user.emailVerifiedAt ? { emailVerifiedAt: user.emailVerifiedAt } : {}),
       createdAt: at,
       updatedAt: at,
     };
@@ -66,5 +89,55 @@ export class InMemoryUserRepository implements IUserReader, IUserCreator, IUserP
       updatedAt: this.now(),
     });
     return Promise.resolve(true);
+  }
+
+  // Async, so a refused owner slot rejects the promise as the real repository's does.
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async updatePending(id: string, update: PendingUserUpdate): Promise<User | null> {
+    const user = this.users.get(id);
+    if (!user || user.emailVerifiedAt) return null;
+    if (update.role && update.role !== user.role) this.assertOwnerSlot(update.role);
+    const updated: User = { ...user, ...update, updatedAt: this.now() };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  markEmailVerified(id: string, at: Date): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return Promise.resolve(false);
+    if (!user.emailVerifiedAt) {
+      this.users.set(id, { ...user, emailVerifiedAt: at, updatedAt: this.now() });
+    }
+    return Promise.resolve(true);
+  }
+
+  findByGoogleSub(sub: string): Promise<User | null> {
+    const found = [...this.users.values()].find((user) => user.googleSub === sub);
+    return Promise.resolve(found ?? null);
+  }
+
+  async linkGoogle(id: string, sub: string, verifiedAt: Date): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user || user.googleSub) return false;
+    if (await this.findByGoogleSub(sub)) return false;
+    this.users.set(id, {
+      ...user,
+      googleSub: sub,
+      emailVerifiedAt: user.emailVerifiedAt ?? verifiedAt,
+      updatedAt: this.now(),
+    });
+    return true;
+  }
+
+  ownerExists(): Promise<boolean> {
+    return Promise.resolve([...this.users.values()].some((user) => user.role === 'owner'));
+  }
+
+  /** Same rule as the `one_owner` partial unique index. */
+  private assertOwnerSlot(role: User['role']): void {
+    if (role !== 'owner') return;
+    if ([...this.users.values()].some((user) => user.role === 'owner')) {
+      throw new ConflictError('OWNER_EXISTS', {}, 'The platform owner has already been claimed');
+    }
   }
 }

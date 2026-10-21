@@ -93,6 +93,7 @@ beforeAll(async () => {
     email: OWNER_EMAIL,
     passwordHash: await new Argon2PasswordHasher().hash(OWNER_PASSWORD),
     displayName: 'Owner',
+    emailVerifiedAt: new Date(),
   });
   ownerId = owner.id;
 });
@@ -186,7 +187,12 @@ function expectError(response: request.Response, status: number, code: string): 
   });
 }
 
-const OWNER_USER = () => ({ id: ownerId, email: OWNER_EMAIL, displayName: 'Owner' });
+const OWNER_USER = () => ({
+  id: ownerId,
+  email: OWNER_EMAIL,
+  displayName: 'Owner',
+  role: 'member',
+});
 
 describe('POST /api/v1/auth/login (owner-auth.API01)', () => {
   it('owner-auth.IT01 / AC1 — 200 with the user only, three cookies with the contract attributes, and the session in Redis', async () => {

@@ -2,7 +2,31 @@
 ## Spec ID
 cms-panel-shell
 ## Status
-Draft
+Implemented
+- 2026-10-21: AC21 added at the owner's request (a signed-in browser opening the sign-in screen
+  had to sign in again) and built as `cms-panel-shell.T09`; the spec stays `Implemented`.
+- 2026-10-21: AC11's data arrived with `publish-pipeline.T09` — the header shows the live version
+  and time or "Never published", and the "Unpublished changes" badge; asserted in
+  `e2e/cms-publish.spec.ts`.
+- `In Progress → Implemented` on 2026-10-20: T01–T08 completed, each with a DoD self-check line
+  in `state/completed.md`. Handed on, as recorded below: AC11's data (`publish-pipeline`) and
+  the editing E2E05–E2E09 (`about-section`).
+- `Ready → In Progress` on 2026-10-20 with `cms-panel-shell.T01` started.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`).
+- Revised 2026-10-20, before the spec was ever `Ready`, for ADR-0010 / ADR-0011 and the
+  implemented `account-registration`, `google-sign-in` and `section-engine` specs: registration
+  and email-verification screens, the Google button and its error notices, the portfolio
+  address (slug) on the overview, `EMAIL_NOT_VERIFIED` at sign-in (AC16–AC19). AC11's data comes
+  from `publish-pipeline.API01`, which does not exist yet: T03 builds the header slot and
+  `publish-pipeline` fills it (recorded there). E2E for editing flows (E2E05–E2E09) needs a
+  registered section type with an editor, so it runs from the first section spec
+  (`about-section`), which reuses this spec's harness.
+- Deviation found in T02 (2026-10-20): the plan's `middleware.ts` / `proxy.ts` cookie check
+  cannot work — the session cookies are `Path=/api/v1` (`owner-auth` → Session contract), so a
+  `/cms` page request never carries them. AC1's redirect is done client-side instead: the panel
+  layout loads `owner-auth.API04` (refreshing once if needed) and sends a 401 to
+  `/cms/login?next=…`. The API stays the only authority either way.
 ## Linked BRD
 .ai-context/BRD.md#BRD-001
 ## Intent
@@ -17,12 +41,14 @@ editors into this shell; they do not rebuild any of it.
 - Shared facts used: .ai-context/ownership_index.md (Session contract · Section engine endpoints ·
   Optimistic concurrency · Section type catalogue)
 ## API Contract
-None of its own. Consumes `owner-auth.API01`–`API07`, `section-engine.API01`–`API05` and
-`publish-pipeline.API01`.
+None of its own. Consumes `owner-auth.API01`–`API07`, `account-registration.API01`–`API05`,
+`google-sign-in.API01`, `section-engine.API01`–`API06` and `publish-pipeline.API01`.
 ## Screens
 | Route | Purpose |
 |---|---|
-| `/cms/login` | Sign in |
+| `/cms/login` | Sign in; "Continue with Google" when `googleSignIn`; notices for `?error=google_*`, `?notice=password-updated`, `?notice=signed-out-elsewhere` |
+| `/cms/register` | Create an account (`account-registration.API02`); the owner-key field only while `ownerClaimOpen` |
+| `/cms/verify` | Enter the emailed code (`API03`, signs in), resend (`API05`); or request a new code by email (`API04`) |
 | `/cms/forgot-password` | Request a one-time code (`owner-auth.API05`), then enter it with a new password (`API07`); resend (`API06`) |
 | `/cms` | Overview: section list with visibility and order, publish status |
 | `/cms/sections/[type]` | Section editor host + live preview |
@@ -81,6 +107,29 @@ None of its own. Consumes `owner-auth.API01`–`API07`, `section-engine.API01`�
     then `OTP_INVALID` and `OTP_EXPIRED` each show their own inline message, `OTP_EXPIRED` and
     a 429 offer Resend with the wait time, and success leads to `/cms/login` with a "password
     updated" notice. Neither the code nor the reference is placed in a URL or in client logs.
+16. cms-panel-shell.AC16 — Given `/cms/register`, when the options say `ownerClaimOpen: false`,
+    then no owner-key field is shown; when true, an optional owner-key field is shown; on
+    submit the screen moves to code entry holding the `reference` in component state only and
+    shows the same confirmation whatever the address; `OWNER_CLAIM_REFUSED` shows an inline
+    message on the key field.
+17. cms-panel-shell.AC17 — Given the code-entry screen, when the right code is submitted, then
+    the user is signed in and lands on `/cms`; `OTP_INVALID` / `OTP_EXPIRED` show their own
+    inline messages; Resend observes the 60-second wait from `retryAfterSec`.
+18. cms-panel-shell.AC18 — Given a sign-in answered with 403 `EMAIL_NOT_VERIFIED`, then the login
+    screen explains it and offers to send a new code, which leads to the code-entry screen.
+19. cms-panel-shell.AC19 — Given the options say `googleSignIn: true`, then login and register
+    show "Continue with Google" linking to `google-sign-in.API01`; given `/cms/login?error=<reason>`
+    with a known Google reason, then one plain message per reason is shown; an unknown reason
+    shows a generic one.
+20. cms-panel-shell.AC20 — Given the overview, then it shows the portfolio's public address
+    (`<site origin>/<slug>`) and lets the user change the slug (`section-engine.API06`); `SLUG_TAKEN`
+    shows an inline message on the field.
+21. cms-panel-shell.AC21 — Given a browser whose session is still usable (refreshing an expired
+    access token first, as AC3), when `/cms/login`, `/cms/register`, `/cms/verify` or
+    `/cms/forgot-password` is opened, then it is sent to `next` (by AC1's rule) or `/cms` without
+    the form; with no usable session the screen shows as before. A `?notice=` on the URL means the
+    session has just ended, so no check is made; a failed check on these screens never counts as
+    a lost session (no redirect, cached data kept).
 ## Edge Cases Covered
 - Network failure on save: the form stays dirty, an error with Retry is shown, nothing is lost.
 - The API is unreachable on load: a full-pane error with Retry, not a blank screen.
@@ -105,6 +154,9 @@ None of its own. Consumes `owner-auth.API01`–`API07`, `section-engine.API01`�
 | cms-panel-shell.UT05 | AC6 | Map `errors[{path:"projects.1.title"}]` onto form state | Error set on that field |
 | cms-panel-shell.UT06 | AC9 | Preview model: saved draft + unsaved values for one section | Only that section's data replaced |
 | cms-panel-shell.UT07 | AC13 | `ListField` at max and at min | Add disabled; Remove disabled |
+| cms-panel-shell.UT11 | AC19 | `googleErrorMessage` for every known reason and an unknown one | One message each; generic fallback |
+| cms-panel-shell.UT12 | AC5 | `fieldLimits(schema)` reads max lengths for counters | Limits per path |
+| cms-panel-shell.UT13 | AC21 | `isPublicCmsPath()` with each signed-out screen, a trailing slash, `/cms`, `/cms/design`, `/cms/login/extra`, `/` | The four screens → true; others false |
 ## Explicitly Out of Scope
 - The field-level editor for each section, identity, design, assets, AI and publish screens —
   their own specs.

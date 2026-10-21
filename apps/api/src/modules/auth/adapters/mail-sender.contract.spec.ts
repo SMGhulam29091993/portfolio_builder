@@ -21,6 +21,7 @@ import type { IMailSender } from '../auth.interface.js';
 import type { MailMessage } from '../auth.types.js';
 import { DisabledMailSender } from './disabled-mail-sender.js';
 import { GmailMailSender, type SmtpEndpoint } from './gmail-mail-sender.js';
+import { SmtpMailSender, smtpUrlSettings } from './smtp-mail-sender.js';
 
 /** Credentials the local server accepts. Placeholders: they only ever reach 127.0.0.1. */
 const SMTP_USER = 'sender@portfolio.test';
@@ -157,6 +158,25 @@ const deliveringSenders: readonly { name: string; create: () => DeliveringSender
     name: 'GmailMailSender (local SMTP server)',
     create: () => ({
       sender: localGmail(),
+      delivered: () =>
+        smtp.received.map(({ envelopeTo, raw }) => {
+          const { headers, body } = parseRaw(raw);
+          return { to: envelopeTo.join(','), subject: header(headers, 'subject') ?? '', text: body };
+        }),
+      refuse: () => {
+        smtp.refuseRecipients = true;
+      },
+    }),
+  },
+  {
+    name: 'SmtpMailSender from an smtp:// URL (local SMTP server)',
+    create: () => ({
+      sender: (() => {
+        const settings = smtpUrlSettings(
+          `smtp://${encodeURIComponent(SMTP_USER)}:${encodeURIComponent(SMTP_APP_PASSWORD)}@127.0.0.1:${String(smtp.endpoint.port)}`,
+        );
+        return new SmtpMailSender({ ...settings.endpoint, ignoreTLS: true }, settings.credentials, MAIL_FROM);
+      })(),
       delivered: () =>
         smtp.received.map(({ envelopeTo, raw }) => {
           const { headers, body } = parseRaw(raw);

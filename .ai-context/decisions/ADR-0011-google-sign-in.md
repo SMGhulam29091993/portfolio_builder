@@ -18,7 +18,7 @@ and `constitution.md` → Infrastructure allows no external service without an A
 - A Google identity whose email Google reports as verified counts as a verified email for
   ADR-0010's verification rule.
 
-### Mechanics (*Proposed* — fixed by the `google-sign-in` spec, not here)
+### Mechanics (fixed by the `google-sign-in` spec, implemented 2026-10-20)
 - OpenID Connect authorization-code flow with PKCE and a `state` value, run by the API; the ID
   token is verified against Google's published keys with `jose` (already pinned, ADR-0007), so no
   new runtime dependency is needed.
@@ -28,8 +28,12 @@ and `constitution.md` → Infrastructure allows no external service without an A
 - `users` gains the Google subject id (`googleSub`, unique, sparse). Linking a Google identity to
   an existing password account with the same email happens only when Google reports the email
   verified.
-- Whether the owner claim (ADR-0010) can be made through Google, or only through the
-  registration form, is decided by that spec.
+- The owner claim is never made through Google (owner, 2026-10-20; below).
+
+### Owner answer, 2026-10-20
+The owner claim is never made through Google: a Google sign-in that creates an account always
+creates a `member` (ADR-0010 → Owner answers). The owner may link Google to their account
+afterwards by signing in with Google using the same, Google-verified email.
 
 ## Consequences
 - `constitution.md` → Infrastructure lists Google OpenID Connect as an approved integration for

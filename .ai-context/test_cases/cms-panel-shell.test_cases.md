@@ -19,6 +19,7 @@
 | cms-panel-shell.E2E12 | AC12 | Inspect `/cms` response | `noindex, nofollow` present |
 | cms-panel-shell.E2E13 | AC11 | Header before any publish, after a publish, and after a further edit | "Never published"; version and time; "Unpublished changes" badge |
 | cms-panel-shell.E2E14 | AC3 | Sign in on context A, then on context B, then save in A | A lands on `/cms/login` with the "signed in elsewhere" notice; no refresh request |
+| cms-panel-shell.E2E16 | AC21 | Signed in, open `/cms/login?next=/cms/design`, then each signed-out screen, then `/cms/login?notice=signed-out` | `/cms/design`; `/cms` for each; the sign-in form |
 | cms-panel-shell.E2E15 | AC15 | Forgot password with the recorded code, a wrong code, then the right one | Inline `OTP_INVALID` message; then login screen with "password updated"; new password signs in |
 
 ## Component

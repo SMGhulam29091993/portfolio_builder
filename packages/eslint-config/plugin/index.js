@@ -9,6 +9,7 @@
  * | `no-framework-in-service` | (b) a service imports neither `mongoose` nor `express` |
  * | `no-process-env` | (c) only `config/env.ts` reads `process.env` |
  * | `no-instantiation-outside-container` | (d) wired classes are created in `container.ts` only |
+ * | `no-style-literals` | `design-theme.AC8`: no colour or font literal in `packages/sections` (enabled by `../sections.js`) |
  *
  * Module-level edges between modules are checked by the API's architecture test, not by lint.
  */
@@ -16,6 +17,7 @@ import moduleBoundary from './rules/module-boundary.js';
 import noFrameworkInService from './rules/no-framework-in-service.js';
 import noInstantiationOutsideContainer from './rules/no-instantiation-outside-container.js';
 import noProcessEnv from './rules/no-process-env.js';
+import noStyleLiterals from './rules/no-style-literals.js';
 
 /** @type {import('eslint').ESLint.Plugin} */
 const plugin = {
@@ -25,6 +27,7 @@ const plugin = {
     'no-framework-in-service': noFrameworkInService,
     'no-process-env': noProcessEnv,
     'no-instantiation-outside-container': noInstantiationOutsideContainer,
+    'no-style-literals': noStyleLiterals,
   },
 };
 

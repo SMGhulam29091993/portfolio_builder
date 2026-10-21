@@ -2,11 +2,21 @@
 ## Spec ID
 media-assets
 ## Status
-Draft
+Implemented
+- `In Progress → Implemented` on 2026-10-20: T01–T06 completed, each with a DoD self-check line
+  in `state/completed.md`.
+- `Ready → In Progress` on 2026-10-20 with `media-assets.T01` started.
+- DoR self-check: 2026-10-20, pass. Moved `Draft → Ready` by the agent under the owner's
+  standing authorisation of 2026-10-20 (`governance.md`).
+- Revised 2026-10-20, before the spec was ever `Ready`, for ADR-0010: every asset belongs to one
+  portfolio and is served only to that portfolio's user; another user's id answers 404 on every
+  route (AC13); dedupe is per portfolio. Built before `site-identity`, which validates against
+  it (build-order swap recorded in `status.md`). Multipart parsing uses `busboy` (pinned in
+  ADR-0007).
 ## Linked BRD
 .ai-context/BRD.md#BRD-006
 ## Intent
-Let the owner upload, list and remove the small set of files the portfolio needs — the résumé
+Let each signed-in user upload, list and remove the small set of files the portfolio needs — the résumé
 PDF behind the nav's `Résumé` button and an optional social-preview image — with the file's real
 type and size checked before anything is stored, and with deletion refused while a file is in
 use. Bytes are stored behind a storage interface so the backend can change without touching the
@@ -26,8 +36,9 @@ Canonical owner (`ownership_index.md`).
 |---|---|---|
 | `resume` | `application/pdf` | 5 MB |
 | `image` | `image/png`, `image/jpeg`, `image/webp` | 2 MB |
-Other modules store only `assetId`. This module serves bytes to the signed-in owner only;
-visitors receive published files through `public-site-rendering.API02`.
+Other modules store only `assetId`. This module serves bytes only to the signed-in user whose
+portfolio owns the asset (ADR-0010); visitors receive published files through
+`public-site-rendering.API02`.
 ## API Contract
 ### media-assets.API01 — POST /api/v1/cms/assets
 **Request payload:** `multipart/form-data` — `kind` (text), `file` (one file).
@@ -82,6 +93,9 @@ visitors receive published files through `public-site-rendering.API02`.
 11. media-assets.AC11 — Given `/cms/assets`, when the owner uploads, then progress is shown,
     413 and 415 are explained with the limit or allowed types, the list refreshes, and Delete
     is disabled with a reason for assets in use.
+13. media-assets.AC13 — Given an asset of user A, when user B calls API03 or API04 with its id,
+    or lists assets, then B gets 404 / does not see it, and A's asset is untouched; an identical
+    file uploaded by B is stored as B's own asset.
 12. media-assets.AC12 — Given any implementation of `IFileStorage`, when the shared contract
     suite runs against it, then put, get, delete and "get after delete" behave identically.
 ## Edge Cases Covered
