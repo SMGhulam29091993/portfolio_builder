@@ -211,3 +211,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 19:40 IST] — CMS form wording and the AI Studio stub
 **User Request:** Make the CMS form titles and fields plain and self-explanatory, and find out why no designs could be seen or generated.
 **Agent Action:** Diagnosed the AI Studio from the dev database (statuses only): generation worked, but `AI_PROVIDER` is unset so the stub answered with its one fixed sample, already applied. Added a stub notice and the preview of applied proposals to `/cms/ai`. Relabelled every section editor, the identity, design and AI screens in plain words with hints; added optional `hint` to every form-kit group field; updated the E2E selectors. Full E2E (40), web unit tests and build pass.
+
+### [2026-10-21 20:10 IST] — empty CMS preview
+**User Request:** What are the Desktop and Mobile buttons for (the preview beside them was empty)?
+**Agent Action:** Found the dev portfolio predated the section types, so the hero was stored hidden through AC18 and nothing was visible. Fixed the hero to be always visible on read, save and publish (regression tests), added a preview message when every section is hidden, and sized the preview frame to the scaled page (it had an empty tail). Clarified `section-engine.AC18`; pitfall recorded.

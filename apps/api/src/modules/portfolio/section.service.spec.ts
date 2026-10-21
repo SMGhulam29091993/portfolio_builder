@@ -154,6 +154,38 @@ describe('updateSection', () => {
   });
 });
 
+describe('a section that cannot be hidden (hero) is never hidden', () => {
+  // Regression (memory/pitfalls.md, 2026-10-21): a portfolio provisioned before its section types
+  // were registered got the hero created hidden on its first save, with no way to show it again.
+  it('readDraft shows a missing hero visible, while a missing hideable type stays hidden', async () => {
+    const bare = await portfolios.create({ userId: 'u2', slug: 'bare', sectionOrder: [] });
+    const draft = await service.readDraft(bare.id);
+    expect(draft.sections.map((section) => [section.type, section.revision, section.visible])).toEqual([
+      ['hero', 0, true],
+      ['about', 0, false],
+      ['work', 0, false],
+    ]);
+  });
+
+  it('the first save of a missing hero creates it visible', async () => {
+    const bare = await portfolios.create({ userId: 'u2', slug: 'bare', sectionOrder: [] });
+    await expect(service.updateSection(bare.id, 'hero', 0, { title: 'Hello' })).resolves.toMatchObject({ type: 'hero', revision: 1, visible: true });
+  });
+
+  it('a hero stored hidden by an earlier version reads as visible', async () => {
+    const bare = await portfolios.create({ userId: 'u2', slug: 'bare', sectionOrder: [] });
+    await sections.createMissing(bare.id, [{ type: 'hero', visible: false, data: { title: 'Hi' } }]);
+    const draft = await service.readDraft(bare.id);
+    expect(draft.sections[0]).toMatchObject({ type: 'hero', revision: 1, visible: true });
+  });
+
+  it('saving a hero stored hidden makes it visible again', async () => {
+    const bare = await portfolios.create({ userId: 'u2', slug: 'bare', sectionOrder: [] });
+    await sections.createMissing(bare.id, [{ type: 'hero', visible: false, data: { title: 'Hi' } }]);
+    await expect(service.updateSection(bare.id, 'hero', 1, { title: 'Hello' })).resolves.toMatchObject({ revision: 2, visible: true });
+  });
+});
+
 describe('setVisibility', () => {
   it('section-engine.AC8 — hides and shows with data intact', async () => {
     const hidden = await service.setVisibility(portfolio.id, 'about', 1, false);

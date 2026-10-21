@@ -140,3 +140,17 @@ be completed", though the route tests passed.
 directly does not rebuild it, so the E2E API predated the new routes and answered 404.
 **Fix:** run `pnpm test:e2e` (turbo builds the API first), or `pnpm --filter @portfolio/api build`
 before calling Playwright directly.
+
+### 2026-10-21 — a hero created hidden on a portfolio older than its section types
+**Symptom:** the owner's CMS preview was empty; the Work editor showed template placeholders.
+**Root cause:** the dev portfolio was provisioned (2026-10-20) before any section type was
+registered, so it got no sections and an empty order, and provisioning never runs again for an
+existing portfolio. `section-engine.AC18` then shows each missing type hidden and stores it
+hidden on its first save — applied even to the hero, which cannot be hidden, so the hero was
+stored hidden with no way to show it. With every section hidden the preview drew nothing.
+**Fix:** a type that cannot be hidden is shown, created, saved and published visible
+(`SectionService.readDraft`, `updateSection`, `SectionsDraftContributor`); hideable types keep
+AC18. The preview says when every section is hidden instead of showing an empty box, and sizes
+its frame to the scaled page. Regression tests: `section.service.spec.ts` → "a section that
+cannot be hidden (hero) is never hidden"; `sections-draft.contributor.spec.ts` → "publishes a
+hero stored hidden…".

@@ -39,10 +39,13 @@ export class SectionService implements ISectionService {
       (await this.sections.listByPortfolio(portfolioId)).map((section) => [section.type, section]),
     );
     // Every registered type, in registration order. A type with no stored document shows its
-    // defaults, hidden, at revision 0 (AC18). A stored type no longer registered is omitted.
+    // defaults, hidden, at revision 0 (AC18). A stored type no longer registered is omitted. A
+    // type that cannot be hidden reads as visible even if an earlier version stored it hidden.
     const sections = this.registry.list().map((definition) => {
       const section = stored.get(definition.type);
-      return section ? toCmsSection(section) : missingSection(definition);
+      if (!section) return missingSection(definition);
+      const cms = toCmsSection(section);
+      return definition.hideable ? cms : { ...cms, visible: true };
     });
     return { portfolio: toCmsPortfolio(portfolio), sections };
   }
@@ -77,10 +80,14 @@ export class SectionService implements ISectionService {
     const withIds = assignItemIds(parsed.data, this.ids);
 
     if (expectedRevision === 0) {
-      // A type with no stored document yet (AC18): the first save creates it, hidden as shown.
-      return this.createFirst(portfolioId, type, { data: withIds, visible: false });
+      // A type with no stored document yet (AC18): the first save creates it as it was shown —
+      // hidden, unless the type cannot be hidden (the hero), which is always visible.
+      return this.createFirst(portfolioId, type, { data: withIds, visible: !definition.hideable });
     }
-    const updated = await this.sections.update(portfolioId, type, expectedRevision, { data: withIds });
+    // A type that cannot be hidden is made visible on every save, which also repairs one an
+    // earlier version stored hidden (memory/pitfalls.md, 2026-10-21).
+    const changes = definition.hideable ? { data: withIds } : { data: withIds, visible: true };
+    const updated = await this.sections.update(portfolioId, type, expectedRevision, changes);
     if (!updated) throw await this.revisionConflict(portfolioId, type);
     return toCmsSection(updated);
   }
@@ -213,6 +220,7 @@ function permutationIssues(order: readonly string[], orderable: readonly string[
   return issues;
 }
 
+/** A registered type with no stored document (AC18): hidden, unless it cannot be hidden. */
 function missingSection(definition: ISectionDefinition): CmsSection {
-  return { type: definition.type, visible: false, revision: 0, data: definition.defaults() };
+  return { type: definition.type, visible: !definition.hideable, revision: 0, data: definition.defaults() };
 }

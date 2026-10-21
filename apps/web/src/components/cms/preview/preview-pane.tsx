@@ -15,7 +15,7 @@ import { useIdentity } from '../../../lib/api/identity';
 import { usePortfolioDraft, useSectionTypes } from '../../../lib/api/portfolio';
 import { buildPreviewModel } from '../../../lib/cms/preview-model';
 import { useCmsUi, type PreviewViewport } from '../../../lib/cms/ui-store';
-import { Button } from '../ui';
+import { Button, TextLink } from '../ui';
 import { SectionErrorBoundary } from './section-error-boundary';
 import { useDebouncedValue } from './use-debounced-value';
 
@@ -38,7 +38,11 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
   const setOpen = useCmsUi((state) => state.setPreviewOpen);
   const debounced = useDebouncedValue(editing, PREVIEW_DEBOUNCE_MS);
   const frameHost = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  // The page's own height. A CSS transform does not change layout size, so the host is given
+  // the scaled height explicitly; otherwise it keeps the unscaled height and shows an empty tail.
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const width = VIEWPORT_WIDTHS[viewport];
 
   useEffect(() => {
@@ -53,9 +57,22 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
     };
   }, [width]);
 
+  useEffect(() => {
+    const page = frame.current;
+    if (!page) return undefined;
+    const observer = new ResizeObserver(() => {
+      setContentHeight(page.offsetHeight);
+    });
+    observer.observe(page);
+    return () => {
+      observer.disconnect();
+    };
+  });
+
   if (!draft.data) return null;
   const model = buildPreviewModel(draft.data, debounced);
   const labels = new Map((types.data ?? []).map((info) => [info.type, info.label]));
+  const nothingVisible = model.sections.every((section) => !section.visible);
 
   return (
     <aside aria-label="Preview" className="flex min-w-0 flex-col gap-3 xl:w-[46%]">
@@ -76,11 +93,22 @@ export function PreviewPane({ editing, design }: { editing?: { type: string; dat
           ))}
         </div>
       </div>
-      <div ref={frameHost} className={`${open ? 'block' : 'hidden'} overflow-hidden rounded-xl border border-neutral-800 xl:block`}>
+      {nothingVisible ? (
+        <p role="status" className={`${open ? 'block' : 'hidden'} rounded-xl border border-neutral-800 p-4 text-sm text-neutral-300 xl:block`}>
+          Nothing to preview yet: every section is hidden. Turn sections on from the{' '}
+          <TextLink href="/cms">Overview</TextLink> page.
+        </p>
+      ) : null}
+      <div
+        ref={frameHost}
+        className={`${open ? 'block' : 'hidden'} overflow-hidden rounded-xl border border-neutral-800 xl:block`}
+        style={contentHeight === null ? undefined : { height: Math.ceil(contentHeight * scale) }}
+      >
         <div
+          ref={frame}
           data-testid="preview-frame"
           data-viewport-width={width}
-          style={{ width, transform: `scale(${String(scale)})`, transformOrigin: 'top left', height: `${String(100 / scale)}%` }}
+          style={{ width, transform: `scale(${String(scale)})`, transformOrigin: 'top left' }}
         >
           <ThemeRoot theme={shown.theme}>
             <PortfolioPage

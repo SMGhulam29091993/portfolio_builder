@@ -27,9 +27,12 @@ export class SectionsDraftContributor implements IDraftContributor<'sections'> {
     return {
       order: [...fixed, ...portfolio.sectionOrder],
       // A stored type that is no longer registered cannot be rendered, so it is never published.
-      sections: stored
-        .filter((section) => this.registry.get(section.type) !== undefined)
-        .map(({ type, visible, data }) => ({ type, visible, data })),
+      // A type that cannot be hidden is published visible even if an earlier version stored it
+      // hidden (memory/pitfalls.md, 2026-10-21).
+      sections: stored.flatMap(({ type, visible, data }) => {
+        const definition = this.registry.get(type);
+        return definition ? [{ type, visible: visible || !definition.hideable, data }] : [];
+      }),
     };
   }
 }

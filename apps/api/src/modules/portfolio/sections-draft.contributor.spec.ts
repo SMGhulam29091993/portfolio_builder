@@ -43,6 +43,19 @@ describe('publish-pipeline.CT01 — SectionsDraftContributor', () => {
     expect(await sections.listByPortfolio(portfolio.id)).toEqual(before);
   });
 
+  it('publishes a hero stored hidden by an earlier version as visible (memory/pitfalls.md, 2026-10-21)', async () => {
+    const portfolio = await portfolios.create({ userId: 'u3', slug: 'old', sectionOrder: [] });
+    await sections.createMissing(portfolio.id, [
+      { type: 'hero', visible: false, data: { title: 'Hi' } },
+      { type: 'about', visible: false, data: { heading: 'About', items: [], tags: [] } },
+    ]);
+    const draft = await contributor.collect({ portfolioId: portfolio.id, userId: 'u3' });
+    expect(draft.sections.map(({ type, visible }) => [type, visible])).toEqual([
+      ['hero', true],
+      ['about', false],
+    ]);
+  });
+
   it('fails for an unknown portfolio', async () => {
     await expect(contributor.collect({ portfolioId: 'missing', userId: 'u1' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });

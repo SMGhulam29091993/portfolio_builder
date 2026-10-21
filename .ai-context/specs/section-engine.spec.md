@@ -182,7 +182,9 @@ For a type with no stored document (AC18), `expectedRevision: 0` creates it.
     `SLUG_TAKEN`; a malformed one 400.
 18. section-engine.AC18 — Given a registered type with no stored document for this portfolio,
     when API01 is called, then it returns that type with the definition's defaults,
-    `visible: false` and `revision: 0`, and the first API03 creates the document.
+    `visible: false` and `revision: 0`, and the first API03 creates the document. A type that
+    cannot be hidden (the hero) is the exception: it is always shown, created, saved and
+    published visible (clarified 2026-10-21 with the fix in `memory/pitfalls.md`).
 ## Edge Cases Covered
 - Two browser tabs editing the same section: the second save gets 409, never a silent overwrite.
 - Editing section A while section B is saved elsewhere: no conflict (per-section revisions).
