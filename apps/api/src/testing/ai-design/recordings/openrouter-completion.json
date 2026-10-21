@@ -1,0 +1,16 @@
+{
+  "id": "gen-recorded-completion",
+  "object": "chat.completion",
+  "created": 1792576800,
+  "model": "recorded/model",
+  "provider": "RecordedUpstream",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": { "role": "assistant", "content": "REPLACED_BY_THE_TEST", "refusal": null }
+    }
+  ],
+  "usage": { "prompt_tokens": 812, "completion_tokens": 214, "total_tokens": 1026 }
+}

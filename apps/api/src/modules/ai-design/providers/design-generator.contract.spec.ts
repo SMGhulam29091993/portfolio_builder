@@ -15,7 +15,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { UpstreamError } from '../../../core/errors/index.js';
 import { SystemDelay } from '../../../core/time/index.js';
-import { geminiInteractionReply, ollamaChatReply, RecordedProviderServer, type RecordedRequest, type ScriptedReply } from '../../../testing/index.js';
+import {
+  geminiInteractionReply,
+  ollamaChatReply,
+  openRouterCompletionReply,
+  RecordedProviderServer, type RecordedRequest, type ScriptedReply } from '../../../testing/index.js';
 import { FetchHttpClient } from '../adapters/fetch-http.client.js';
 import { ProviderRejectedError } from '../ai-design.errors.js';
 import type { IDesignGenerator, IProviderHealth } from '../ai-design.interface.js';
@@ -24,6 +28,7 @@ import { RetryDesignGenerator } from '../decorators/retry.design-generator.js';
 import { TimeoutDesignGenerator } from '../decorators/timeout.design-generator.js';
 import { GeminiDesignGenerator } from './gemini.design-generator.js';
 import { OllamaDesignGenerator } from './ollama.design-generator.js';
+import { OpenRouterDesignGenerator } from './openrouter.design-generator.js';
 import { StubDesignGenerator } from './stub.design-generator.js';
 
 /** A secret no URL may carry (CT01). */
@@ -70,6 +75,8 @@ interface NetworkSubject {
 
 const http = new FetchHttpClient();
 const ollama = (baseUrl: string) => new OllamaDesignGenerator({ baseUrl, model: MODEL, probeTimeoutMs: 1_000 }, http);
+const openRouter = (baseUrl: string) =>
+  new OpenRouterDesignGenerator({ baseUrl, apiKey: SECRET, model: MODEL, probeTimeoutMs: 1_000 }, http);
 const gemini = (baseUrl: string) => new GeminiDesignGenerator({ baseUrl, apiKey: SECRET, model: MODEL, probeTimeoutMs: 1_000 }, http);
 
 /** CT02: the composition the container builds — adapter → retry → timeout. */
@@ -92,6 +99,13 @@ const NETWORK_SUBJECTS: readonly NetworkSubject[] = [
     create: gemini,
     success: (text) => ({ body: geminiInteractionReply(text) }),
     schemaSent: (sent) => (sent.body as { response_format?: { schema?: unknown } }).response_format?.schema,
+    healthPath: '/models',
+  },
+  {
+    name: 'OpenRouterDesignGenerator',
+    create: openRouter,
+    success: (text) => ({ body: openRouterCompletionReply(text) }),
+    schemaSent: (sent) => (sent.body as { response_format?: { json_schema?: { schema?: unknown } } }).response_format?.json_schema?.schema,
     healthPath: '/models',
   },
 ];
@@ -254,5 +268,26 @@ describe('GeminiDesignGenerator wire format', () => {
     server.reply({ status: 200, body: { models: [] } });
     await gemini(server.url).check();
     expect(server.requests[0]?.headers['x-goog-api-key']).toBe(SECRET);
+  });
+});
+
+describe('OpenRouterDesignGenerator wire format', () => {
+  it('posts to <base>/chat/completions with a bearer key, strict json_schema and require_parameters', async () => {
+    server.reply({ body: openRouterCompletionReply('{}') });
+    await openRouter(`${server.url}/api/v1`).generate(request, new AbortController().signal);
+    const [sent] = server.requests;
+    expect(sent?.url).toBe('/api/v1/chat/completions');
+    expect(sent?.headers.authorization).toBe(`Bearer ${SECRET}`);
+    expect(sent?.body).toEqual({
+      model: MODEL,
+      messages: [{ role: 'system', content: request.instructions }, ...request.messages],
+      response_format: { type: 'json_schema', json_schema: { name: 'design_proposal', strict: true, schema: request.schema } },
+      provider: { require_parameters: true },
+    });
+  });
+
+  it('an empty choices list is UpstreamError', async () => {
+    server.reply({ body: { choices: [] } });
+    await expect(openRouter(server.url).generate(request, new AbortController().signal)).rejects.toBeInstanceOf(UpstreamError);
   });
 });

@@ -103,6 +103,7 @@ import {
 import { FetchHttpClient } from './modules/ai-design/adapters/fetch-http.client.js';
 import { GeminiDesignGenerator } from './modules/ai-design/providers/gemini.design-generator.js';
 import { OllamaDesignGenerator } from './modules/ai-design/providers/ollama.design-generator.js';
+import { OpenRouterDesignGenerator } from './modules/ai-design/providers/openrouter.design-generator.js';
 import { STUB_MODEL, StubDesignGenerator } from './modules/ai-design/providers/stub.design-generator.js';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
 import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
@@ -248,6 +249,11 @@ const DESIGN_GENERATORS: DesignGeneratorRegistrations = {
   gemini: ({ GEMINI_BASE_URL, GEMINI_API_KEY, AI_MODEL }) =>
     new GeminiDesignGenerator(
       { baseUrl: GEMINI_BASE_URL, apiKey: GEMINI_API_KEY, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
+      new FetchHttpClient(),
+    ),
+  openrouter: ({ OPENROUTER_BASE_URL, OPENROUTER_API_KEY, AI_MODEL }) =>
+    new OpenRouterDesignGenerator(
+      { baseUrl: OPENROUTER_BASE_URL, apiKey: OPENROUTER_API_KEY, model: AI_MODEL, probeTimeoutMs: PROVIDER_PROBE_TIMEOUT_MS },
       new FetchHttpClient(),
     ),
 };

@@ -502,3 +502,10 @@
   reference before building (`memory/ai-provider-apis.md`). `GEMINI_BASE_URL` (default the
   documented base) read by `env.ts`, in the example, `turbo.json` and `architecture.md`. Added to
   CT01–CT03 and registered in the container. Checked locally: typecheck, lint, 1079 API tests.
+- ai-design-studio.T08 — 2026-10-21 — DoD self-check: 2026-10-21, pass.
+  `OpenRouterDesignGenerator` (`/chat/completions`, bearer key in a header, strict
+  `json_schema` response format named by the request, `provider.require_parameters`, text from
+  `choices[0].message.content`, health `GET /models`); `OPENROUTER_BASE_URL` with the documented
+  default (env, example, `turbo.json`, `architecture.md`). Added to CT01–CT03 and registered;
+  all three providers and the stub now pass one suite. Checked locally: typecheck, lint, 1105
+  API tests.

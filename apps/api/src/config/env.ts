@@ -147,6 +147,8 @@ const envSchema = z.object({
   GEMINI_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://generativelanguage.googleapis.com/v1beta'),
   /** OpenRouter API key. A secret: sent in a header only, never logged or put in a URL. */
   OPENROUTER_API_KEY: optional(z.string().min(1)),
+  /** The OpenRouter API base; the adapter calls `<base>/chat/completions`. Configuration, not a literal. */
+  OPENROUTER_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://openrouter.ai/api/v1'),
   /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */
   OLLAMA_BASE_URL: optional(z.url({ protocol: /^https?$/ })),
 });

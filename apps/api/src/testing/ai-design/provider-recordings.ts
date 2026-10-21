@@ -24,3 +24,10 @@ export function geminiInteractionReply(text: string): unknown {
   );
   return { ...reply, steps };
 }
+
+/** `POST /chat/completions`: one choice whose message content is `text`. */
+export function openRouterCompletionReply(text: string): unknown {
+  const reply = recording('openrouter-completion');
+  const [choice] = reply.choices as { message: Record<string, unknown> }[];
+  return { ...reply, choices: [{ ...choice, message: { ...choice?.message, content: text } }] };
+}

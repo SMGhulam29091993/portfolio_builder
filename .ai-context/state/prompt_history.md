@@ -191,3 +191,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 17:20 IST] — ai-design-studio.T07
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Re-read the Gemini Interactions API reference for the multi-turn input form; added `GeminiDesignGenerator`, its documented-shape recording, `GEMINI_BASE_URL`, contract-suite subject and wire-format tests, and the container registration.
+
+### [2026-10-21 17:30 IST] — ai-design-studio.T08
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added `OpenRouterDesignGenerator`, its documented-shape recording, `OPENROUTER_BASE_URL`, contract-suite subject and wire-format tests, and the container registration.
