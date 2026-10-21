@@ -56,6 +56,8 @@ describe('loadEnv', () => {
       GOOGLE_ISSUER: 'https://accounts.google.com',
       GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
       OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
+      // Provisional until each provider is measured (ai-design-studio.T09).
+      AI_TIMEOUT_MS: 60_000,
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -228,6 +230,15 @@ describe('loadEnv', () => {
     const badUrl = captureEnvError({ ...VALID_SOURCE, OLLAMA_BASE_URL: 'ftp://not-a-real-secret@host' });
     expect(badUrl.variables).toEqual(['OLLAMA_BASE_URL']);
     expect(badUrl.message).not.toContain('not-a-real-secret');
+  });
+
+  it('ai-design-studio.T09 — AI_TIMEOUT_MS defaults to 60000 when unset or blank and is bounded', () => {
+    expect(loadEnv(VALID_SOURCE).AI_TIMEOUT_MS).toBe(60_000);
+    expect(loadEnv({ ...VALID_SOURCE, AI_TIMEOUT_MS: '' }).AI_TIMEOUT_MS).toBe(60_000);
+    expect(loadEnv({ ...VALID_SOURCE, AI_TIMEOUT_MS: '90000' }).AI_TIMEOUT_MS).toBe(90_000);
+    for (const value of ['999', '600001', 'soon']) {
+      expect(captureEnvError({ ...VALID_SOURCE, AI_TIMEOUT_MS: value }).variables).toEqual(['AI_TIMEOUT_MS']);
+    }
   });
 
   it('google-sign-in.AC9 — Google is all three variables or none; the issuer defaults', () => {

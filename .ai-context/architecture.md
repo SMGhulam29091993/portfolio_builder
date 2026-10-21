@@ -111,8 +111,10 @@ portfolio   → core
 identity    → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
 assets      → core
 design      → core
-ai-design   → core, design (IDesignReader, IDesignWriter, IDesignValidator),
-              portfolio (ISectionTypeLister — read-only list of visible section types)
+ai-design   → core, design (IDesignReader, IDesignWriter, IDesignValidator), auth (IClock;
+              the `/cms` guard). It owns `ISectionTypeLister` and `IUserRoleReader`, which
+              the container adapts from `portfolio`'s and `auth`'s repositories, so it imports
+              neither module's classes (`ai-design-studio.T09`)
 publishing  → core, assets (IAssetLookup; implements assets' IAssetReferenceProvider)
 portfolio   → publishing (implements IDraftContributor, IPublishedPointerWriter,
               IPublishedPointerReader)
@@ -232,7 +234,12 @@ module declares its event map in its `index.ts`; core knows no module's events.
 raw JSON → `DesignSpecParser` (schema validation, variant allow-list, contrast check) →
 `design_proposals`. Applying a proposal goes through `IDesignWriter`; a proposal never writes
 the design itself. Generation runs in-process after a `202`; proposals left `pending` by a
-restart are marked `failed` during startup.
+restart are marked `failed` by the `InterruptedProposalRecovery` startup hook, which `main.ts`
+runs before listening. Who may generate is `MonthlyGenerationAllowance`: the owner without
+limit, a member free for `freeMonthly` generations per UTC month and then for credits; prices
+come from `IAiPricing` and credits from `IGenerationWallet`, placeholders until `platform-admin`
+and `credits-billing` replace them in the container. One proposal per portfolio is `pending` at a
+time (partial unique index), and API01 has its own rate limit.
 
 ## Shared packages — one owner each
 | Package | Owns | Consumed by |

@@ -52,8 +52,11 @@ export class ApplicationLifecycle {
   constructor(
     /** Connected in this order before the handler is built. */
     private readonly datastores: readonly NamedDatastore[],
-    /** Builds the request handler; called once, only after every datastore has answered. */
-    private readonly createRequestListener: () => RequestListener,
+    /**
+     * Builds the request handler; called once, only after every datastore has answered. It may
+     * be async: startup hooks (interrupted-work recovery) run inside it, before any port opens.
+     */
+    private readonly createRequestListener: () => RequestListener | Promise<RequestListener>,
     private readonly logger: ILogger,
     private readonly options: ApplicationLifecycleOptions,
   ) {}
@@ -74,8 +77,9 @@ export class ApplicationLifecycle {
         this.logger.info('database connected', { datastore: datastore.name });
       }
       // Inside the same guard: building the container can refuse too — production without a
-      // mail strategy (`owner-auth.AC22`) — and must not leave the datastores open.
-      requestListener = this.createRequestListener();
+      // mail strategy (`owner-auth.AC22`) — and so can a startup hook; neither may leave the
+      // datastores open.
+      requestListener = await this.createRequestListener();
     } catch (error) {
       // Release what did open (MongoDB when Redis fails), so the failed process can exit.
       await this.disconnectAll();

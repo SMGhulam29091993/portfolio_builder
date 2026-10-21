@@ -6,8 +6,8 @@
   `ai-design-studio` — revised for ADR-0010 and ADR-0012 (per-user monthly allowance, then
   credits), `Ready` under the standing authorisation, `In Progress`: T01–T06
   completed (storage; generator port, stub, factory; prompt builder, parser; service,
-  allowance, recovery; decorators; Ollama, Gemini and OpenRouter adapters, the contract suite); next
-  `ai-design-studio.T09` (controller, routes, AI rate limit, wiring, OpenAPI).
+  allowance, recovery; decorators; the three adapters and the contract suite; routes, wiring, OpenAPI 0.13.0);
+  next `ai-design-studio.T10` (the `/cms/ai` screen).
 - Local environment notes: `apps/api/.env` needs `WEB_ORIGIN`, `JWT_ACCESS_SECRET`, `REDIS_URL`;
   `apps/web/.env` now also needs `NEXT_PUBLIC_SITE_URL` (e.g. `http://localhost:3000`) — the web
   app refuses to start without it; set `WEB_REVALIDATE_URL` and the same `REVALIDATE_SECRET` in

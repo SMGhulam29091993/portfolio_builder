@@ -52,6 +52,10 @@ pending row (`IProposalRepository.deletePending`), so nothing unpaid is left sto
 - **Web:** `/cms/ai` — prompt form, scope select, polling hook, proposal preview through the
   shell's `PreviewPane` with the proposal's design injected, apply / discard, history, provider
   badge.
+- **AI rate limit** (set 2026-10-21, `ai-design-studio.T09`; provisional): 10 API01 requests per
+  10 minutes per client. Only an abuse bound — one pending proposal per portfolio and the monthly
+  allowance are the real limits. Revisit with the first measured usage. Retries: one, after 1 s.
+
 ## Data Model
 **`design_proposals`** — `_id`, `portfolioId`, `userId`, `status`, `prompt`, `scope`,
 `basedOnCurrent`, `provider`, `model`, `design`, `rationale`, `failure`, `charge: { kind:

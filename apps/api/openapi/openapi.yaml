@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.12.0
+  version: 0.13.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -42,6 +42,9 @@ tags:
   - name: publishing
     description: >-
       Publish pipeline (publish-pipeline): check the draft against the publish rules, freeze it into an immutable snapshot, switch the live pointer, and roll back to an earlier version. Every route acts on the signed-in user's portfolio.
+  - name: ai-design
+    description: >-
+      AI design proposals (ai-design-studio): a sentence becomes a proposed theme and layout chosen from the catalogue, generated in the background by the configured provider and validated on the server. A proposal is previewed, applied to the draft design or discarded. Every route acts on the signed-in user's portfolio.
   - name: public-site
     description: >-
       Public site (public-site-rendering): anonymous, read-only access to each portfolio's live snapshot and the files it lists. Never returns draft data.
@@ -1193,6 +1196,177 @@ paths:
           $ref: '#/components/responses/OriginNotAllowed'
         '409':
           $ref: '#/components/responses/NothingPublished'
+  /api/v1/cms/ai/design-proposals:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API01
+      x-spec-id: ai-design-studio.API01
+      summary: Start a design proposal
+      description: >-
+        Stores a pending proposal and answers 202 at once; generation runs in the background (poll
+        API02). The owner is unlimited; a member has the free monthly generations, then each costs
+        credits. One proposal per portfolio may be pending. Provider failures are recorded on the
+        proposal, never answered as 5xx. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+      responses:
+        '202':
+          description: The pending proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '402':
+          $ref: '#/components/responses/CreditsRequired'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '409':
+          $ref: '#/components/responses/GenerationInProgress'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API03
+      x-spec-id: ai-design-studio.API03
+      summary: Proposal history
+      description: >-
+        Proposals newest first, discarded ones excluded. Continue with nextCursor.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, required: false, description: The last proposal id of the previous page., schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: One page of proposals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalPageEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+  /api/v1/cms/ai/design-proposals/{id}:
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API02
+      x-spec-id: ai-design-studio.API02
+      summary: One proposal
+      description: >-
+        The proposal and its status; polled while it is pending.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: The proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [ai-design]
+      operationId: ai-design-studio.API05
+      x-spec-id: ai-design-studio.API05
+      summary: Discard a proposal
+      description: >-
+        Discards a ready or failed proposal; it leaves the history. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      responses:
+        '200':
+          description: The discarded proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalNotReady'
+  /api/v1/cms/ai/design-proposals/{id}/apply:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API04
+      x-spec-id: ai-design-studio.API04
+      summary: Apply a proposal to the draft design
+      description: >-
+        Replaces the draft design with a ready proposal's design when expectedDesignRevision
+        matches; the design is validated again first. The published site changes only at the
+        next publish. Requires the web app's Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyProposalRequest'
+      responses:
+        '200':
+          description: The new draft design and the applied proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppliedProposalEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalApplyConflict'
+  /api/v1/cms/ai/provider:
+    get:
+      tags: [ai-design]
+      operationId: ai-design-studio.API06
+      x-spec-id: ai-design-studio.API06
+      summary: The design provider and the allowance
+      description: >-
+        The configured provider and model (or the development stub), whether it answers, and the
+        user's free generations this month, the credit cost and the balance (null for the owner).
+      security:
+        - sessionCookies: []
+      responses:
+        '200':
+          description: Provider and allowance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProviderEnvelope'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
   /api/v1/public/portfolios:
     get:
       tags: [public-site]
@@ -1694,6 +1868,120 @@ components:
                 catalogue:
                   type: object
                   description: The variant catalogue and font allow-list (API01 only).
+    CreateProposalRequest:
+      type: object
+      required: [prompt, scope]
+      properties:
+        prompt: { type: string, minLength: 1, maxLength: 600, description: Plain text; tags are stripped. }
+        scope: { enum: [theme, layout, both] }
+        basedOnCurrent: { type: boolean, default: true }
+    ApplyProposalRequest:
+      type: object
+      required: [expectedDesignRevision]
+      properties:
+        expectedDesignRevision: { type: integer, minimum: 0 }
+    Proposal:
+      type: object
+      required: [id, status, prompt, scope, basedOnCurrent, provider, model, design, rationale, failure, charge, durationMs, createdAt, completedAt]
+      properties:
+        id: { type: string }
+        status: { enum: [pending, ready, failed, applied, discarded] }
+        prompt: { type: string }
+        scope: { enum: [theme, layout, both] }
+        basedOnCurrent: { type: boolean }
+        provider: { enum: [gemini, openrouter, ollama, stub] }
+        model: { type: string }
+        design:
+          oneOf:
+            - $ref: '#/components/schemas/DesignSpec'
+            - type: 'null'
+        rationale: { type: [string, 'null'], maxLength: 400 }
+        failure:
+          oneOf:
+            - type: object
+              required: [code, message]
+              properties:
+                code: { enum: [PROVIDER_TIMEOUT, PROVIDER_ERROR, INVALID_OUTPUT, CONTRAST_FAILED, INTERRUPTED] }
+                message: { type: string }
+            - type: 'null'
+        charge:
+          type: object
+          required: [kind, credits, refunded]
+          properties:
+            kind: { enum: [none, free, credit] }
+            credits: { type: integer, minimum: 0 }
+            refunded: { type: boolean }
+        durationMs: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+    ProposalEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [proposal]
+              properties:
+                proposal: { $ref: '#/components/schemas/Proposal' }
+    ProposalPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [proposals, nextCursor]
+              properties:
+                proposals:
+                  type: array
+                  items: { $ref: '#/components/schemas/Proposal' }
+                nextCursor: { type: [string, 'null'] }
+    AppliedProposalEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [design, proposal]
+              properties:
+                design:
+                  allOf:
+                    - $ref: '#/components/schemas/DesignSpec'
+                    - type: object
+                      required: [revision]
+                      properties:
+                        revision: { type: integer, minimum: 1 }
+                        updatedAt: { type: string, format: date-time }
+                proposal: { $ref: '#/components/schemas/Proposal' }
+    AiProviderEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [provider, model, isStub, reachable, allowance]
+              properties:
+                provider: { enum: [gemini, openrouter, ollama, stub] }
+                model: { type: string }
+                isStub: { type: boolean }
+                reachable: { type: boolean }
+                allowance:
+                  type: object
+                  required: [unlimited, freeMonthly, freeUsed, creditCost, balance, resetsAt]
+                  properties:
+                    unlimited: { type: boolean }
+                    freeMonthly: { type: integer, minimum: 0 }
+                    freeUsed: { type: integer, minimum: 0 }
+                    creditCost: { type: integer, minimum: 0 }
+                    balance: { type: [integer, 'null'], minimum: 0 }
+                    resetsAt: { type: string, format: date-time }
     PublishIssue:
       type: object
       required: [rule, severity, path, message]
@@ -2387,5 +2675,89 @@ components:
             success: false
             message: Nothing is published yet
             data: { code: NOTHING_PUBLISHED }
+    CreditsRequired:
+      description: >-
+        The free monthly generations are used up and the credits do not cover one more. Nothing
+        was stored.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, creditsRequired, balance]
+                    properties:
+                      code: { const: CREDITS_REQUIRED }
+                      creditsRequired: { type: integer, minimum: 0 }
+                      balance: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: Not enough credits
+            data: { code: CREDITS_REQUIRED, creditsRequired: 1, balance: 0 }
+    GenerationInProgress:
+      description: >-
+        A proposal for this portfolio is already pending; data.proposalId names it.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { const: GENERATION_IN_PROGRESS }
+                      proposalId: { type: [string, 'null'] }
+          example:
+            success: false
+            message: A design proposal is already being generated
+            data: { code: GENERATION_IN_PROGRESS }
+    ProposalNotReady:
+      description: >-
+        The proposal is not in a state that allows this; data.status holds its status.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code, status]
+                    properties:
+                      code: { const: PROPOSAL_NOT_READY }
+                      status: { enum: [pending, ready, failed, applied, discarded] }
+          example:
+            success: false
+            message: The design proposal is not ready
+            data: { code: PROPOSAL_NOT_READY, status: pending }
+    ProposalApplyConflict:
+      description: >-
+        PROPOSAL_NOT_READY (with status) or REVISION_CONFLICT (with currentRevision). The design
+        is unchanged.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/FailureEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [code]
+                    properties:
+                      code: { enum: [PROPOSAL_NOT_READY, REVISION_CONFLICT] }
+                      status: { enum: [pending, ready, failed, applied, discarded] }
+                      currentRevision: { type: integer, minimum: 0 }
+          example:
+            success: false
+            message: The design proposal is not ready
+            data: { code: PROPOSAL_NOT_READY, status: failed }
     NotModified:
       description: The client's copy is current (If-None-Match matched); no body.

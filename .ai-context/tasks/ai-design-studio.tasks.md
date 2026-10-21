@@ -10,5 +10,5 @@
 - [x] ai-design-studio.T06 — `OllamaDesignGenerator`; the shared `IDesignGenerator` contract suite with recorded responses; run it against stub + Ollama — Acceptance: AC13, AC14
 - [x] ai-design-studio.T07 — `GeminiDesignGenerator` on the Interactions API (confirmed 2026-10-21, `memory/ai-provider-apis.md`); add to the contract suite — Acceptance: AC13, AC14
 - [x] ai-design-studio.T08 — `OpenRouterDesignGenerator` with `require_parameters`; add to the contract suite — Acceptance: AC13, AC14
-- [ ] ai-design-studio.T09 — `AiDesignController`, routes, AI rate limiter, container wiring (factory → retry → timeout), OpenAPI for API01–API06 — Acceptance: AC1, AC7
+- [x] ai-design-studio.T09 — `AiDesignController`, routes, AI rate limiter, container wiring (factory → retry → timeout), OpenAPI for API01–API06 — Acceptance: AC1, AC7
 - [ ] ai-design-studio.T10 — `/cms/ai` screen: prompt + scope, polling, proposal preview at both widths, apply / discard, failure messages, history, provider badge, the allowance and credit cost — Acceptance: AC16, AC18

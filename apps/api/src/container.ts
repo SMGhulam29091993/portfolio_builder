@@ -100,11 +100,28 @@ import {
   DesignGeneratorFactory,
   type DesignGeneratorRegistrations,
 } from './modules/ai-design/providers/design-generator.factory.js';
+import { DefaultAiPricing } from './modules/ai-design/adapters/default-ai-pricing.js';
+import { EmptyGenerationWallet } from './modules/ai-design/adapters/empty-generation-wallet.js';
 import { FetchHttpClient } from './modules/ai-design/adapters/fetch-http.client.js';
+import { AiDesignController } from './modules/ai-design/ai-design.controller.js';
+import { createAiDesignRouter } from './modules/ai-design/ai-design.routes.js';
+import { AiDesignService } from './modules/ai-design/ai-design.service.js';
+import { RetryDesignGenerator } from './modules/ai-design/decorators/retry.design-generator.js';
+import { TimeoutDesignGenerator } from './modules/ai-design/decorators/timeout.design-generator.js';
+import { DesignPromptBuilder } from './modules/ai-design/design-prompt.builder.js';
+import { DesignSpecParser } from './modules/ai-design/design-spec.parser.js';
+import { MonthlyGenerationAllowance } from './modules/ai-design/generation-allowance.service.js';
+import type { ActiveDesignGenerator } from './modules/ai-design/index.js';
+import { InterruptedProposalRecovery } from './modules/ai-design/interrupted-proposal.recovery.js';
+import { ProposalRepository } from './modules/ai-design/proposal.repository.js';
 import { GeminiDesignGenerator } from './modules/ai-design/providers/gemini.design-generator.js';
 import { OllamaDesignGenerator } from './modules/ai-design/providers/ollama.design-generator.js';
 import { OpenRouterDesignGenerator } from './modules/ai-design/providers/openrouter.design-generator.js';
 import { STUB_MODEL, StubDesignGenerator } from './modules/ai-design/providers/stub.design-generator.js';
+import { InProcessBackgroundRunner } from './core/background/index.js';
+import type { IStartupHook } from './core/lifecycle/startup-hook.interface.js';
+import { SystemDelay } from './core/time/index.js';
+import { CONTRAST_PAIRS, FONT_ALLOW_LIST, VARIANT_CATALOGUE } from '@portfolio/design-tokens';
 import { HttpRevalidationClient } from './modules/publishing/adapters/http-revalidation.client.js';
 import { NoopRevalidationClient } from './modules/publishing/adapters/noop-revalidation.client.js';
 import { CanonicalHasher } from './modules/publishing/canonical-hasher.js';
@@ -259,6 +276,19 @@ const DESIGN_GENERATORS: DesignGeneratorRegistrations = {
 };
 
 /**
+ * The configured generator inside its decorators — adapter → retry → timeout, so the timeout
+ * bounds the whole call, retries included (`ai-design-studio` plan → Composition).
+ *
+ * @throws {EnvValidationError} A row of the environment table that must fail startup (AC12).
+ */
+function buildDesignGenerator(env: Env): ActiveDesignGenerator {
+  const selected = new DesignGeneratorFactory(DESIGN_GENERATORS, { create: () => new StubDesignGenerator(), model: STUB_MODEL }).create(env);
+  const delay = new SystemDelay();
+  const generator = new TimeoutDesignGenerator(new RetryDesignGenerator(selected.generator, delay, AI_RETRY_POLICY), delay, env.AI_TIMEOUT_MS);
+  return { ...selected, generator };
+}
+
+/**
  * The registered section types (`section-engine`; ADR-0005), in page order. Each section spec
  * adds its definition here — one line — and nothing else in the engine changes (AC10).
  */
@@ -280,6 +310,22 @@ const PUBLIC_RATE_LIMIT: RateLimitPolicy = { windowMs: 60_000, max: 600 };
 
 /** Snapshots kept per portfolio besides the live one (ADR-0004 retention; `publish-pipeline.AC20`). */
 const SNAPSHOT_RETENTION = 20;
+
+/**
+ * Generation requests per client on API01 (`ai-design-studio`). Provisional, set 2026-10-21: an
+ * abuse bound only — one generation in flight per portfolio and the monthly allowance are the
+ * real limits — to revisit with the first measured usage.
+ */
+const AI_GENERATION_RATE_LIMIT: RateLimitPolicy = { windowMs: 10 * 60_000, max: 10 };
+
+/** Transport retries around every provider (ADR-0003): one retry, after one second. */
+const AI_RETRY_POLICY = { attempts: 2, baseDelayMs: 1_000 } as const;
+
+/**
+ * The seeded AI prices (ADR-0012 → Owner answers, 2026-10-21) until `platform-admin` makes them
+ * settings: five free generations a month, then one credit each.
+ */
+const AI_DEFAULT_PRICES = { freeMonthly: 5, creditCost: 1 } as const;
 
 /** Upper bound on an AI provider's health probe (`ai-design-studio.API06`). */
 const PROVIDER_PROBE_TIMEOUT_MS = 3_000;
@@ -322,6 +368,11 @@ export interface ContainerDependencies {
   readonly fileStorage?: IFileStorage;
   /** Replaces the configured revalidation client; production omits it. */
   readonly revalidationClient?: IRevalidationClient;
+  /**
+   * Replaces the configured design generator and its decorators. Route tests pass a scripted one;
+   * production omits it, and the factory then decides — failing startup when it must (AC12).
+   */
+  readonly designGenerator?: ActiveDesignGenerator;
 }
 
 /** Middleware the app factory mounts on a set of path prefixes, ahead of every router. */
@@ -347,6 +398,11 @@ export interface Container {
    * module exists.
    */
   readonly authGuard: IAuthGuard;
+  /**
+   * Work `main.ts` runs after building the container and before listening (`constitution.md` →
+   * Infrastructure): failing interrupted AI proposals (`ai-design-studio.AC10`).
+   */
+  readonly startupHooks: readonly IStartupHook[];
 }
 
 /** Wires every module. Performs no I/O beyond reading the API's own `package.json`. */
@@ -362,6 +418,7 @@ export function buildContainer({
   extraAssetReferenceProviders = [],
   fileStorage,
   revalidationClient,
+  designGenerator,
 }: ContainerDependencies): Container {
   // On the same clock as tokens and sessions, so a test moves every window together.
   const rateLimiters = new RateLimiterFactory(() => clock.now().getTime());
@@ -584,8 +641,44 @@ export function buildContainer({
 
   // ai-design (`ai-design-studio`). The generator is chosen while the container is built, after
   // mail and revalidation, so production without a usable provider refuses to start naming the
-  // variable (AC12). The service and routes that use it are wired by `ai-design-studio.T09`.
-  new DesignGeneratorFactory(DESIGN_GENERATORS, { create: () => new StubDesignGenerator(), model: STUB_MODEL }).create(env);
+  // variable (AC12). `ai-design` imports neither `portfolio`'s nor `auth`'s classes: the section
+  // lister and the role reader are adapted here from their repositories.
+  const proposalRepository = new ProposalRepository(mongo);
+  const aiDesignService = new AiDesignService(
+    proposalRepository,
+    designGenerator ?? buildDesignGenerator(env),
+    new DesignPromptBuilder({ variants: VARIANT_CATALOGUE, fonts: FONT_ALLOW_LIST, contrastPairs: CONTRAST_PAIRS }),
+    new DesignSpecParser(new DesignValidator()),
+    designService,
+    designService,
+    {
+      // Visible types in page order: `hero` first, then the portfolio's order.
+      listVisible: async (portfolioId) => {
+        const [portfolio, sections] = await Promise.all([
+          portfolioRepository.findById(portfolioId),
+          sectionRepository.listByPortfolio(portfolioId),
+        ]);
+        const visible = new Set(sections.filter((section) => section.visible).map((section) => section.type));
+        return ['hero', ...(portfolio?.sectionOrder ?? [])].filter((type) => visible.has(type));
+      },
+    },
+    new MonthlyGenerationAllowance(
+      proposalRepository,
+      new DefaultAiPricing(AI_DEFAULT_PRICES),
+      new EmptyGenerationWallet(),
+      { roleOf: async (userId) => (await users.findById(userId))?.role ?? null },
+      clock,
+    ),
+    new InProcessBackgroundRunner(logger),
+    clock,
+    logger,
+  );
+  const aiDesignRouter = createAiDesignRouter(
+    new AiDesignController(aiDesignService),
+    authGuard,
+    resolvePortfolio,
+    rateLimiters.create(AI_GENERATION_RATE_LIMIT),
+  );
 
   const originAllowList: MountedMiddleware = {
     paths: ORIGIN_CHECKED_PATHS,
@@ -604,9 +697,11 @@ export function buildContainer({
       identityRouter,
       designRouter,
       publishingRouter,
+      aiDesignRouter,
       publicSiteRouter,
     ],
     authGuard,
+    startupHooks: [new InterruptedProposalRecovery(aiDesignService)],
   };
 }
 

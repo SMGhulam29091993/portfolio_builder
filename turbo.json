@@ -84,6 +84,7 @@
         "OPENROUTER_API_KEY",
         "OPENROUTER_BASE_URL",
         "OLLAMA_BASE_URL",
+        "AI_TIMEOUT_MS",
         "API_INTERNAL_URL"
       ]
     },

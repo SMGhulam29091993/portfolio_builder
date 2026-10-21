@@ -149,6 +149,14 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: optional(z.string().min(1)),
   /** The OpenRouter API base; the adapter calls `<base>/chat/completions`. Configuration, not a literal. */
   OPENROUTER_BASE_URL: z.url({ protocol: /^https?$/ }).default('https://openrouter.ai/api/v1'),
+  /**
+   * Upper bound on one generation, retries included (`ai-design-studio.AC6`). 60 000 ms when
+   * unset or blank — provisional until each provider is measured (MT01, MT02).
+   */
+  AI_TIMEOUT_MS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(1_000).max(600_000).default(60_000),
+  ),
   /** A local Ollama server, e.g. `http://127.0.0.1:11434`; development only (ADR-0003). */
   OLLAMA_BASE_URL: optional(z.url({ protocol: /^https?$/ })),
 });

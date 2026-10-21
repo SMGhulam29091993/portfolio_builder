@@ -509,3 +509,13 @@
   default (env, example, `turbo.json`, `architecture.md`). Added to CT01–CT03 and registered;
   all three providers and the stub now pass one suite. Checked locally: typecheck, lint, 1105
   API tests.
+- ai-design-studio.T09 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `AiDesignController`,
+  `ai-design.routes.ts` (API01–API06; the AI rate limit on API01), container wiring (factory →
+  retry → timeout; prompt builder, parser, allowance with the seeded prices and the empty
+  wallet; the section lister and role reader adapted from `portfolio` and `auth`),
+  `designGenerator` test override, `Container.startupHooks` run by `main.ts` before listening
+  (the lifecycle now accepts an async listener builder), `AI_TIMEOUT_MS` (60 000 ms default,
+  bounded), OpenAPI 0.13.0 with every `$ref` resolving. Route tests IT01–IT09, IT11–IT15 plus
+  400, 403, 404 isolation and 429 (IT10 is the process boot in `main.spec.ts`). Provisional AI
+  rate limit recorded in the plan. Checked locally: typecheck (every workspace), lint, 1123 API
+  tests with the coverage floor, drift (45 routes).
