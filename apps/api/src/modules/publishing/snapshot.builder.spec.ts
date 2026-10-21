@@ -1,6 +1,7 @@
 /**
  * `SnapshotBuilder` and `DraftAssembler` (`publish-pipeline.UT05`; AC9, AC10).
  */
+import { SNAPSHOT_SCHEMA_VERSION } from '@portfolio/contracts';
 import { DEFAULT_DESIGN } from '@portfolio/design-tokens';
 import { describe, expect, it } from 'vitest';
 
@@ -40,10 +41,24 @@ function parts(): DraftParts {
 describe('publish-pipeline.UT05 — SnapshotBuilder', () => {
   it('keeps visible sections only, hero first then the order; lists exactly the existing referenced assets', async () => {
     const content = await new SnapshotBuilder(assets).build('p1', parts());
-    expect(content.schemaVersion).toBe(1);
+    expect(content.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION);
+    expect(content.schemaVersion).toBe(2);
+    // No custom layouts named: the field is left out, as in version-1 content.
+    expect(content.design).not.toHaveProperty('customLayouts');
     expect(content.sections.map((section) => section.type)).toEqual(['hero', 'work', 'about']);
     expect(content.assets).toEqual([RESUME]);
     expect(content.design.layout).toEqual(DEFAULT_DESIGN.layout);
+  });
+
+  it('design-library.AC4 — stores a copy of the custom layouts, independent of the draft', async () => {
+    const draft = parts();
+    const layout = { section: 'work', align: 'start', body: { kind: 'stack', gap: 'md', columns: null, children: [] } };
+    const customLayouts: Record<string, unknown> = { work: layout };
+    const content = await new SnapshotBuilder(assets).build('p1', { ...draft, design: { ...draft.design, customLayouts } });
+    expect(content.design.customLayouts).toEqual({ work: layout });
+    // A later change to the draft's object does not reach the snapshot.
+    (layout as { align: string }).align = 'center';
+    expect(content.design.customLayouts).toEqual({ work: { ...layout, align: 'start' } });
   });
 
   it('places a section missing from the order last, and finds nothing in another portfolio', async () => {

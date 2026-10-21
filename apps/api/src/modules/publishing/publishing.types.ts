@@ -44,6 +44,8 @@ export interface SectionsDraft {
 export interface DesignDraft {
   readonly theme: unknown;
   readonly layout: Readonly<Record<string, string>>;
+  /** A copy of each custom layout the layout names, by section (`design-library`, ADR-0014). */
+  readonly customLayouts?: Readonly<Record<string, unknown>>;
 }
 
 /** What each contributor supplies, by key (`publish-pipeline` plan → `IDraftContributor`). */

@@ -623,7 +623,7 @@ export function buildContainer({
       [
         new SectionsDraftContributor(portfolioRepository, sectionRepository, sectionRegistry),
         new IdentityDraftContributor(identityService),
-        new DesignDraftContributor(designService),
+        new DesignDraftContributor(designService, layoutLibrary),
       ],
       new SnapshotBuilder(assetRepository),
       new CanonicalHasher(),

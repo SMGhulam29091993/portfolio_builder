@@ -37,6 +37,7 @@ export function SitePage({ slug, content, year }: { slug: string; content: Rende
           sectionOrder={content.sections.map((section) => section.type)}
           registry={rendererRegistry}
           variants={content.layout}
+          customLayouts={content.customLayouts}
           context={{ identity: content.identity }}
           wrapSection={(type, section) => <PublicSectionBoundary type={type}>{section}</PublicSectionBoundary>}
         />

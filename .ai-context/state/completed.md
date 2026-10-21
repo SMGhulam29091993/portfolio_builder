@@ -549,3 +549,9 @@
   limits 50 / 20), `DesignService` checks every `custom:` entry against the library (AC2),
   routes API01–API06, OpenAPI 0.14.0, ports `ILayoutLibraryWriter` / `IPresetWriter` for
   `ai-design`. Checked: typecheck, lint, 1143 API tests with the coverage floor, drift (51).
+- design-library.T04 — 2026-10-21 — DoD self-check: 2026-10-21, pass. Snapshot schema version
+  2: `design.customLayouts` copies, resolved by `DesignDraftContributor` and cloned by the
+  builder; the `design-valid` publish check accepts a resolved `custom:` entry and names one that
+  did not resolve (found during the task: it would otherwise have blocked every custom layout);
+  the web adapter reads version 2 (unreadable layouts fall back) and version 1 unchanged; the
+  site passes the copies to `PortfolioPage`. Checked: 1146 API tests, 103 web unit tests, 41 E2E.

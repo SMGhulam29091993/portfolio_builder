@@ -10,7 +10,11 @@ import { identitySchema } from '../identity/identity-contracts.js';
 import { assetKindSchema } from '../assets/assets-contracts.js';
 
 /** The current shape's version; any change to it bumps this (`constitution.md` → Versioning). */
-export const SNAPSHOT_SCHEMA_VERSION = 1;
+/**
+ * Version 2 (`design-library`, ADR-0014) adds `design.customLayouts`: a copy of each custom layout
+ * the published design names. Version-1 snapshots have none and still render.
+ */
+export const SNAPSHOT_SCHEMA_VERSION = 2;
 
 export const publishedAssetSchema = z.object({
   id: z.string(),
@@ -26,7 +30,12 @@ export const publishedContentSchema = z.object({
   schemaVersion: z.number().int().min(1),
   identity: identitySchema,
   sections: z.array(z.object({ type: z.string(), data: z.unknown() })),
-  design: z.object({ theme: z.unknown(), layout: z.record(z.string(), z.string()) }),
+  design: z.object({
+    theme: z.unknown(),
+    layout: z.record(z.string(), z.string()),
+    /** Version 2: a `CustomLayout` per section that uses one. */
+    customLayouts: z.record(z.string(), z.unknown()).optional(),
+  }),
   assets: z.array(publishedAssetSchema),
 });
 

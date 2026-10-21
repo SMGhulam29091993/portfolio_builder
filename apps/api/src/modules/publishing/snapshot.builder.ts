@@ -24,7 +24,14 @@ export class SnapshotBuilder implements ISnapshotBuilder {
       schemaVersion: SNAPSHOT_SCHEMA_VERSION,
       identity: parts.identity,
       sections,
-      design: { theme: parts.design.theme, layout: { ...parts.design.layout } },
+      design: {
+        theme: parts.design.theme,
+        layout: { ...parts.design.layout },
+        // A copy, so a later library change never alters what this snapshot shows (AC4).
+        ...(parts.design.customLayouts && Object.keys(parts.design.customLayouts).length > 0
+          ? { customLayouts: structuredClone(parts.design.customLayouts) }
+          : {}),
+      },
       assets: [],
     };
     const ids = [...new Set(assetReferencesOf(content).map((reference) => reference.assetId))].sort();
