@@ -6,6 +6,7 @@
  * reuse (`architecture.md` → Shared packages). One folder per area; `common/` holds the shared payload
  * primitives (`plainText`).
  */
+export * from './ai-design/index.js';
 export * from './assets/index.js';
 export * from './auth/index.js';
 export * from './common/index.js';

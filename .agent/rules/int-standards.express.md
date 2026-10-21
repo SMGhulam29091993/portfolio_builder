@@ -66,6 +66,7 @@ Every endpoint returns this shape through `core/http/respond.ts` (`ok`, `created
 | 400 | `OTP_INVALID` | — (unknown reference, used-up attempts or wrong code; `owner-auth`) |
 | 400 | `OTP_EXPIRED` | — (`owner-auth`) |
 | 401 | `UNAUTHENTICATED` | — |
+| 402 | `CREDITS_REQUIRED` | `creditsRequired`, `balance` (too few credits for a paid action; ADR-0012) |
 | 401 | `SESSION_EXPIRED` | — (a newer sign-in replaced this session; `owner-auth`) |
 | 403 | `ORIGIN_NOT_ALLOWED` | — |
 | 403 | `EMAIL_NOT_VERIFIED` | — (right password, unverified email; `account-registration`) |

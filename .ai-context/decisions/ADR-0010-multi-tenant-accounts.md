@@ -81,3 +81,9 @@ answered with a different product (2026-10-18):
 - Open, recorded in `state/blockers.md`: what the owner role may do that a member may not; the
   payment provider and what credits buy; the shape of a free portfolio's address on the
   platform domain; whether the reference design becomes a template for every user.
+
+## Owner answers, 2026-10-21
+- **Suspension takes a portfolio offline.** While the owner has a member suspended, that
+  member's `/<slug>` answers the same 404 as an unpublished portfolio, and signing in is refused.
+  Re-enabling restores both; no data is deleted (`platform-admin`, `public-site-rendering`).
+

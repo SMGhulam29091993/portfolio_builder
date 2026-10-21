@@ -24,7 +24,7 @@ owner moves a spec to `Ready`.
 | 13 | `contact-section` | Contact card | Implemented | BRD-001 | — |
 | 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
 | 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
-| 16 | `ai-design-studio` | AI design proposals | Draft | BRD-004 | ADR-0006, ADR-0003 mechanics; revise for ADR-0010 (per-user limits) |
+| 16 | `ai-design-studio` | AI design proposals | In Progress | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 

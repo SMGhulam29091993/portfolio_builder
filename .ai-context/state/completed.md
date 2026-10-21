@@ -441,3 +441,10 @@
   experience-timeline.T05, stack-credentials.T05, contact-section.T05 — 2026-10-21 — DoD
   self-check: 2026-10-21, pass. Run as `public-site-rendering` VR01/VR02 and E2E11 at real
   widths; screenshots are attached to the test results for the owner's review.
+- ai-design-studio.T01 — 2026-10-21 — DoD self-check: 2026-10-21, pass. Contracts in
+  `packages/contracts/src/ai-design`; `design_proposals` model with the history index and the
+  partial unique index on `pending`; `ProposalRepository` (conditional status changes, the
+  once-only refund flag, the monthly free count, pending list for recovery) with 11 tests on
+  real MongoDB, including the concurrent-insert race (IT14 at the storage layer). Checked
+  locally: API typecheck, lint, 890 tests with the coverage floor, OpenAPI drift (no route
+  change). Not wired into `container.ts` yet: that is T09.

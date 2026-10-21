@@ -34,3 +34,14 @@ what credits buy: a custom domain, and AI design generations beyond a free month
   automatically (an owner adjustment entry does). Recorded as out of scope by `credits-billing`.
 - Tests never call Stripe: the webhook route is exercised with events signed by a test secret,
   and the gateway behind a recording fake.
+
+## Owner answers, 2026-10-21
+- **AI generations beyond the free allowance.** The AI screen shows the free generations left
+  this month and the credit cost before submitting; submitting a generation past the allowance
+  spends the credit. With too few credits the request is refused with a link to buy credits. A
+  generation that fails through the platform's or provider's fault (timeout, provider error,
+  restart) gives its credit — or its free slot — back.
+- **Custom-domain renewal.** A domain renews automatically from the balance each year. With too
+  few credits it keeps serving for a 14-day grace period, then detaches; the portfolio stays at
+  `<platform>/<slug>` throughout. The user is emailed before renewal and at expiry.
+

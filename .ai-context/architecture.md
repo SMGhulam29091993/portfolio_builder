@@ -271,7 +271,7 @@ the `mongod` version the tests run, loopback-only, no auth); setup steps are in 
 | `AI_PROVIDER` | api | `gemini` \| `openrouter` \| `ollama`; unset outside production → stub |
 | `AI_MODEL` | api | Model ID for the chosen provider — never a code literal |
 | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | api | Provider access |
-| `AI_TIMEOUT_MS`, `AI_DAILY_PROPOSAL_LIMIT` | api | AI bounds |
+| `AI_TIMEOUT_MS` | api | Upper bound on one provider call (default 60 000 ms, provisional) |
 | `WEB_REVALIDATE_URL` | api | Publish → site revalidation: the web endpoint to call |
 | `REVALIDATE_SECRET` | api, web | Publish → site revalidation: shared secret |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_SITE_URL` | web | Server-side fetch target; canonical URL |

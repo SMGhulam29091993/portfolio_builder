@@ -138,3 +138,12 @@ the API's own checks; `seed-owner.spec.ts` (IT26) proves `users` stays empty in 
   `link-in-text-block` (the public-address link in a sentence was distinguishable by colour
   only). Fixed: secondary text uses `text-neutral-400`; in-text links are always underlined.
   The axe journey (E2E11) now guards every CMS screen.
+
+### 2026-10-21 — ai-design-studio.T01
+**Finding:** Mongoose 9.11 deprecates the `new: true` option of `findOneAndUpdate()` (a runtime
+warning on every call: "Use `returnDocument: 'after'` instead"). `ProposalRepository` uses
+`returnDocument: 'after'`; the `design`, `identity`, `auth` (user), `portfolio` and `section`
+repositories still pass `new: true`. Behaviour is unchanged today, but the option will go in a
+later major.
+**Resulting rule/check added:** none yet — new repositories use `returnDocument: 'after'`; the
+existing five are switched when each is next touched, not as drive-by edits in another task.

@@ -1,5 +1,7 @@
 # ADR-0003: One design-generation port; provider chosen by configuration
-**Status:** Accepted for the provider list (owner, 2026-10-11) · selection mechanics *Proposed*
+**Status:** Accepted — provider list (owner, 2026-10-11); selection mechanics as written (owner,
+2026-10-21: `AI_PROVIDER` / `AI_MODEL`, the stub outside production only, production refusal,
+timeout and retry decorators, no automatic fallback)
 
 ## Context
 The owner named three providers: Gemini or OpenRouter for UI design generation, and Ollama

@@ -7,6 +7,15 @@
 - **Express `trust proxy`** — must be set to the real hop count at deployment
   (`memory/review-findings.md`, 2026-10-18). Blocks nothing in code.
 
+## Resolved 2026-10-21
+- ADR-0003 selection mechanics accepted as written — `ai-design-studio` may become `Ready`.
+- Suspension takes a member's public portfolio offline until re-enabled (ADR-0010 → Owner
+  answers, 2026-10-21).
+- AI generations past the free monthly allowance spend one credit, shown before submitting;
+  platform-fault failures give it back (ADR-0012 → Owner answers, 2026-10-21).
+- Custom domains renew automatically from the balance, with a 14-day grace before detaching
+  (ADR-0012 → Owner answers, 2026-10-21).
+
 ## Resolved 2026-10-20 (owner answered every open question in one session)
 - ADR-0004 accepted, with a retention amendment (newest 20 snapshots per portfolio plus the
   live one). ADR-0005 accepted as written. ADR-0006 accepted, reading (a), amended to ship two or

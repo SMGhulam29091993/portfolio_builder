@@ -1,6 +1,6 @@
 # Test Cases: AI Design Studio
 **Spec:** .ai-context/specs/ai-design-studio.spec.md
-**Spec-derived unit cases:** UT01–UT14 are defined in the spec and not restated here.
+**Spec-derived unit cases:** UT01–UT16 are defined in the spec and not restated here.
 No test in CI calls a real provider. Integration tests use the stub or a scripted fake generator.
 
 ## Integration (real MongoDB, real HTTP, fake or stub generator)
@@ -11,7 +11,7 @@ No test in CI calls a real provider. Integration tests use the stub or a scripte
 | ai-design-studio.IT03 | AC3 | Generator returns prose twice | `failed` / `INVALID_OUTPUT`; `design` null |
 | ai-design-studio.IT04 | AC4 | Generator returns a low-contrast design, then a valid one | `ready`; generator called twice |
 | ai-design-studio.IT05 | AC7 | POST while one is pending | 409 `GENERATION_IN_PROGRESS` with its id |
-| ai-design-studio.IT06 | AC7 | Reach the daily limit, POST again | 429; succeeds after the clock passes 00:00 UTC |
+| ai-design-studio.IT06 | AC7, AC17 | A member uses the free monthly allowance, POSTs again; the owner POSTs past it | 402 `CREDITS_REQUIRED`, nothing stored; the owner's 202; a member's POST succeeds again after the clock passes the month |
 | ai-design-studio.IT07 | AC8 | Apply a ready proposal | Design revision + 1; proposal `applied`; published snapshot unchanged |
 | ai-design-studio.IT08 | AC9 | Apply a failed proposal; apply with a stale revision | 409 `PROPOSAL_NOT_READY`; 409 `REVISION_CONFLICT` |
 | ai-design-studio.IT09 | AC10 | Insert a pending proposal, run startup hooks | `failed` / `INTERRUPTED`; a new POST is accepted |
@@ -20,7 +20,7 @@ No test in CI calls a real provider. Integration tests use the stub or a scripte
 | ai-design-studio.IT12 | Edge | Discard a pending proposal; discard a ready one | 409; 200 and excluded from the list |
 | ai-design-studio.IT13 | Auth | Each route with no cookie | 401 |
 | ai-design-studio.IT14 | Edge | Concurrent POSTs | Exactly one 202 (partial unique index) |
-| ai-design-studio.IT15 | AC14 | Boot three times with `AI_PROVIDER` = `ollama`, `gemini`, `openrouter` against recorded HTTP; run create → ready → apply each time | Same flow passes unchanged; each proposal records its provider and model |
+| ai-design-studio.IT15 | AC14 | Each adapter, built by the factory from its environment row, runs create → ready against recorded HTTP | Same flow passes unchanged; each proposal records its provider and model |
 
 ## Contract suites
 | Test ID | Interface | Asserts |

@@ -163,3 +163,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-20 20:45 IST] — cms-panel-shell (T01–T08)
 **User Request:** Build the whole project in one go on one branch (continuing).
 **Agent Action:** Revised `cms-panel-shell` for ADR-0010/0011 (register, verify, Google, slug; AC16–AC20); `Ready` under the standing authorisation. Pinned TanStack Query, react-hook-form, resolvers, Zustand, axe (newest releases at least two weeks old). Built the API client with the cross-tab refresh rule, query hooks, auth screens, panel frame, form kit with schema-read limits, editor registry and host with conflict dialog, overview with visibility/reorder/slug, live preview with error boundaries, and the browser E2E harness (generic `SMTP_URL` mail strategy, local SMTP mailbox, seeded account, Chromium in CI). Recorded deviations: no `proxy.ts` (cookie paths), AC11 data to `publish-pipeline`, editing E2E to `about-section`; turbo serialises web typecheck/lint after its build (pitfall).
+
+### [2026-10-21 14:51 IST] — ai-design-studio.T01
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Moved `ai-design-studio` `Ready → In Progress`. Added the `ai-design` module's types, `IProposalRepository`, the `design_proposals` model (history index, partial unique index on `pending`) and `ProposalRepository` with its real-MongoDB spec; the contracts written in the previous session are part of this task. Recorded the Mongoose `new: true` deprecation in `memory/review-findings.md`.
