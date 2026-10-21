@@ -199,3 +199,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 17:55 IST] — ai-design-studio.T09
 **User Request:** Continue the build from where the last session stopped.
 **Agent Action:** Added the ai-design controller and routes, the container wiring and startup hook run, `AI_TIMEOUT_MS`, OpenAPI 0.13.0 and the route integration tests; updated the module map prose, AI flow, security backlog and plan (provisional AI rate limit).
+
+### [2026-10-21 18:30 IST] — ai-design-studio.T10
+**User Request:** Continue the build from where the last session stopped.
+**Agent Action:** Added the `/cms/ai` screen, its hooks and display helpers with unit tests, the `/cms/credits` placeholder, and E2E01–E05; moved `ai-design-studio` to `Implemented` and updated the spec status, board, test cases and state files.

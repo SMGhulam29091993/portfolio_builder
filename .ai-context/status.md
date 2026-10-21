@@ -24,7 +24,7 @@ owner moves a spec to `Ready`.
 | 13 | `contact-section` | Contact card | Implemented | BRD-001 | — |
 | 14 | `publish-pipeline` | Validate, snapshot, publish, rollback | Implemented | BRD-005 | — |
 | 15 | `public-site-rendering` | Public site shell, SEO, fidelity | Implemented | BRD-003 | — |
-| 16 | `ai-design-studio` | AI design proposals | In Progress | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
+| 16 | `ai-design-studio` | AI design proposals | Implemented | BRD-004 | — (revised 2026-10-21 for ADR-0010 and ADR-0012: per-user monthly allowance, then credits) |
 
 `OQ<n>` refers to the numbered Open Questions section of that spec.
 
@@ -37,6 +37,12 @@ owner moves a spec to `Ready`.
 
 ## Daily Execution Log
 ### 2026-10-21
+- `ai-design-studio` revised for ADR-0010 and ADR-0012 (per-user monthly allowance, then
+  credits; refunds on platform faults), `Ready` under the standing authorisation, and implemented
+  T01–T10: proposal storage with one generation in flight, the generator port, stub and
+  environment table, prompt builder and parser, the service and allowance with startup recovery,
+  timeout and retry decorators, Ollama, Gemini (Interactions API) and OpenRouter adapters under
+  one contract suite, routes and OpenAPI 0.13.0, and the `/cms/ai` screen. `Implemented`.
 - Section specs: the template placeholders renamed to the `[Your …]` form and matched by the
   shared `PLACEHOLDER_PATTERN`; the layout checks ran in the public-site journeys. All six
   `Implemented`.

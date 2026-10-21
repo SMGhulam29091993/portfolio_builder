@@ -1,6 +1,6 @@
-/** `/cms/ai` — mount point (`cms-panel-shell` → Screens), filled by its own spec. */
-import { AreaPlaceholder } from '../../../../../components/cms/panel/area-placeholder';
+/** `/cms/ai` (`ai-design-studio.T10`). */
+import { AiScreen } from '../../../../../components/cms/ai/ai-screen';
 
-export default function Page() {
-  return <AreaPlaceholder title="AI Studio" note="This area is not available yet." />;
+export default function AiPage() {
+  return <AiScreen />;
 }

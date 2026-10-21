@@ -43,6 +43,7 @@ No test in CI calls a real provider. Integration tests use the stub or a scripte
 | ai-design-studio.E2E02 | AC16 | Apply, then open Design | Design screen shows the applied tokens |
 | ai-design-studio.E2E03 | AC16 | Discard a proposal | Removed from history |
 | ai-design-studio.E2E04 | AC16 | Provider badge with the stub | "Stub (development)" |
+| ai-design-studio.E2E05 | AC16 (layout, accessibility) | A ready proposal on screen at 390, 768, 1024, 1440 | No horizontal scroll; no serious axe violations |
 
 ## Data variations
 - Prompts: 1 character, 600, 601 (400), with HTML, with model-directed instructions.

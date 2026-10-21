@@ -2,7 +2,14 @@
 ## Spec ID
 ai-design-studio
 ## Status
-In Progress
+Implemented
+- `In Progress → Implemented` 2026-10-21: T01–T10 completed, each with a DoD self-check line in
+  `state/completed.md`. Deviations, recorded where they were made: an object inside a JSON array
+  is found and fully validated rather than refused (T03); `InterruptedProposalRecovery` depends
+  on the service's recovery role and a failed credit spend removes the pending row (T04, plan
+  footnote ²); the AI rate limit is a provisional 10 per 10 minutes (T09, plan); AC18's "buy
+  credits" link leads to a `/cms/credits` placeholder until `credits-billing` (T10). MT01 / MT02
+  (live provider runs) remain for the owner, with real keys.
 - `Ready → In Progress` 2026-10-21: `ai-design-studio.T01` started.
 - DoR self-check: 2026-10-21, pass. Moved `Draft → Ready` by the agent under the owner's
   standing authorisation of 2026-10-20 (`governance.md`); ADR-0003 fully accepted 2026-10-21,

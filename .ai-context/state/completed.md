@@ -519,3 +519,13 @@
   400, 403, 404 isolation and 429 (IT10 is the process boot in `main.spec.ts`). Provisional AI
   rate limit recorded in the plan. Checked locally: typecheck (every workspace), lint, 1123 API
   tests with the coverage floor, drift (45 routes).
+- ai-design-studio.T10 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `/cms/ai`
+  (`AiScreen`): provider badge and allowance before submitting, the prompt form on the API's own
+  schema, polling while pending, the ready proposal in the shell's `PreviewPane` at both widths
+  without applying, Apply (with the draft revision) and Discard, failures in the server's plain
+  language, history; "Not enough credits" with a link to the new `/cms/credits` placeholder.
+  Hooks in `lib/api/ai-design.ts`, display rules in `lib/cms/ai-studio.ts` (unit-tested). E2E01–
+  E05 (E05 added: four widths and axe). Checked locally: web typecheck, lint, 101 unit tests,
+  `next build`; the full Playwright suite (39 journeys before E05, then E05).
+- `ai-design-studio` spec — 2026-10-21 — `In Progress → Implemented` (every task completed with
+  its DoD line above).

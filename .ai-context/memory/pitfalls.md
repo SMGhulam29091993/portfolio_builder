@@ -132,3 +132,11 @@ returned its rejection, so that rejection won the `Promise.race`.
 **Fix:** the decorator remembers the timeout error and rethrows it from `catch`, whatever settled
 first. Regression test: `timeout.design-generator.spec.ts` → `ai-design-studio.UT09`. Applies to
 any race between an aborted call and the reason it was aborted.
+
+### 2026-10-21 — ai-design-studio.T10: E2E against a stale API build
+**Symptom:** every new `/cms/ai` request in a Playwright run failed with "The request could not
+be completed", though the route tests passed.
+**Root cause:** `e2e/start-api.ts` runs the built `apps/api/dist`. `npx playwright test` run
+directly does not rebuild it, so the E2E API predated the new routes and answered 404.
+**Fix:** run `pnpm test:e2e` (turbo builds the API first), or `pnpm --filter @portfolio/api build`
+before calling Playwright directly.
