@@ -11,6 +11,7 @@ import type { IProposalRepository } from './ai-design.interface.js';
 import type {
   DesignSpec,
   NewProposal,
+  ProposedDesignSpec,
   ProposalOutcome,
   ProposalStatus,
   StoredProposal,
@@ -139,6 +140,12 @@ export class ProposalRepository implements IProposalRepository {
     return rows.map(toProposal);
   }
 
+  async recordAppliedDesign(portfolioId: string, proposalId: string, design: DesignSpec): Promise<boolean> {
+    if (!isValidObjectId(portfolioId) || !isValidObjectId(proposalId)) return false;
+    const result = await this.model().updateOne({ _id: proposalId, portfolioId, status: 'applied' }, { $set: { design } }).exec();
+    return result.matchedCount === 1;
+  }
+
   async deletePending(portfolioId: string, proposalId: string): Promise<boolean> {
     if (!isValidObjectId(portfolioId) || !isValidObjectId(proposalId)) return false;
     const result = await this.model().deleteOne({ _id: proposalId, portfolioId, status: 'pending' }).exec();
@@ -163,9 +170,10 @@ function toProposal(document: LeanProposal): StoredProposal {
     prompt: document.prompt,
     scope: document.scope,
     basedOnCurrent: document.basedOnCurrent,
+    explore: document.explore ?? false,
     provider: document.provider,
     model: document.model,
-    design: (document.design ?? null) as DesignSpec | null,
+    design: (document.design ?? null) as ProposedDesignSpec | null,
     rationale: document.rationale,
     failure: document.failure ? { code: document.failure.code, message: document.failure.message } : null,
     charge: { kind: document.charge.kind, credits: document.charge.credits, refunded: document.charge.refunded },

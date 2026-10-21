@@ -10,7 +10,7 @@
 openapi: 3.1.0
 info:
   title: Portfolio Builder API
-  version: 0.14.0
+  version: 0.15.0
   description: >-
     CMS and published-site API for Portfolio Builder. Every response uses the standard envelope
     `{ success, message, data? }`; on failure `data.code` is a canonical error code.
@@ -1506,6 +1506,42 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/ProposalApplyConflict'
+  /api/v1/cms/ai/design-proposals/{id}/preset:
+    post:
+      tags: [ai-design]
+      operationId: ai-design-studio.API07
+      x-spec-id: ai-design-studio.API07
+      summary: Save a proposal as a design preset
+      description: >-
+        Saves a ready or applied proposal as a named preset (design-library); its custom layouts
+        are saved to the library first. Requires the web app Origin.
+      security:
+        - sessionCookies: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{24}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavePresetRequest'
+      responses:
+        '201':
+          description: The preset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignPresetEnvelope'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/GuardRejected'
+        '403':
+          $ref: '#/components/responses/OriginNotAllowed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ProposalNotReady'
   /api/v1/cms/ai/provider:
     get:
       tags: [ai-design]
@@ -2034,6 +2070,7 @@ components:
         prompt: { type: string, minLength: 1, maxLength: 600, description: Plain text; tags are stripped. }
         scope: { enum: [theme, layout, both] }
         basedOnCurrent: { type: boolean, default: true }
+        explore: { type: boolean, default: false, description: Ask for a new custom layout for every section in scope (design-library). }
     ApplyProposalRequest:
       type: object
       required: [expectedDesignRevision]
@@ -2041,18 +2078,26 @@ components:
         expectedDesignRevision: { type: integer, minimum: 0 }
     Proposal:
       type: object
-      required: [id, status, prompt, scope, basedOnCurrent, provider, model, design, rationale, failure, charge, durationMs, createdAt, completedAt]
+      required: [id, status, prompt, scope, basedOnCurrent, explore, provider, model, design, rationale, failure, charge, durationMs, createdAt, completedAt]
       properties:
         id: { type: string }
         status: { enum: [pending, ready, failed, applied, discarded] }
         prompt: { type: string }
         scope: { enum: [theme, layout, both] }
         basedOnCurrent: { type: boolean }
+        explore: { type: boolean }
         provider: { enum: [gemini, openrouter, ollama, stub] }
         model: { type: string }
         design:
           oneOf:
-            - $ref: '#/components/schemas/DesignSpec'
+            - allOf:
+                - $ref: '#/components/schemas/DesignSpec'
+                - type: object
+                  properties:
+                    customLayouts:
+                      type: object
+                      description: A CustomLayout per section the AI arranged (design-library); saved to the library on apply.
+                      additionalProperties: { type: object }
             - type: 'null'
         rationale: { type: [string, 'null'], maxLength: 400 }
         failure:

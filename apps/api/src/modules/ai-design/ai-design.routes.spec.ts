@@ -376,3 +376,31 @@ describe('ai-design routes', () => {
     });
   });
 });
+
+describe('design-library.IT05 / AC7, AC8 — custom layouts through the API', () => {
+  const block = (name: string, style: string | null = null) => ({ kind: 'block', block: name, style });
+  const workLayout = { section: 'work', align: 'start', body: { kind: 'columns', gap: 'md', columns: '2-1', children: [block('projects', 'grid'), block('featured')] } };
+
+  it('explore reaches the provider; apply saves the layout to the library; the proposal saves as a preset', async () => {
+    const scripted = new ScriptedDesignGenerator([JSON.stringify({ ...proposed, customLayouts: { work: workLayout } })]);
+    const app = setup({ generator: scripted.active() });
+    const client = await member(app);
+    const ready = await generate(client, { prompt: 'Something new', scope: 'both', explore: true });
+    expect(ready).toMatchObject({ status: 'ready', design: { customLayouts: { work: workLayout } } });
+    expect(JSON.stringify(scripted.requests[0])).toContain('Explore:');
+
+    const applied = await client.send('post', `/cms/ai/design-proposals/${ready.id}/apply`, { expectedDesignRevision: 0 });
+    expect(applied.status).toBe(200);
+    const library = ((await client.get('/cms/design/layouts')).body as { data: { layouts: { id: string; section: string; source: string; name: string }[] } }).data.layouts;
+    expect(library).toMatchObject([{ section: 'work', source: 'ai', name: 'Something new · work' }]);
+    expect((await client.get('/cms/design')).body).toMatchObject({ data: { design: { revision: 1, layout: { work: `custom:${library[0]?.id ?? ''}` } } } });
+
+    const preset = await client.send('post', `/cms/ai/design-proposals/${ready.id}/preset`, { name: 'New look' });
+    expect(preset.status).toBe(201);
+    expect(preset.body).toMatchObject({ data: { preset: { name: 'New look', design: { layout: { work: `custom:${library[0]?.id ?? ''}` } } } } });
+    // The applied proposal named its saved layout, so the preset added none.
+    expect(((await client.get('/cms/design/layouts')).body as { data: { layouts: unknown[] } }).data.layouts).toHaveLength(1);
+    // The layout is now in use by the draft and the preset.
+    expect((await client.send('delete', `/cms/design/layouts/${library[0]?.id ?? ''}`)).body).toMatchObject({ data: { code: 'LAYOUT_IN_USE', usedBy: ['draft', 'preset'] } });
+  });
+});

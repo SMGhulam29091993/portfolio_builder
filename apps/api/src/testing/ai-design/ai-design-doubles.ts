@@ -18,7 +18,18 @@ import type {
   IUserRoleReader,
   UserRole,
 } from '../../modules/ai-design/index.js';
-import type { CmsDesign, IDesignReader, IDesignValidator, IDesignWriter } from '../../modules/design/index.js';
+import type {
+  CmsDesign,
+  CustomLayout,
+  DesignPreset,
+  IDesignReader,
+  IDesignValidator,
+  IDesignWriter,
+  ILayoutLibraryWriter,
+  IPresetWriter,
+  StoredLayout,
+} from '../../modules/design/index.js';
+import { Types } from 'mongoose';
 
 /** One scripted answer: text, or an error to throw. */
 export type ScriptedAnswer = string | Error;
@@ -146,5 +157,33 @@ export class TokensDesignValidator implements IDesignValidator {
     const verdict = validateDesign(candidate);
     if (!verdict.ok) throw new ValidationError(verdict.issues);
     return verdict.design;
+  }
+}
+
+/**
+ * `ILayoutLibraryWriter` and `IPresetWriter` that record what was saved (`design-library`); the
+ * real ones are tested in the `design` module. `refuseNext` makes the next save fail as full.
+ */
+export class RecordingDesignLibrary implements ILayoutLibraryWriter, IPresetWriter {
+  readonly layouts: StoredLayout[] = [];
+  readonly presets: { name: string; design: unknown }[] = [];
+  refuseNext = false;
+
+  saveLayouts(portfolioId: string, layouts: readonly { name: string; layout: unknown; source: 'ai' | 'preset' }[]): Promise<StoredLayout[]> {
+    if (this.refuseNext) {
+      this.refuseNext = false;
+      return Promise.reject(new ConflictError('LIBRARY_FULL', { max: 50 }));
+    }
+    const saved = layouts.map((entry) => {
+      const layout = entry.layout as CustomLayout;
+      return { id: new Types.ObjectId().toString(), portfolioId, section: layout.section, name: entry.name, layout, source: entry.source, createdAt: new Date() };
+    });
+    this.layouts.push(...saved);
+    return Promise.resolve(saved);
+  }
+
+  savePreset(_portfolioId: string, name: string, design: unknown): Promise<DesignPreset> {
+    this.presets.push({ name, design });
+    return Promise.resolve({ id: new Types.ObjectId().toString(), name, design: design as DesignPreset['design'], createdAt: new Date().toISOString() });
   }
 }

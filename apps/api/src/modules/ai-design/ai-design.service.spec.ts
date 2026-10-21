@@ -14,6 +14,7 @@ import {
   ManualBackgroundRunner,
   ManualClock,
   MapRoleReader,
+  RecordingDesignLibrary,
   RecordingLogger,
   RecordingWallet,
   ScriptedDesignGenerator,
@@ -47,7 +48,7 @@ const VALID = JSON.stringify(proposed);
 const LOW_CONTRAST = JSON.stringify({ ...proposed, theme: { ...proposed.theme, colors: { ...proposed.theme.colors, text: '#1a1a1c' } } });
 const PROSE = 'A calm design with a blue accent.';
 
-const request: CreateProposalRequest = { prompt: 'Cool and calm', scope: 'both', basedOnCurrent: true };
+const request: CreateProposalRequest = { prompt: 'Cool and calm', scope: 'both', basedOnCurrent: true, explore: false };
 
 function setup(answers: ScriptedAnswer[] = [VALID], options: { balance?: number; freeMonthly?: number } = {}) {
   const proposals = new InMemoryProposalRepository();
@@ -56,6 +57,7 @@ function setup(answers: ScriptedAnswer[] = [VALID], options: { balance?: number;
   const runner = new ManualBackgroundRunner();
   const clock = new ManualClock(new Date('2026-10-21T10:00:00.000Z'));
   const logger = new RecordingLogger();
+  const library = new RecordingDesignLibrary();
   const wallet = new RecordingWallet({ [MEMBER]: options.balance ?? 0 });
   const allowance = new MonthlyGenerationAllowance(
     proposals,
@@ -76,6 +78,8 @@ function setup(answers: ScriptedAnswer[] = [VALID], options: { balance?: number;
     runner,
     clock,
     logger,
+    library,
+    library,
   );
   /** Creates a proposal and runs it to the end. */
   const generate = async (subject = member, body = request) => {
@@ -83,7 +87,7 @@ function setup(answers: ScriptedAnswer[] = [VALID], options: { balance?: number;
     await runner.runAll();
     return service.get(subject, created.id);
   };
-  return { proposals, generator, designs, runner, clock, logger, wallet, service, generate };
+  return { proposals, generator, designs, runner, clock, logger, wallet, library, service, generate };
 }
 
 describe('AiDesignService', () => {
@@ -376,5 +380,59 @@ describe('AiDesignService', () => {
       await expect(service.recoverInterrupted()).resolves.toBe(0);
       expect(logger.entries).toEqual([]);
     });
+  });
+});
+
+describe('design-library.AC8 — custom layouts on apply and as presets', () => {
+  const block = (name: string, style: string | null = null) => ({ kind: 'block', block: name, style });
+  const workLayout = { section: 'work', align: 'center', body: { kind: 'columns', gap: 'lg', columns: '1-2', children: [block('featured'), block('projects', 'list')] } };
+  const WITH_LAYOUT = JSON.stringify({ ...proposed, customLayouts: { work: workLayout } });
+
+  it('passes explore to the provider request', async () => {
+    const { generate, generator } = setup([WITH_LAYOUT]);
+    await generate(member, { ...request, explore: true });
+    expect(generator.requests[0]?.messages[0]?.content).toContain('Explore:');
+  });
+
+  it('apply saves each custom layout to the library and the design names it', async () => {
+    const { generate, service, library, designs } = setup([WITH_LAYOUT]);
+    const ready = await generate();
+    expect(ready.design).toMatchObject({ customLayouts: { work: workLayout } });
+    const applied = await service.apply(member, ready.id, 0);
+    expect(library.layouts).toHaveLength(1);
+    expect(library.layouts[0]).toMatchObject({ section: 'work', source: 'ai', name: 'Cool and calm · work' });
+    const ref = `custom:${library.layouts[0]?.id ?? ''}`;
+    expect(applied.design.layout.work).toBe(ref);
+    expect(applied.proposal.design).not.toHaveProperty('customLayouts');
+    expect(designs.writes).toEqual([portfolioId]);
+    // The proposal now records the references, so a preset from it saves no second copy.
+    await service.savePreset(member, ready.id, 'Applied look');
+    expect(library.layouts).toHaveLength(1);
+    expect(library.presets[0]).toMatchObject({ name: 'Applied look', design: { layout: { work: ref } } });
+  });
+
+  it('a stale revision saves no layouts; a full library leaves the proposal ready', async () => {
+    const stale = setup([WITH_LAYOUT]);
+    const ready = await stale.generate();
+    await expect(stale.service.apply(member, ready.id, 5)).rejects.toMatchObject({ code: 'REVISION_CONFLICT' });
+    expect(stale.library.layouts).toEqual([]);
+
+    const full = setup([WITH_LAYOUT]);
+    const another = await full.generate();
+    full.library.refuseNext = true;
+    await expect(full.service.apply(member, another.id, 0)).rejects.toMatchObject({ code: 'LIBRARY_FULL' });
+    await expect(full.service.get(member, another.id)).resolves.toMatchObject({ status: 'ready' });
+    expect(full.designs.writes).toEqual([]);
+  });
+
+  it('a ready proposal saved as a preset stores its layouts as preset layouts; pending and failed are refused', async () => {
+    const { generate, service, library } = setup([WITH_LAYOUT, PROSE, PROSE]);
+    const ready = await generate();
+    const preset = await service.savePreset(member, ready.id, 'Calm columns');
+    expect(preset.name).toBe('Calm columns');
+    expect(library.layouts).toMatchObject([{ section: 'work', source: 'preset' }]);
+    expect(library.presets[0]?.design).toMatchObject({ layout: { work: `custom:${library.layouts[0]?.id ?? ''}` } });
+    const failed = await generate();
+    await expect(service.savePreset(member, failed.id, 'x')).rejects.toMatchObject({ code: 'PROPOSAL_NOT_READY', details: { status: 'failed' } });
   });
 });

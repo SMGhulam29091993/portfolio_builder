@@ -10,7 +10,7 @@ import type {
   ProposalStatus,
 } from '@portfolio/contracts';
 import type { GenerationAllowance, Proposal } from '@portfolio/contracts';
-import type { DesignSpec } from '@portfolio/design-tokens';
+import type { CustomLayout, DesignSpec } from '@portfolio/design-tokens';
 
 import type { CmsDesign } from '../design/index.js';
 
@@ -24,11 +24,13 @@ export {
   PROPOSAL_SCOPES,
   PROPOSAL_STATUSES,
   proposalIdParamsSchema,
+  saveProposalPresetRequestSchema,
   RATIONALE_MAX_LENGTH,
   REFUNDABLE_FAILURES,
   type AiProviderId,
   type AiProviderInfo,
   type ApplyProposalRequest,
+  type DesignPreset,
   type CreateProposalRequest,
   type GenerationAllowance,
   type ListProposalsQuery,
@@ -37,8 +39,17 @@ export {
   type ProposalFailureCode,
   type ProposalScope,
   type ProposalStatus,
+  type SaveProposalPresetRequest,
 } from '@portfolio/contracts';
-export type { DesignSpec } from '@portfolio/design-tokens';
+export type { CustomLayout, DesignSpec } from '@portfolio/design-tokens';
+
+/**
+ * A proposal's design: a `DesignSpec`, plus the custom layouts the AI designed for sections in
+ * scope (`design-library`). Applying it saves those to the library and names them in the layout.
+ */
+export type ProposedDesignSpec = DesignSpec & {
+  readonly customLayouts?: Readonly<Partial<Record<CustomLayout['section'], CustomLayout>>>;
+};
 
 /** The roles `auth` knows (ADR-0010); the owner generates without limit (AC17). */
 export type UserRole = 'owner' | 'member';
@@ -82,10 +93,11 @@ export interface StoredProposal {
   readonly prompt: string;
   readonly scope: ProposalScope;
   readonly basedOnCurrent: boolean;
+  readonly explore: boolean;
   readonly provider: AiProviderId;
   readonly model: string;
   /** A validated, scope-merged design; set only once the proposal is `ready`. */
-  readonly design: DesignSpec | null;
+  readonly design: ProposedDesignSpec | null;
   readonly rationale: string | null;
   readonly failure: ProposalFailure | null;
   readonly charge: ProposalCharge;
@@ -101,6 +113,7 @@ export interface NewProposal {
   readonly prompt: string;
   readonly scope: ProposalScope;
   readonly basedOnCurrent: boolean;
+  readonly explore: boolean;
   readonly provider: AiProviderId;
   readonly model: string;
   readonly charge: Omit<ProposalCharge, 'refunded'>;
@@ -145,6 +158,8 @@ export interface PromptInput {
   readonly current: DesignSpec | null;
   /** The section types the portfolio shows, in page order. */
   readonly visibleSections: readonly string[];
+  /** Ask for a new custom layout for every section in scope (`design-library.AC7`). */
+  readonly explore: boolean;
 }
 
 /** One reason a provider's answer cannot be used, sent back in the repair attempt. */
@@ -158,7 +173,7 @@ export interface AnswerIssue {
  * answer was well-formed and only contrast pairs failed; anything else is `INVALID_OUTPUT`.
  */
 export type ParsedAnswer =
-  | { readonly ok: true; readonly design: DesignSpec; readonly rationale: string | null }
+  | { readonly ok: true; readonly design: ProposedDesignSpec; readonly rationale: string | null }
   | {
       readonly ok: false;
       readonly code: Extract<ProposalFailureCode, 'INVALID_OUTPUT' | 'CONTRAST_FAILED'>;
@@ -169,7 +184,7 @@ export type ParsedAnswer =
 export type ProposalOutcome =
   | {
       readonly status: 'ready';
-      readonly design: DesignSpec;
+      readonly design: ProposedDesignSpec;
       readonly rationale: string | null;
       readonly durationMs: number;
       readonly completedAt: Date;

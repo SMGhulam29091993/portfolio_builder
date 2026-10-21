@@ -555,3 +555,10 @@
   did not resolve (found during the task: it would otherwise have blocked every custom layout);
   the web adapter reads version 2 (unreadable layouts fall back) and version 1 unchanged; the
   site passes the copies to `PortfolioPage`. Checked: 1146 API tests, 103 web unit tests, 41 E2E.
+- design-library.T05 — 2026-10-21 — DoD self-check: 2026-10-21, pass. `ai-design`: answer
+  schema with a nullable fixed-depth tree per section (no recursion), instructions listing every
+  section's blocks, `explore` on requests and stored on proposals (default false for older
+  ones); the parser validates custom layouts per section (scope theme drops them; invalid ones go
+  to the repair attempt); apply checks the revision first, saves layouts through
+  `ILayoutLibraryWriter`, writes the design naming them and records the references on the
+  proposal; API07 saves a proposal as a preset. OpenAPI 0.15.0. Checked: lint, 1159+ API tests.

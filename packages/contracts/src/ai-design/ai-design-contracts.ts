@@ -36,7 +36,13 @@ export const createProposalRequestSchema = z.object({
   prompt: plainText(PROMPT_MAX_LENGTH),
   scope: z.enum(PROPOSAL_SCOPES),
   basedOnCurrent: z.boolean().default(true),
+  /** Ask for a new custom layout for every section in scope (`design-library.AC7`). */
+  explore: z.boolean().default(false),
 });
+
+/** `ai-design-studio.API07` — body: save a proposal as a design preset (`design-library.AC8`). */
+export const saveProposalPresetRequestSchema = z.object({ name: plainText(60) });
+export type SaveProposalPresetRequest = z.infer<typeof saveProposalPresetRequestSchema>;
 
 /** `ai-design-studio.API03` — query. The cursor is the last proposal id of the previous page. */
 export const listProposalsQuerySchema = z.object({
@@ -54,10 +60,14 @@ export type CreateProposalRequest = z.infer<typeof createProposalRequestSchema>;
 export type ListProposalsQuery = z.infer<typeof listProposalsQuerySchema>;
 export type ApplyProposalRequest = z.infer<typeof applyProposalRequestSchema>;
 
-/** A design as a proposal carries it: theme tokens and one layout variant per section. */
+/**
+ * A design as a proposal carries it: theme tokens, one layout entry per section, and — when the
+ * AI designed any — a custom layout per section (`design-library`; a `CustomLayout` each).
+ */
 export interface ProposedDesign {
   readonly theme: unknown;
   readonly layout: Readonly<Record<string, string>>;
+  readonly customLayouts?: Readonly<Record<string, unknown>>;
 }
 
 /** What a proposal cost (AC17): nothing (the owner), a free slot, or credits. */
@@ -75,6 +85,8 @@ export interface Proposal {
   readonly prompt: string;
   readonly scope: ProposalScope;
   readonly basedOnCurrent: boolean;
+  /** Asked for new custom layouts (`design-library.AC7`). */
+  readonly explore: boolean;
   readonly provider: AiProviderId;
   readonly model: string;
   readonly design: ProposedDesign | null;

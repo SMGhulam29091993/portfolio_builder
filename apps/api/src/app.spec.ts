@@ -134,6 +134,7 @@ describe('app with MongoDB reachable', () => {
       { method: 'get', path: '/api/v1/cms/ai/design-proposals/:id' },
       { method: 'post', path: '/api/v1/cms/ai/design-proposals/:id/apply' },
       { method: 'delete', path: '/api/v1/cms/ai/design-proposals/:id' },
+      { method: 'post', path: '/api/v1/cms/ai/design-proposals/:id/preset' },
       { method: 'get', path: '/api/v1/cms/ai/provider' },
       { method: 'get', path: '/api/v1/public/portfolios' },
       { method: 'get', path: '/api/v1/public/portfolios/:slug' },

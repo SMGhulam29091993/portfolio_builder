@@ -12,7 +12,7 @@
  *      keys are stripped, hex is normalised, and when the only problems are contrast pairs the
  *      code is `CONTRAST_FAILED`, carrying the measured ratios for the repair attempt (AC4).
  */
-import { checkContrast, designSpecSchema } from '@portfolio/design-tokens';
+import { checkContrast, designSpecSchema, SECTION_TYPES, validateCustomLayout, type CustomLayout } from '@portfolio/design-tokens';
 import { cleanPlainText } from '@portfolio/contracts';
 
 import { AppError } from '../../core/errors/index.js';
@@ -50,15 +50,37 @@ export class DesignSpecParser implements IDesignSpecParser {
       theme: scope === 'layout' ? current.theme : answer.theme,
       layout: scope === 'theme' ? current.layout : answer.layout,
     };
+    // Custom layouts count only where the layout may change; each must pass the one validator for
+    // its own section (`design-library.AC7`), or the answer goes to the repair attempt.
+    const custom = scope === 'theme' ? { layouts: {}, issues: [] } : this.customLayouts(answer.customLayouts);
     try {
       const design = this.validator.validate(candidate);
+      if (custom.issues.length > 0) return invalid(custom.issues);
       const cleaned = typeof rationale === 'string' ? cleanPlainText(rationale).slice(0, RATIONALE_MAX_LENGTH).trim() : '';
-      return { ok: true, design, rationale: cleaned === '' ? null : cleaned };
+      const customLayouts = Object.keys(custom.layouts).length > 0 ? { customLayouts: custom.layouts } : {};
+      return { ok: true, design: { ...design, ...customLayouts }, rationale: cleaned === '' ? null : cleaned };
     } catch (error) {
       if (!(error instanceof AppError) || error.code !== 'VALIDATION_FAILED') throw error;
       const issues = (error.details.errors ?? []) as readonly AnswerIssue[];
       return { ok: false, code: this.onlyContrast(candidate, issues) ? 'CONTRAST_FAILED' : 'INVALID_OUTPUT', issues };
     }
+  }
+
+  /** The answer's custom layouts by section, validated; `null` or absent entries mean none. */
+  private customLayouts(value: unknown): { layouts: Partial<Record<CustomLayout['section'], CustomLayout>>; issues: AnswerIssue[] } {
+    const layouts: Partial<Record<CustomLayout['section'], CustomLayout>> = {};
+    const issues: AnswerIssue[] = [];
+    if (value === undefined || value === null) return { layouts, issues };
+    if (typeof value !== 'object' || Array.isArray(value)) return { layouts, issues: [{ path: 'customLayouts', message: 'Must be an object' }] };
+    const entries = value as Record<string, unknown>;
+    for (const section of SECTION_TYPES) {
+      const candidate = entries[section];
+      if (candidate === undefined || candidate === null) continue;
+      const verdict = validateCustomLayout(candidate, section);
+      if (verdict.ok) layouts[section] = verdict.layout;
+      else issues.push(...verdict.issues.map((issue) => ({ path: join(`customLayouts.${section}`, issue.path), message: issue.message })));
+    }
+    return { layouts, issues };
   }
 
   /** The first balanced `{ … }` that parses to an object, scanning outside JSON strings. */

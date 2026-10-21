@@ -11,9 +11,15 @@
  */
 import {
   designSpecSchema,
+  LAYOUT_ALIGNS,
+  LAYOUT_BLOCKS,
+  LAYOUT_COLUMNS,
+  LAYOUT_GAPS,
   layoutSchema,
+  MAX_LAYOUT_CHILDREN,
   MOTIONS,
   RADII,
+  SECTION_TYPES,
   themeTokensSchema,
   type ContrastPair,
   type FontInfo,
@@ -69,6 +75,12 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
         ? `Current design, to start from:\n${JSON.stringify(input.current)}`
         : 'Start fresh rather than from the current design.',
     ];
+    // Explore asks for new arrangements; it has no meaning when only the theme may change.
+    if (input.explore && input.scope !== 'theme') {
+      lines.push(
+        'Explore: design a NEW custom layout in "customLayouts" for every visible section. Make each arrangement clearly different from the current layout and from the catalogue layouts; vary columns, order and styles.',
+      );
+    }
     return {
       instructions: this.instructions,
       messages: [{ role: 'user', content: lines.join('\n') }],
@@ -99,6 +111,12 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
     const variants = Object.entries(catalogue.variants)
       .map(([section, entries]) => `- ${section}: ${entries.map((entry) => `${entry.id} (${entry.label})`).join(', ')}`)
       .join('\n');
+    const blocks = SECTION_TYPES.map(
+      (section) =>
+        `- ${section}: ${Object.entries(LAYOUT_BLOCKS[section])
+          .map(([block, styles]) => (styles.length > 0 ? `${block} [${styles.join(' | ')}]` : block))
+          .join(', ')}`,
+    ).join('\n');
     const contrast = catalogue.contrastPairs
       .map((pair) => `- ${pair.foreground} on ${pair.background}: at least ${String(pair.minimum)}:1`)
       .join('\n');
@@ -113,8 +131,34 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
       `Radius: one of ${RADII.join(', ')}. Motion: one of ${MOTIONS.join(', ')}.`,
       'Layout variants by section:',
       variants,
+      'Custom layouts ("customLayouts", optional per section, null for none): arrange a section\'s blocks in a "stack" or in "columns" (split 1-1, 2-1, 1-2 or 1-1-1, one child per column), two levels at most, gap sm, md or lg, align start or center. Every block of the section must appear exactly once. A custom layout replaces that section\'s variant. Blocks by section (style options in brackets; a block without options takes style null):',
+      blocks,
       'Choose only from these lists. When the request asks for something they cannot express, still return a design from the lists and say so in the rationale.',
     ].join('\n');
+  }
+
+  /** The zod shape of one section's custom layout, its blocks and styles as enums. */
+  private static layoutTree(section: (typeof SECTION_TYPES)[number]) {
+    const choice = (ids: readonly string[]) => z.enum(ids as [string, ...string[]]);
+    const entries = Object.entries(LAYOUT_BLOCKS[section]);
+    const styles = [...new Set(entries.flatMap(([, options]) => options))];
+    const block = z.object({
+      kind: z.literal('block'),
+      block: choice(entries.map(([name]) => name)),
+      style: styles.length > 0 ? choice(styles).nullable() : z.null(),
+    });
+    const container = <T extends z.ZodType>(child: T) =>
+      z.object({
+        kind: z.enum(['stack', 'columns']),
+        gap: z.enum(LAYOUT_GAPS),
+        columns: z.enum(LAYOUT_COLUMNS).nullable(),
+        children: z.array(child).min(1).max(MAX_LAYOUT_CHILDREN),
+      });
+    return z.object({
+      section: z.literal(section),
+      align: z.enum(LAYOUT_ALIGNS),
+      body: container(z.union([container(block), block])),
+    });
   }
 
   /** The answer's JSON Schema: `DesignSpec` plus a rationale, narrowed to the catalogue. */
@@ -134,6 +178,9 @@ export class DesignPromptBuilder implements IDesignPromptBuilder {
         ),
       ),
       rationale: z.string().max(RATIONALE_MAX_LENGTH),
+      // One fixed-depth tree per section, with that section's blocks; null for none. Not
+      // recursive, because strict structured-output modes do not all accept recursion.
+      customLayouts: z.object(Object.fromEntries(SECTION_TYPES.map((section) => [section, DesignPromptBuilder.layoutTree(section).nullable()]))),
     });
     // `io: 'input'` describes what the model writes (before the hex transform). Strict-mode
     // providers want closed objects, so every object refuses extra keys.

@@ -144,6 +144,7 @@ describe('readDocumentedOperations', () => {
       { method: 'get', path: '/api/v1/cms/ai/design-proposals/{id}', specId: 'ai-design-studio.API02' },
       { method: 'delete', path: '/api/v1/cms/ai/design-proposals/{id}', specId: 'ai-design-studio.API05' },
       { method: 'post', path: '/api/v1/cms/ai/design-proposals/{id}/apply', specId: 'ai-design-studio.API04' },
+      { method: 'post', path: '/api/v1/cms/ai/design-proposals/{id}/preset', specId: 'ai-design-studio.API07' },
       { method: 'get', path: '/api/v1/cms/ai/provider', specId: 'ai-design-studio.API06' },
       { method: 'get', path: '/api/v1/public/portfolios', specId: 'public-site-rendering.API04' },
       { method: 'get', path: '/api/v1/public/portfolios/{slug}', specId: 'public-site-rendering.API01' },

@@ -14,6 +14,7 @@ const input: PromptInput = {
   scope: 'both',
   current: DEFAULT_DESIGN,
   visibleSections: ['hero', 'about', 'work'],
+  explore: false,
 };
 
 /** Everything that would cross the wire, as one string. */
@@ -95,5 +96,36 @@ describe('DesignPromptBuilder', () => {
     expect(request.messages).toHaveLength(1);
     // A huge answer is cut in the echo.
     expect(builder.repair(request, 'x'.repeat(10_000), []).messages[1]?.content).toHaveLength(4_000);
+  });
+});
+
+describe('custom layouts in the request (design-library.AC7)', () => {
+  it('lists every section\'s blocks with their style options in the instructions', () => {
+    const { instructions } = builder.build(input);
+    expect(instructions).toContain('Custom layouts');
+    expect(instructions).toContain('- work: featured, projects [grid | list]');
+    expect(instructions).toContain('Every block of the section must appear exactly once');
+  });
+
+  it('asks for new layouts only when exploring and the layout may change', () => {
+    const explore = (scope: PromptInput['scope']) => builder.build({ ...input, scope, explore: true }).messages[0]?.content ?? '';
+    expect(explore('both')).toContain('Explore: design a NEW custom layout');
+    expect(explore('layout')).toContain('Explore: design a NEW custom layout');
+    expect(explore('theme')).not.toContain('Explore:');
+    expect(builder.build(input).messages[0]?.content).not.toContain('Explore:');
+  });
+
+  it('the schema carries a nullable, fixed-depth tree per section with that section\'s block names', () => {
+    const { schema } = builder.build(input);
+    const properties = schema.properties as Record<string, { properties?: Record<string, unknown>; required?: string[] }>;
+    const custom = properties.customLayouts;
+    expect(Object.keys(custom?.properties ?? {}).sort()).toEqual(['about', 'contact', 'experience', 'hero', 'stack', 'work']);
+    const text = JSON.stringify(custom?.properties?.work);
+    expect(text).toContain('"featured"');
+    expect(text).toContain('"projects"');
+    expect(text).not.toContain('"bio"');
+    expect(text).toContain('"null"');
+    // No recursion: nothing refers back to itself.
+    expect(JSON.stringify(schema)).not.toContain('"$ref"');
   });
 });

@@ -16,7 +16,7 @@ import { ConflictError, CreditsRequiredError, NotFoundError, UpstreamError } fro
 import type { IBackgroundRunner } from '../../core/background/index.js';
 import type { ILogger } from '../../core/logger/logger.interface.js';
 import type { IClock } from '../auth/index.js';
-import type { IDesignReader, IDesignWriter } from '../design/index.js';
+import type { IDesignReader, IDesignWriter, ILayoutLibraryWriter, IPresetWriter } from '../design/index.js';
 import { ProviderTimeoutError } from './ai-design.errors.js';
 import type {
   ActiveDesignGenerator,
@@ -33,12 +33,14 @@ import type {
   AllowanceSubject,
   AppliedProposal,
   CreateProposalRequest,
+  DesignPreset,
   DesignSpec,
   Proposal,
   ProposalFailure,
   ProposalFailureCode,
   ProposalOutcome,
   ProposalPage,
+  ProposedDesignSpec,
   StoredProposal,
 } from './ai-design.types.js';
 
@@ -67,6 +69,8 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
     private readonly runner: IBackgroundRunner,
     private readonly clock: IClock,
     private readonly logger: ILogger,
+    private readonly layoutLibrary: ILayoutLibraryWriter,
+    private readonly presets: IPresetWriter,
   ) {}
 
   async create(subject: AllowanceSubject, request: CreateProposalRequest): Promise<Proposal> {
@@ -79,6 +83,7 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
       prompt: request.prompt,
       scope: request.scope,
       basedOnCurrent: request.basedOnCurrent,
+      explore: request.explore,
       provider: this.active.generator.providerId,
       model: this.active.model,
       charge: next,
@@ -133,12 +138,20 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
   async apply(subject: AllowanceSubject, proposalId: string, expectedDesignRevision: number): Promise<AppliedProposal> {
     const proposal = await this.find(subject, proposalId);
     if (proposal.status !== 'ready' || proposal.design === null) throw notReady(proposal);
+    // A stale revision is refused before anything is saved, so it leaves no layouts behind.
+    const { revision } = await this.designReader.read(subject.portfolioId);
+    if (revision !== expectedDesignRevision) {
+      throw new ConflictError('REVISION_CONFLICT', { currentRevision: revision }, 'This was changed elsewhere. Reload to see the latest version');
+    }
     // Claimed first, so a racing discard or second apply sees `applied` and stops.
     const claimed = await this.proposals.transition(subject.portfolioId, proposalId, 'ready', 'applied');
     if (claimed === null) throw notReady(await this.find(subject, proposalId));
     try {
-      const design = await this.designWriter.apply(subject.portfolioId, proposal.design, expectedDesignRevision);
-      return { design, proposal: toContract(claimed) };
+      // Custom layouts go to the library first; the design then names them (`design-library.AC8`).
+      const resolved = await this.saveCustomLayouts(subject, proposal, proposal.design, 'ai');
+      const design = await this.designWriter.apply(subject.portfolioId, resolved, expectedDesignRevision);
+      await this.proposals.recordAppliedDesign(subject.portfolioId, proposalId, resolved);
+      return { design, proposal: toContract({ ...claimed, design: resolved }) };
     } catch (error) {
       // A stale revision or a design that no longer validates leaves the proposal usable (AC9).
       await this.proposals.transition(subject.portfolioId, proposalId, 'applied', 'ready');
@@ -152,6 +165,14 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
     const discarded = await this.proposals.transition(subject.portfolioId, proposalId, proposal.status, 'discarded');
     if (discarded === null) throw notReady(await this.find(subject, proposalId));
     return toContract(discarded);
+  }
+
+  async savePreset(subject: AllowanceSubject, proposalId: string, name: string): Promise<DesignPreset> {
+    const proposal = await this.find(subject, proposalId);
+    if ((proposal.status !== 'ready' && proposal.status !== 'applied') || proposal.design === null) throw notReady(proposal);
+    // An applied proposal already names its library layouts; a ready one saves its own first.
+    const design = await this.saveCustomLayouts(subject, proposal, proposal.design, 'preset');
+    return this.presets.savePreset(subject.portfolioId, name, design);
   }
 
   async provider(subject: AllowanceSubject): Promise<AiProviderInfo> {
@@ -181,6 +202,7 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
       scope: proposal.scope,
       current: proposal.basedOnCurrent ? current : null,
       visibleSections: await this.sections.listVisible(proposal.portfolioId),
+      explore: proposal.explore,
     });
 
     for (let attempt = 1; ; attempt += 1) {
@@ -199,6 +221,30 @@ export class AiDesignService implements IAiDesignService, IInterruptedWorkRecove
       if (attempt >= MAX_ATTEMPTS) return this.failed(answer.code, started);
       request = this.promptBuilder.repair(request, text, answer.issues);
     }
+  }
+
+  /**
+   * Saves a proposal's custom layouts to the library and returns its design naming them as
+   * `custom:<id>`; a design without any is returned as it is.
+   */
+  private async saveCustomLayouts(
+    subject: AllowanceSubject,
+    proposal: StoredProposal,
+    design: ProposedDesignSpec,
+    source: 'ai' | 'preset',
+  ): Promise<DesignSpec> {
+    const { customLayouts, ...spec } = design;
+    const entries = Object.values(customLayouts ?? {});
+    if (entries.length === 0) return spec;
+    // Named from the request, so the library says where each came from.
+    const base = proposal.prompt.length > 44 ? `${proposal.prompt.slice(0, 43).trimEnd()}…` : proposal.prompt;
+    const saved = await this.layoutLibrary.saveLayouts(
+      subject.portfolioId,
+      entries.map((layout) => ({ name: `${base} · ${layout.section}`, layout, source })),
+    );
+    const layout: Record<string, string> = { ...spec.layout };
+    for (const stored of saved) layout[stored.section] = `custom:${stored.id}`;
+    return { ...spec, layout: layout as DesignSpec['layout'] };
   }
 
   private failed(code: ProposalFailureCode, started: number): ProposalOutcome {
@@ -231,6 +277,7 @@ function toContract(proposal: StoredProposal): Proposal {
     prompt: proposal.prompt,
     scope: proposal.scope,
     basedOnCurrent: proposal.basedOnCurrent,
+    explore: proposal.explore,
     provider: proposal.provider,
     model: proposal.model,
     design: proposal.design,

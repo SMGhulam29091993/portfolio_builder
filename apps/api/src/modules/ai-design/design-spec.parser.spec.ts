@@ -163,3 +163,35 @@ describe('DesignSpecParser', () => {
     });
   });
 });
+
+describe('custom layouts in the answer (design-library.AC7)', () => {
+  const block = (name: string, style: string | null = null) => ({ kind: 'block', block: name, style });
+  const workLayout = { section: 'work', align: 'start', body: { kind: 'columns', gap: 'md', columns: '1-2', children: [block('featured'), block('projects', 'list')] } };
+  const answer = (customLayouts: unknown) => text({ ...proposed, customLayouts });
+
+  it('keeps valid custom layouts for scope both and layout, and drops them for theme', () => {
+    const all = { hero: null, about: null, work: workLayout, experience: null, stack: null, contact: null };
+    expect(parser.parse(answer(all), 'both', current)).toMatchObject({ ok: true, design: { customLayouts: { work: workLayout } } });
+    expect(parser.parse(answer(all), 'layout', current)).toMatchObject({ ok: true, design: { customLayouts: { work: workLayout } } });
+    const themeOnly = parser.parse(answer(all), 'theme', current);
+    expect(themeOnly.ok && themeOnly.design).not.toHaveProperty('customLayouts');
+  });
+
+  it('no layouts, or all null, adds nothing', () => {
+    const none = parser.parse(answer({ hero: null }), 'both', current);
+    expect(none.ok && none.design).not.toHaveProperty('customLayouts');
+    expect(parser.parse(text(proposed), 'both', current)).toMatchObject({ ok: true });
+  });
+
+  it('an invalid layout is INVALID_OUTPUT with its path, for the repair attempt', () => {
+    const missingBlock = { ...workLayout, body: { kind: 'stack', gap: 'md', columns: null, children: [block('projects', 'grid')] } };
+    expect(parser.parse(answer({ work: missingBlock }), 'both', current)).toEqual({
+      ok: false,
+      code: 'INVALID_OUTPUT',
+      issues: [{ path: 'customLayouts.work.body', message: 'Missing the featured block' }],
+    });
+    const wrongSection = parser.parse(answer({ about: workLayout }), 'both', current);
+    expect(wrongSection).toMatchObject({ ok: false, code: 'INVALID_OUTPUT', issues: expect.arrayContaining([{ path: 'customLayouts.about.section', message: 'This layout is for work, not about' }]) as unknown });
+    expect(parser.parse(answer('columns please'), 'both', current)).toMatchObject({ ok: false, issues: [{ path: 'customLayouts', message: 'Must be an object' }] });
+  });
+});

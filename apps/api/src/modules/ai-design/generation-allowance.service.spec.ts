@@ -39,6 +39,7 @@ function setup(wallet: IGenerationWallet = new RecordingWallet(), now = new Date
       prompt: 'x',
       scope: 'both',
       basedOnCurrent: true,
+      explore: false,
       provider: 'stub',
       model: 'fixture',
       charge,

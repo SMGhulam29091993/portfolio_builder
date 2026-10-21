@@ -1,6 +1,6 @@
 /**
  * Router factory for AI design proposals, mounted under `/api/v1` (`ai-design-studio.T09`).
- * Documented as `ai-design-studio.API01`–`API06`; each runs `requireOwner` then
+ * Documented as `ai-design-studio.API01`–`API07`; each runs `requireOwner` then
  * `resolvePortfolio`, so every proposal read and written belongs to the signed-in user's
  * portfolio (ADR-0010). The AI rate limit guards API01 only — the one route that starts work.
  */
@@ -13,6 +13,7 @@ import {
   createProposalRequestSchema,
   listProposalsQuerySchema,
   proposalIdParamsSchema,
+  saveProposalPresetRequestSchema,
 } from './ai-design.types.js';
 
 export function createAiDesignRouter(
@@ -29,5 +30,6 @@ export function createAiDesignRouter(
     .route('get', '/cms/ai/design-proposals/:id', ...signedIn, byId, controller.get)
     .route('post', '/cms/ai/design-proposals/:id/apply', ...signedIn, byId, validate(applyProposalRequestSchema), controller.apply)
     .route('delete', '/cms/ai/design-proposals/:id', ...signedIn, byId, controller.discard)
+    .route('post', '/cms/ai/design-proposals/:id/preset', ...signedIn, byId, validate(saveProposalPresetRequestSchema), controller.savePreset)
     .route('get', '/cms/ai/provider', ...signedIn, controller.provider);
 }

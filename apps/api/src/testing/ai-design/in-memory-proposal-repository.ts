@@ -100,6 +100,13 @@ export class InMemoryProposalRepository implements IProposalRepository {
     return Promise.resolve(structuredClone(this.rows.filter((row) => row.status === 'pending')));
   }
 
+  recordAppliedDesign(portfolioId: string, proposalId: string, design: StoredProposal['design']): Promise<boolean> {
+    const row = this.find(portfolioId, proposalId);
+    if (row?.status !== 'applied') return Promise.resolve(false);
+    this.replace({ ...row, design: structuredClone(design) });
+    return Promise.resolve(true);
+  }
+
   deletePending(portfolioId: string, proposalId: string): Promise<boolean> {
     const row = this.find(portfolioId, proposalId);
     if (row?.status !== 'pending') return Promise.resolve(false);

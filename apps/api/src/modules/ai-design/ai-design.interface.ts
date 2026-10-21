@@ -10,6 +10,7 @@ import type {
   AnswerIssue,
   AppliedProposal,
   CreateProposalRequest,
+  DesignPreset,
   DesignSpec,
   GenerationRequest,
   GenerationResult,
@@ -132,6 +133,12 @@ export interface IProposalRepository {
   /** Every `pending` proposal of every portfolio — read once at startup (AC10). */
   listPending(): Promise<StoredProposal[]>;
   /**
+   * Replaces an `applied` proposal's design with the one written — its custom layouts replaced by
+   * library references — so saving it as a preset later does not store the layouts twice.
+   * @returns `false` when it is not `applied`.
+   */
+  recordAppliedDesign(portfolioId: string, proposalId: string, design: DesignSpec): Promise<boolean>;
+  /**
    * Removes a `pending` proposal whose charge could not be taken after all (a credit spend that
    * lost a race), so nothing is left that was never paid for.
    * @returns `false` when it is not `pending` or does not exist.
@@ -200,6 +207,13 @@ export interface IAiDesignService {
   apply(subject: AllowanceSubject, proposalId: string, expectedDesignRevision: number): Promise<AppliedProposal>;
   /** @throws {NotFoundError} @throws {ConflictError} `PROPOSAL_NOT_READY` (pending, applied). */
   discard(subject: AllowanceSubject, proposalId: string): Promise<Proposal>;
+  /**
+   * Saves a `ready` or `applied` proposal as a design preset, its custom layouts to the library
+   * (`ai-design-studio.API07`; `design-library.AC8`).
+   * @throws {NotFoundError}
+   * @throws {ConflictError} `PROPOSAL_NOT_READY`; `LIBRARY_FULL`.
+   */
+  savePreset(subject: AllowanceSubject, proposalId: string, name: string): Promise<DesignPreset>;
   provider(subject: AllowanceSubject): Promise<AiProviderInfo>;
 }
 

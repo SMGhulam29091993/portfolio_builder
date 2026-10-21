@@ -19,6 +19,8 @@ export interface ProposalDocument {
   prompt: string;
   scope: ProposalScope;
   basedOnCurrent: boolean;
+  /** Absent on proposals stored before `design-library`; lean reads do not apply the default. */
+  explore?: boolean;
   provider: AiProviderId;
   model: string;
   /** A `DesignSpec` validated by `IDesignValidator` before it got here; `null` until `ready`. */
@@ -39,6 +41,8 @@ const proposalSchema = new Schema<ProposalDocument>(
     prompt: { type: String, required: true },
     scope: { type: String, enum: PROPOSAL_SCOPES, required: true },
     basedOnCurrent: { type: Boolean, required: true },
+    // Proposals stored before `design-library` have none; they were not explore requests.
+    explore: { type: Boolean, required: true, default: false },
     provider: { type: String, enum: AI_PROVIDER_IDS, required: true },
     model: { type: String, required: true },
     design: { type: Schema.Types.Mixed, default: null },

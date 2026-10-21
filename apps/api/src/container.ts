@@ -685,6 +685,9 @@ export function buildContainer({
     new InProcessBackgroundRunner(logger),
     clock,
     logger,
+    // Applying or saving a proposal writes the library through `design` (`design-library`).
+    designLibrary,
+    designLibrary,
   );
   const aiDesignRouter = createAiDesignRouter(
     new AiDesignController(aiDesignService),

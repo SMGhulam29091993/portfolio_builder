@@ -30,6 +30,7 @@ function pending(overrides: Partial<NewProposal> = {}): NewProposal {
     prompt: 'Calm and editorial',
     scope: 'both',
     basedOnCurrent: true,
+    explore: false,
     provider: 'stub',
     model: 'stub-fixture',
     charge: { kind: 'free', credits: 0 },
@@ -214,6 +215,18 @@ describe.each(subjects)('ai-design-studio.CT04 — IProposalRepository contract 
     const third = await repository.insertPending(pending({ portfolioId: new Types.ObjectId().toString() }));
     await repository.complete(third.portfolioId, third.id, { status: 'ready', design, rationale: null, ...done });
     expect((await repository.listPending()).map((row) => row.id).sort()).toEqual([one.id, two.id].sort());
+  });
+
+  it('records the design written on apply, for an applied proposal only', async () => {
+    const stored = await repository.insertPending(pending());
+    await repository.complete(portfolioId, stored.id, { status: 'ready', design, rationale: null, ...done });
+    expect(await repository.recordAppliedDesign(portfolioId, stored.id, design)).toBe(false);
+    await repository.transition(portfolioId, stored.id, 'ready', 'applied');
+    const resolved = { theme: { colors: {} }, layout: { hero: 'custom:0123456789abcdef01234567' } } as unknown as DesignSpec;
+    expect(await repository.recordAppliedDesign(otherPortfolioId, stored.id, resolved)).toBe(false);
+    expect(await repository.recordAppliedDesign(portfolioId, stored.id, resolved)).toBe(true);
+    expect((await repository.findById(portfolioId, stored.id))?.design).toEqual(resolved);
+    expect(await repository.recordAppliedDesign(portfolioId, 'not-an-id', resolved)).toBe(false);
   });
 
   it('deletes a pending proposal only, scoped to the portfolio', async () => {

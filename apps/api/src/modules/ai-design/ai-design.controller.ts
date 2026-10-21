@@ -2,13 +2,14 @@
 import type { Request, RequestHandler } from 'express';
 
 import { UnauthenticatedError } from '../../core/errors/index.js';
-import { accepted, ok } from '../../core/http/index.js';
+import { accepted, created, ok } from '../../core/http/index.js';
 import type { IAiDesignService } from './ai-design.interface.js';
 import type {
   AllowanceSubject,
   ApplyProposalRequest,
   CreateProposalRequest,
   ListProposalsQuery,
+  SaveProposalPresetRequest,
 } from './ai-design.types.js';
 
 export class AiDesignController {
@@ -40,6 +41,12 @@ export class AiDesignController {
   /** `DELETE /api/v1/cms/ai/design-proposals/:id` — `ai-design-studio.API05`. */
   readonly discard: RequestHandler = async (req, res) => {
     ok(res, 'Design proposal discarded', { proposal: await this.service.discard(subjectOf(req), idOf(req)) });
+  };
+
+  /** `POST /api/v1/cms/ai/design-proposals/:id/preset` — `ai-design-studio.API07` (`design-library`). */
+  readonly savePreset: RequestHandler = async (req, res) => {
+    const { name } = req.validatedBody as SaveProposalPresetRequest;
+    created(res, 'Preset saved', { preset: await this.service.savePreset(subjectOf(req), idOf(req), name) });
   };
 
   /** `GET /api/v1/cms/ai/provider` — `ai-design-studio.API06`. */

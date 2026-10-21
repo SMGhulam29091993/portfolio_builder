@@ -63,6 +63,7 @@ export {
   InMemoryDesignStore,
   ManualBackgroundRunner,
   MapRoleReader,
+  RecordingDesignLibrary,
   RecordingWallet,
   ScriptedDesignGenerator,
   StaticSectionLister,
