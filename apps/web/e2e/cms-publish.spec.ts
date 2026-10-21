@@ -19,7 +19,7 @@ async function openPublish(page: Page): Promise<void> {
 async function editWorkDescription(page: Page, index: number, text: string): Promise<void> {
   await page.goto('/cms/sections/work');
   await expect(page.getByRole('heading', { name: 'Work', level: 1 })).toBeVisible({ timeout: 30_000 });
-  await page.getByLabel('Description', { exact: true }).nth(index).fill(text);
+  await page.getByLabel('What the project is and what you did', { exact: true }).nth(index).fill(text);
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Work saved.')).toBeVisible();
 }

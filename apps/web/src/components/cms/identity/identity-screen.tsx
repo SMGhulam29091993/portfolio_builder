@@ -146,48 +146,49 @@ function IdentityForm({ initial }: { initial: CmsIdentity }) {
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="pb-2 text-lg font-semibold">About you</legend>
               <TextField name="fullName" label="Full name" />
-              <TextField name="monogram" label="Monogram" hint="1–3 capital letters or digits, e.g. GF" />
-              <TextField name="roleTitle" label="Role" />
+              <TextField name="monogram" label="Initials shown as your logo" hint="1–3 capital letters or digits, e.g. GF" />
+              <TextField name="roleTitle" label="Your job title" hint="e.g. Full Stack Developer" />
               <TextField name="email" label="Contact email" />
-              <TextField name="location.label" label="Location" />
-              <TextField name="location.timezoneLabel" label="Time zone (optional)" />
+              <TextField name="location.label" label="Where you are based" hint="e.g. Kolkata, India" />
+              <TextField name="location.timezoneLabel" label="Time zone (optional)" hint="e.g. IST (UTC+5:30)" />
             </fieldset>
             <fieldset className="flex flex-col gap-3">
               <legend className="pb-2 text-lg font-semibold">Availability</legend>
-              <SwitchField name="availability.enabled" label="Show the availability badge" />
-              <TextField name="availability.label" label="Badge text" />
+              <SwitchField name="availability.enabled" label={'Show the "open to work" badge on your page'} />
+              <TextField name="availability.label" label="Badge text" hint="e.g. Open to Full Stack roles" />
             </fieldset>
             <ListField
               name="socials"
-              label="Social links"
+              label="Social media links"
+              hint="Shown as icons in the hero and contact sections, e.g. your GitHub and LinkedIn profiles."
               itemLabel="link"
               newItem={() => ({ platform: 'website', url: 'https://' })}
               renderItem={(path) => (
                 <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
                   <SelectField
                     name={`${path}.platform`}
-                    label="Platform"
+                    label="Website"
                     options={SOCIAL_PLATFORMS.map((platform) => ({ value: platform, label: PLATFORM_LABELS[platform] }))}
                   />
-                  <TextField name={`${path}.url`} label="Link" hint="Starts with https://" />
+                  <TextField name={`${path}.url`} label="Your profile address" hint="The full address of your profile, starting with https://" />
                 </div>
               )}
             />
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="pb-2 text-lg font-semibold">Résumé</legend>
               <SelectField name="resume.assetId" label="Résumé file" options={assetOptions(resumes.data)} hint="Upload PDFs under Assets." />
-              <TextField name="resume.label" label="Button text" />
+              <TextField name="resume.label" label="Résumé button text" hint="e.g. Download CV" />
             </fieldset>
             <fieldset className="flex flex-col gap-4">
               <legend className="pb-2 text-lg font-semibold">Footer</legend>
-              <TextField name="footer.copyrightName" label="Copyright name" hint="The year is added automatically." />
-              <TagListField name="footer.builtWith" label="Built with" />
+              <TextField name="footer.copyrightName" label="Name in the copyright line" hint="Shown as © year name at the bottom of the page; the year is added automatically." />
+              <TagListField name="footer.builtWith" label={'Tools listed in "Built with" at the bottom of the page'} hint="Type one and press Enter or Add, e.g. Next.js." />
             </fieldset>
             <fieldset className="flex flex-col gap-4">
               <legend className="pb-2 text-lg font-semibold">Search and sharing</legend>
-              <TextField name="seo.title" label="Page title" />
-              <TextAreaField name="seo.description" label="Description" rows={3} />
-              <SelectField name="seo.ogImageAssetId" label="Social preview image" options={assetOptions(images.data)} hint="Upload images under Assets." />
+              <TextField name="seo.title" label="Title in search results and browser tabs" hint="e.g. Jane Doe · Full Stack Developer" />
+              <TextAreaField name="seo.description" label="Description in search results" hint="One or two sentences shown under the title on Google and when your link is shared." rows={3} />
+              <SelectField name="seo.ogImageAssetId" label="Image shown when your link is shared" options={assetOptions(images.data)} hint="Upload images under Assets first." />
             </fieldset>
           </form>
         </FormSchemaProvider>

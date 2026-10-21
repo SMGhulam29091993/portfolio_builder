@@ -129,6 +129,13 @@ export function AiScreen() {
         </div>
 
         {provider.isError ? <Notice tone="error">{genericErrorMessage(provider.error)}</Notice> : null}
+        {provider.data?.isStub ? (
+          <Notice tone="info">
+            No AI provider is connected, so a built-in sample answers instead. It returns the same sample design every
+            time, which is why every proposal looks alike. To get real designs, set AI_PROVIDER, AI_MODEL and that
+            provider&apos;s key in apps/api/.env, then restart the API.
+          </Notice>
+        ) : null}
         {provider.data && !provider.data.reachable ? (
           <Notice tone="info">The design provider is not answering right now. A proposal may fail until it is back.</Notice>
         ) : null}
@@ -151,12 +158,16 @@ export function AiScreen() {
               <TextAreaField
                 name="prompt"
                 label="Describe the look you want"
-                hint="For example: calm and editorial, warm off-white, a serif for headings. Colours, fonts and layouts come from the design catalogue."
+                hint="Plain words about colours, mood and style, e.g. calm and editorial, warm off-white background, serif headings. The AI picks from the available colours, fonts and layouts; it does not write text or add images."
                 rows={3}
               />
               <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField name="scope" label="What to change" options={SCOPE_OPTIONS} />
-                <SwitchField name="basedOnCurrent" label="Start from my current design" />
+                <SelectField name="scope" label="What the AI may change" options={SCOPE_OPTIONS} />
+                <SwitchField
+                  name="basedOnCurrent"
+                  label="Start from my current design"
+                  hint="Off: the AI starts from scratch instead of adjusting what you have."
+                />
               </div>
               <div>
                 <Button type="submit" disabled={pending || outOfCredits || !form.formState.isValid} busy={create.isPending}>
@@ -205,7 +216,7 @@ export function AiScreen() {
           </ul>
         </section>
       </section>
-      {proposal?.status === 'ready' && proposal.design ? (
+      {(proposal?.status === 'ready' || proposal?.status === 'applied') && proposal.design ? (
         // The API stores a proposal's design only after validating it as a `DesignSpec` (ADR-0006).
         <PreviewPane design={proposal.design as DesignSpec} />
       ) : (
@@ -240,7 +251,9 @@ function ProposalPanel({
       {proposal.status === 'ready' ? (
         <p className="text-sm text-neutral-400">The preview shows this proposal on your draft. Nothing changes until you apply it.</p>
       ) : null}
-      {proposal.status === 'applied' ? <Notice tone="success">Applied to your draft design.</Notice> : null}
+      {proposal.status === 'applied' ? (
+        <Notice tone="success">Applied to your draft design. The preview shows it; publish to put it on your live site.</Notice>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {proposal.status === 'ready' ? (
           <Button onClick={onApply} busy={applying}>

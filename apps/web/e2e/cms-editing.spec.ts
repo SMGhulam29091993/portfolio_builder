@@ -20,7 +20,7 @@ test('cms-panel-shell.E2E05 / AC5 — Save only when changed and valid; the save
   const save = page.getByRole('button', { name: 'Save' });
   await expect(save).toBeDisabled();
 
-  const text = page.getByLabel('Text', { exact: true });
+  const text = page.getByLabel('What you are working on now', { exact: true });
   await text.fill('');
   await expect(save).toBeDisabled();
   await text.fill('Building portfolio tooling');
@@ -30,7 +30,7 @@ test('cms-panel-shell.E2E05 / AC5 — Save only when changed and valid; the save
   await expect(page.locator('#section-editor')).toHaveAttribute('data-dirty', 'false');
 
   await page.reload();
-  await expect(page.getByLabel('Text', { exact: true })).toHaveValue('Building portfolio tooling');
+  await expect(page.getByLabel('What you are working on now', { exact: true })).toHaveValue('Building portfolio tooling');
 });
 
 test('cms-panel-shell.E2E06 / AC7 — a save from another page opens the conflict dialog', async ({ page, context }) => {
@@ -38,19 +38,19 @@ test('cms-panel-shell.E2E06 / AC7 — a save from another page opens the conflic
   const other = await context.newPage();
   await openAbout(other);
 
-  await other.getByLabel('Currently', { exact: false }).first().waitFor();
-  await other.getByLabel('Label', { exact: true }).first().fill('Now');
+  await other.getByLabel('What you are working on now', { exact: true }).waitFor();
+  await other.getByLabel('Card title', { exact: true }).first().fill('Now');
   await other.getByRole('button', { name: 'Save' }).click();
   await expect(other.getByText('About saved.')).toBeVisible();
 
-  await page.getByLabel('Label', { exact: true }).first().fill('Lately');
+  await page.getByLabel('Card title', { exact: true }).first().fill('Lately');
   await page.getByRole('button', { name: 'Save' }).click();
   const dialog = page.getByRole('dialog', { name: 'This section changed elsewhere' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Load latest' }).click();
-  await expect(page.getByLabel('Label', { exact: true }).first()).toHaveValue('Now');
+  await expect(page.getByLabel('Card title', { exact: true }).first()).toHaveValue('Now');
 
-  await page.getByLabel('Label', { exact: true }).first().fill('Mine wins');
+  await page.getByLabel('Card title', { exact: true }).first().fill('Mine wins');
   await other.close();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('About saved.')).toBeVisible();
@@ -58,13 +58,13 @@ test('cms-panel-shell.E2E06 / AC7 — a save from another page opens the conflic
 
 test('cms-panel-shell.E2E07 / AC8 — leaving with unsaved edits asks first; cancel keeps them', async ({ page }) => {
   await openAbout(page);
-  await page.getByLabel('Bio').fill('An edit that is not saved yet.');
+  await page.getByLabel('About you', { exact: true }).fill('An edit that is not saved yet.');
 
   page.once('dialog', (dialog) => void dialog.dismiss());
   await page.getByRole('navigation', { name: 'CMS' }).first().getByRole('link', { name: 'Overview' }).click();
 
   await expect(page).toHaveURL(/\/cms\/sections\/about$/);
-  await expect(page.getByLabel('Bio')).toHaveValue('An edit that is not saved yet.');
+  await expect(page.getByLabel('About you', { exact: true })).toHaveValue('An edit that is not saved yet.');
 });
 
 test('cms-panel-shell.E2E08 / AC9 — the preview follows typing and switches width', async ({ page }) => {
@@ -73,7 +73,7 @@ test('cms-panel-shell.E2E08 / AC9 — the preview follows typing and switches wi
   const preview = page.getByRole('complementary', { name: 'Preview' });
   await expect(preview.getByRole('heading', { name: /Production backends/ })).toBeVisible();
 
-  await page.getByLabel('Lead').fill('Preview follows typing,');
+  await page.getByLabel('Main text', { exact: true }).fill('Preview follows typing,');
   await expect(preview.getByRole('heading', { name: /Preview follows typing/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'Mobile 390' }).click();

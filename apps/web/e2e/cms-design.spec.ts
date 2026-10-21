@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('design-theme.E2E01 / AC10 — a failing contrast pair disables Save; restoring enables it', async ({ page }) => {
-  const text = page.getByLabel('Text', { exact: true });
+  const text = page.getByLabel('Main text', { exact: true });
   await text.fill('#1a1a1a');
 
   await expect(page.locator('[data-contrast="fail"]').first()).toBeVisible();
@@ -21,24 +21,24 @@ test('design-theme.E2E01 / AC10 — a failing contrast pair disables Save; resto
   await text.fill('#ededef');
   await expect(page.locator('[data-contrast="fail"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
-  await page.getByLabel('Accent', { exact: true }).fill('#b4f02a');
+  await page.getByLabel('Accent colour', { exact: true }).fill('#b4f02a');
   await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
 });
 
 test('design-theme.E2E02 / AC10 — change the accent and a layout, save, reload', async ({ page }) => {
-  await page.getByLabel('Accent', { exact: true }).fill('#a3e635');
-  await page.getByLabel('Hero').selectOption('centered');
+  await page.getByLabel('Accent colour', { exact: true }).fill('#a3e635');
+  await page.getByLabel('Hero section layout').selectOption('centered');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Design saved.')).toBeVisible();
   await expect(page.locator('#design-form')).toHaveAttribute('data-dirty', 'false');
 
   await page.reload();
-  await expect(page.getByLabel('Accent', { exact: true })).toHaveValue('#a3e635');
-  await expect(page.getByLabel('Hero')).toHaveValue('centered');
+  await expect(page.getByLabel('Accent colour', { exact: true })).toHaveValue('#a3e635');
+  await expect(page.getByLabel('Hero section layout')).toHaveValue('centered');
   const preview = page.locator('[data-theme-root]');
   await expect(preview).toHaveAttribute('style', /--color-accent:\s*#a3e635/);
 
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Reset to reference' }).click();
-  await expect(page.getByLabel('Accent', { exact: true })).toHaveValue('#c0f83c');
+  await expect(page.getByLabel('Accent colour', { exact: true })).toHaveValue('#c0f83c');
 });

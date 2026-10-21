@@ -529,3 +529,8 @@
   `next build`; the full Playwright suite (39 journeys before E05, then E05).
 - `ai-design-studio` spec — 2026-10-21 — `In Progress → Implemented` (every task completed with
   its DoD line above).
+- CMS wording pass — 2026-10-21 (owner request, outside the task lists): plain labels and a hint
+  on every section-editor, identity, design and AI Studio field; the form kit's group fields
+  (`ListField`, `StringListField`, emphasis heading, metrics, tags, link target, year fields)
+  accept `hint`; the AI Studio says when the development stub is answering and previews applied
+  proposals. Checked: web typecheck, lint, 101 unit tests, 40 E2E journeys (axe included), build.

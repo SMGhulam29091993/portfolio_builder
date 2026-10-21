@@ -11,7 +11,20 @@ import { get, useController, useFormContext, type FieldError } from 'react-hook-
 import { Button, focusRing } from '../ui';
 import { useFieldLimits } from './form-schema';
 
-export function StringListField({ name, label, itemLabel, multiline = false }: { name: string; label: string; itemLabel: string; multiline?: boolean }) {
+export function StringListField({
+  name,
+  label,
+  itemLabel,
+  multiline = false,
+  hint,
+}: {
+  name: string;
+  label: string;
+  itemLabel: string;
+  multiline?: boolean;
+  /** One plain sentence: what goes in each row and where it shows. */
+  hint?: string;
+}) {
   const id = useId();
   const { control, formState } = useFormContext();
   const { field } = useController({ name, control });
@@ -31,10 +44,15 @@ export function StringListField({ name, label, itemLabel, multiline = false }: {
   };
 
   return (
-    <fieldset className="flex flex-col gap-2 rounded-2xl border border-neutral-800 p-4">
+    <fieldset className="flex flex-col gap-2 rounded-2xl border border-neutral-800 p-4" aria-describedby={hint ? `${id}-hint` : undefined}>
       <legend className="px-1 text-sm font-medium text-neutral-200">
         {label} <span className="text-xs text-neutral-400">({items.length}{Number.isFinite(maxItems) ? ` of at most ${String(maxItems)}` : ''})</span>
       </legend>
+      {hint ? (
+        <p id={`${id}-hint`} className="text-xs text-neutral-400">
+          {hint}
+        </p>
+      ) : null}
       {errors?.message ? <p className="text-sm text-red-300">{errors.message}</p> : null}
       <ol className="flex flex-col gap-2">
         {items.map((item, index) => {

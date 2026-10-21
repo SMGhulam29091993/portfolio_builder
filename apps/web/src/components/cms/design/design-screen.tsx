@@ -22,22 +22,34 @@ import { Button, Notice, focusRing } from '../ui';
 
 const COLOR_LABELS: Readonly<Record<ColorToken, string>> = {
   background: 'Page background',
-  surface: 'Card surface',
-  surfaceRaised: 'Raised surface',
-  border: 'Borders',
-  text: 'Text',
-  textMuted: 'Muted text',
-  accent: 'Accent',
-  onAccent: 'Text on accent',
+  surface: 'Card background',
+  surfaceRaised: 'Raised card background',
+  border: 'Borders and dividers',
+  text: 'Main text',
+  textMuted: 'Secondary text',
+  accent: 'Accent colour',
+  onAccent: 'Text on accent colour',
+};
+
+/** Where each colour shows, so the user knows what they are changing. */
+const COLOR_HINTS: Readonly<Record<ColorToken, string>> = {
+  background: 'Behind the whole page.',
+  surface: 'Behind cards such as projects and the contact card.',
+  surfaceRaised: 'Behind cards that sit on other cards, and hover states.',
+  border: 'Lines around cards and between sections.',
+  text: 'Headings and body text.',
+  textMuted: 'Smaller, less important text such as dates and captions.',
+  accent: 'Buttons, links, highlights and the italic heading words.',
+  onAccent: 'Text and icons placed on the accent colour, such as button labels.',
 };
 
 const SECTION_LABELS: Readonly<Record<string, string>> = {
-  hero: 'Hero',
-  about: 'About',
-  work: 'Work',
-  experience: 'Experience',
-  stack: 'Stack',
-  contact: 'Contact',
+  hero: 'Hero section layout',
+  about: 'About section layout',
+  work: 'Work section layout',
+  experience: 'Experience section layout',
+  stack: 'Stack section layout',
+  contact: 'Contact section layout',
 };
 
 export function DesignScreen() {
@@ -179,15 +191,21 @@ function DesignForm({ initial }: { initial: DesignResponse }) {
             <fieldset className="grid gap-4 sm:grid-cols-3">
               <legend className="pb-2 text-lg font-semibold">Fonts</legend>
               {FONT_ROLES.map((role) => (
-                <SelectField key={role} name={`theme.fonts.${role}`} label={{ sans: 'Body', display: 'Display (italic accents)', mono: 'Monospace' }[role]} options={fontsFor(role)} />
+                <SelectField
+                  key={role}
+                  name={`theme.fonts.${role}`}
+                  label={{ sans: 'Body text font', display: 'Headline accent font (italic words)', mono: 'Code font' }[role]}
+                  hint={{ sans: 'Most of the text on the page.', display: 'The highlighted words in headings.', mono: 'The code-style card and small labels.' }[role]}
+                  options={fontsFor(role)}
+                />
               ))}
             </fieldset>
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="pb-2 text-lg font-semibold">Shape and effects</legend>
-              <SelectField name="theme.radius" label="Corner radius" options={RADII.map((radius) => ({ value: radius, label: radius }))} />
-              <SelectField name="theme.effects.motion" label="Motion" options={MOTIONS.map((motion) => ({ value: motion, label: motion }))} />
-              <SwitchField name="theme.effects.glow" label="Accent glow" />
-              <SwitchField name="theme.effects.dotGrid" label="Dot grid texture" />
+              <SelectField name="theme.radius" label="Corner roundness" hint="How rounded cards and buttons are." options={RADII.map((radius) => ({ value: radius, label: radius }))} />
+              <SelectField name="theme.effects.motion" label="Animations" hint="none turns every animation off." options={MOTIONS.map((motion) => ({ value: motion, label: motion }))} />
+              <SwitchField name="theme.effects.glow" label="Soft glow behind accent elements" />
+              <SwitchField name="theme.effects.dotGrid" label="Dotted background pattern" />
             </fieldset>
             <fieldset className="grid gap-4 sm:grid-cols-2">
               <legend className="pb-2 text-lg font-semibold">Layouts</legend>
@@ -226,6 +244,7 @@ function ColorField({ token }: { token: ColorToken }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-medium text-neutral-200">{COLOR_LABELS[token]}</label>
+      <p id={`${id}-hint`} className="text-xs text-neutral-400">{COLOR_HINTS[token]}</p>
       <div className="flex items-center gap-2">
         <input
           type="color"
@@ -242,7 +261,7 @@ function ColorField({ token }: { token: ColorToken }) {
           onChange={field.onChange}
           onBlur={field.onBlur}
           aria-invalid={fieldState.error ? true : undefined}
-          aria-describedby={fieldState.error ? `${id}-error` : undefined}
+          aria-describedby={fieldState.error ? `${id}-hint ${id}-error` : `${id}-hint`}
           className={`w-32 rounded-lg border bg-neutral-900 px-3 py-2 font-mono text-sm ${fieldState.error ? 'border-red-400' : 'border-neutral-700'} ${focusRing}`}
         />
       </div>

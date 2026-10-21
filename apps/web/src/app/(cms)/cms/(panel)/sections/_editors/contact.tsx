@@ -16,17 +16,17 @@ function ContactEditor() {
   return (
     <>
       <MetaFields />
-      <EmphasisHeadingField name="heading" label="Heading" />
-      <TextAreaField name="body" label="Body (optional)" rows={3} />
+      <EmphasisHeadingField name="heading" label="Section heading" hint="e.g. Let us build something." />
+      <TextAreaField name="body" label="Message under the heading (optional)" hint="e.g. I am open to full-time roles and freelance work." rows={3} />
       <div className="flex flex-col gap-1 rounded-xl border border-neutral-800 p-4 text-sm">
         <span className="text-neutral-400">Email address used by the button and the copy chip</span>
         <span className="font-mono text-neutral-100">{identity.data?.data.email ?? '…'}</span>
         <TextLink href="/cms/identity">Change it under Identity</TextLink>
       </div>
-      <TextField name="emailCta.label" label="Email button text" />
-      <TextField name="emailCta.subject" label="Email subject (optional)" />
-      <SwitchField name="showCopyEmail" label="Show the copy-email chip" />
-      <SwitchField name="showSocialLinks" label="Show social links (from Identity)" />
+      <TextField name="emailCta.label" label="Email button text" hint="e.g. Email me" />
+      <TextField name="emailCta.subject" label="Subject line filled in for visitors (optional)" hint="e.g. Hello from your portfolio" />
+      <SwitchField name="showCopyEmail" label="Show a button that copies your email address" />
+      <SwitchField name="showSocialLinks" label="Show your social media links (set under Identity)" />
     </>
   );
 }

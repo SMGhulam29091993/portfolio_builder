@@ -29,9 +29,9 @@ function CurrentRole({ path }: { path: string }) {
           }}
           className={`h-5 w-9 accent-lime-300 ${focusRing}`}
         />
-        Current role
+        I still work here
       </label>
-      {current ? null : <MonthYearField name={`${path}.end`} label="End" />}
+      {current ? null : <MonthYearField name={`${path}.end`} label="End date" />}
     </>
   );
 }
@@ -40,21 +40,28 @@ function ExperienceEditor() {
   return (
     <>
       <MetaFields />
-      <EmphasisHeadingField name="heading" label="Heading" />
-      <TextField name="presentLabel" label="Word for a current role's end" />
+      <EmphasisHeadingField name="heading" label="Section heading" hint="e.g. Where I have worked." />
+      <TextField name="presentLabel" label="Text shown instead of an end date for a current job" hint="e.g. Present" />
       <ListField
         name="entries"
-        label="Roles"
-        itemLabel="role"
+        label="Jobs"
+        hint="Newest first. Drag or use the arrows to reorder."
+        itemLabel="job"
         newItem={() => ({ company: '[Your company]', role: '[Your role]', start: { year: new Date().getFullYear(), month: 1 }, end: null, highlights: ['[Your achievement.]'] })}
         renderItem={(path) => (
           <div className="flex flex-col gap-3">
-            <TextField name={`${path}.company`} label="Company" />
-            <TextField name={`${path}.role`} label="Role" />
-            <TextField name={`${path}.location`} label="Location (optional)" />
-            <MonthYearField name={`${path}.start`} label="Start" />
+            <TextField name={`${path}.company`} label="Company name" />
+            <TextField name={`${path}.role`} label="Job title" hint="e.g. Full Stack Developer" />
+            <TextField name={`${path}.location`} label="City or Remote (optional)" />
+            <MonthYearField name={`${path}.start`} label="Start date" />
             <CurrentRole path={path} />
-            <StringListField name={`${path}.highlights`} label="Highlights" itemLabel="highlight" multiline />
+            <StringListField
+              name={`${path}.highlights`}
+              label="What you achieved"
+              itemLabel="achievement"
+              hint="One achievement per row, e.g. Cut page load time by 40%."
+              multiline
+            />
           </div>
         )}
       />

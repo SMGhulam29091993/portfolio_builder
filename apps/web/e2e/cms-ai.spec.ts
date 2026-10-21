@@ -33,7 +33,7 @@ test('ai-design-studio.E2E04 / AC16, AC18 — the stub badge and the allowance s
 
 test('ai-design-studio.E2E01 / AC16 — a ready proposal previews at both widths; the draft design is unchanged', async ({ page }) => {
   await page.goto('/cms/design');
-  const accentBefore = await page.getByLabel('Accent', { exact: true }).inputValue();
+  const accentBefore = await page.getByLabel('Accent colour', { exact: true }).inputValue();
   await page.goto('/cms/ai');
 
   await propose(page, 'Light and editorial');
@@ -44,7 +44,7 @@ test('ai-design-studio.E2E01 / AC16 — a ready proposal previews at both widths
   await page.getByRole('button', { name: 'Desktop' }).click();
 
   await page.goto('/cms/design');
-  await expect(page.getByLabel('Accent', { exact: true })).toHaveValue(accentBefore);
+  await expect(page.getByLabel('Accent colour', { exact: true })).toHaveValue(accentBefore);
 });
 
 test('ai-design-studio.E2E02 / AC16 — apply, then the design screen shows the applied tokens', async ({ page }) => {
@@ -53,12 +53,12 @@ test('ai-design-studio.E2E02 / AC16 — apply, then the design screen shows the 
   await expect(page.getByText('Proposal applied to your draft design.')).toBeVisible();
 
   await page.goto('/cms/design');
-  await expect(page.getByLabel('Accent', { exact: true })).toHaveValue(STUB_ACCENT);
-  await expect(page.getByLabel('Hero')).toHaveValue('centered');
+  await expect(page.getByLabel('Accent colour', { exact: true })).toHaveValue(STUB_ACCENT);
+  await expect(page.getByLabel('Hero section layout')).toHaveValue('centered');
 
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Reset to reference' }).click();
-  await expect(page.getByLabel('Accent', { exact: true })).toHaveValue('#c0f83c');
+  await expect(page.getByLabel('Accent colour', { exact: true })).toHaveValue('#c0f83c');
 });
 
 test('ai-design-studio.E2E03 / AC16 — a discarded proposal leaves the history', async ({ page }) => {

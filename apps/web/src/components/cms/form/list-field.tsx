@@ -5,7 +5,7 @@
  * "Add" is disabled at the schema's maximum and "Remove" at its minimum. Item ids stay with
  * their items through every move, so the API keeps them stable (`section-engine.AC7`).
  */
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useFieldArray, useFormContext, type FieldValues } from 'react-hook-form';
 
 import { Button } from '../ui';
@@ -21,9 +21,12 @@ export interface ListFieldProps {
   readonly newItem: () => FieldValues;
   /** The item's own fields; `path` is `<name>.<index>`. */
   readonly renderItem: (path: string, index: number) => ReactNode;
+  /** One plain sentence: what the list is for and where it shows on the page. */
+  readonly hint?: string;
 }
 
-export function ListField({ name, label, itemLabel, newItem, renderItem }: ListFieldProps) {
+export function ListField({ name, label, itemLabel, newItem, renderItem, hint }: ListFieldProps) {
+  const hintId = useId();
   const { control } = useFormContext();
   const { fields, append, remove, move } = useFieldArray({ control, name });
   const { minItems = 0, maxItems = Number.POSITIVE_INFINITY } = useFieldLimits(name);
@@ -32,7 +35,7 @@ export function ListField({ name, label, itemLabel, newItem, renderItem }: ListF
   const atMin = fields.length <= minItems;
 
   return (
-    <fieldset className="flex flex-col gap-3 rounded-2xl border border-neutral-800 p-4">
+    <fieldset className="flex flex-col gap-3 rounded-2xl border border-neutral-800 p-4" aria-describedby={hint ? hintId : undefined}>
       <legend className="px-1 text-sm font-medium text-neutral-200">
         {label}{' '}
         <span className="text-xs text-neutral-400">
@@ -40,6 +43,11 @@ export function ListField({ name, label, itemLabel, newItem, renderItem }: ListF
           {Number.isFinite(maxItems) ? ` of at most ${String(maxItems)}` : ''})
         </span>
       </legend>
+      {hint ? (
+        <p id={hintId} className="text-xs text-neutral-400">
+          {hint}
+        </p>
+      ) : null}
       <ol className="flex flex-col gap-3">
         {fields.map((field, index) => (
           <li
