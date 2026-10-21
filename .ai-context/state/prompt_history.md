@@ -215,3 +215,7 @@ provider, or PII. Old entries are allowed to age — do not edit them.
 ### [2026-10-21 20:10 IST] — empty CMS preview
 **User Request:** What are the Desktop and Mobile buttons for (the preview beside them was empty)?
 **Agent Action:** Found the dev portfolio predated the section types, so the hero was stored hidden through AC18 and nothing was visible. Fixed the hero to be always visible on read, save and publish (regression tests), added a preview message when every section is hidden, and sized the preview frame to the scaled page (it had an empty tail). Clarified `section-engine.AC18`; pitfall recorded.
+
+### [2026-10-21 20:35 IST] — filled sections not showing
+**User Request:** Sections were filled in but do not show in the preview or the site.
+**Agent Action:** Confirmed from the dev database that every section except the hero was hidden (saving never changes visibility) and that placeholders remained in About, Work and Stack. Added a visibility bar to the section editor (shown / hidden, with Show on my site and Hide from my site, revision kept in step for the next save) and an E2E journey for it.

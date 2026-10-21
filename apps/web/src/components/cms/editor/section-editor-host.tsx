@@ -12,7 +12,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { FormProvider, useForm, type FieldValues } from 'react-hook-form';
 
 import { ApiError } from '../../../lib/api/client';
-import { portfolioKeys, usePortfolioDraft, useSaveSection, useSectionTypes } from '../../../lib/api/portfolio';
+import { portfolioKeys, usePortfolioDraft, useSaveSection, useSectionTypes, useSetVisibility } from '../../../lib/api/portfolio';
 import { genericErrorMessage } from '../../../lib/cms/messages';
 import { useCmsUi } from '../../../lib/cms/ui-store';
 import { FormSchemaProvider } from '../form';
@@ -33,7 +33,8 @@ export function SectionEditorHost({ type, registry, aside }: SectionEditorHostPr
   const types = useSectionTypes();
   const entry = registry.get(type);
   const section = draft.data?.sections.find((candidate) => candidate.type === type);
-  const label = types.data?.find((info) => info.type === type)?.label ?? type;
+  const info = types.data?.find((candidate) => candidate.type === type);
+  const label = info?.label ?? type;
 
   if (draft.isPending) return <p role="status">Loading the section…</p>;
   if (draft.isError) {
@@ -61,6 +62,8 @@ export function SectionEditorHost({ type, registry, aside }: SectionEditorHostPr
       label={label}
       revision={section.revision}
       data={section.data}
+      visible={section.visible}
+      hideable={info?.hideable ?? true}
       sectionTypes={(types.data ?? []).map(({ type: value, label: name }) => ({ type: value, label: name }))}
       aside={aside}
     />
@@ -72,6 +75,8 @@ function EditorForm({
   label,
   revision,
   data,
+  visible,
+  hideable,
   sectionTypes,
   aside,
 }: {
@@ -79,6 +84,10 @@ function EditorForm({
   label: string;
   revision: number;
   data: unknown;
+  /** Whether the section is on the site and in the preview. */
+  visible: boolean;
+  /** `false` for the hero, which is always shown. */
+  hideable: boolean;
   sectionTypes: readonly { type: string; label: string }[];
   aside?: SectionEditorHostProps['aside'];
 }) {
@@ -162,6 +171,17 @@ function EditorForm({
             Save
           </Button>
         </div>
+        <VisibilityBar
+          type={type}
+          label={label}
+          visible={visible}
+          hideable={hideable}
+          revision={baseRevision}
+          onChanged={(next) => {
+            // The toggle bumps the revision; the form saves against the new one, not a stale one.
+            setBaseRevision(next);
+          }}
+        />
         {failure ? (
           <Notice tone="error">
             <p>{failure}</p>
@@ -211,4 +231,62 @@ function LiveAside({
 }) {
   const values = watch();
   return <>{render({ type, data: values })}</>;
+}
+
+/**
+ * Whether this section is on the site, said plainly at the top of the editor, with the switch
+ * beside it. Saving text never changes visibility, so without this a filled-in section can stay
+ * hidden from the site and the preview with nothing on the screen saying so.
+ */
+function VisibilityBar({
+  type,
+  label,
+  visible,
+  hideable,
+  revision,
+  onChanged,
+}: {
+  type: string;
+  label: string;
+  visible: boolean;
+  hideable: boolean;
+  revision: number;
+  onChanged: (revision: number) => void;
+}) {
+  const setVisibility = useSetVisibility();
+  const notify = useCmsUi((state) => state.notify);
+  if (!hideable) return null;
+
+  const toggle = async () => {
+    try {
+      const updated = await setVisibility.mutateAsync({ type, expectedRevision: revision, visible: !visible });
+      onChanged(updated.revision);
+      notify('success', updated.visible ? `${label} is now shown on your site.` : `${label} is now hidden from your site.`);
+    } catch (error) {
+      notify('error', genericErrorMessage(error));
+    }
+  };
+
+  if (visible) {
+    return (
+      <div data-visibility="shown" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-800 px-4 py-3 text-sm">
+        <span className="text-neutral-300">Shown on your site and in the preview.</span>
+        <Button variant="ghost" onClick={() => void toggle()} busy={setVisibility.isPending}>
+          Hide from my site
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div data-visibility="hidden" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/60 px-4 py-3 text-sm">
+      <span className="text-amber-100">
+        {revision === 0
+          ? 'Hidden: this section is not on your site or in the preview yet. Save it once, then show it.'
+          : 'Hidden: this section is not on your site or in the preview.'}
+      </span>
+      <Button onClick={() => void toggle()} disabled={revision === 0} busy={setVisibility.isPending}>
+        Show on my site
+      </Button>
+    </div>
+  );
 }

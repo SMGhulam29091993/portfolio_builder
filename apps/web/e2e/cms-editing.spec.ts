@@ -97,3 +97,17 @@ test('cms-panel-shell.E2E09 / AC10 — hide a section and move one with the keyb
   await stackRow.getByRole('switch').click();
   await expect(stackRow.getByText('Hidden')).toHaveCount(0);
 });
+
+test('the editor says whether a section is on the site, and switching it keeps saving conflict-free', async ({ page }) => {
+  await openAbout(page);
+  await expect(page.locator('[data-visibility="shown"]')).toContainText('Shown on your site');
+  await page.getByRole('button', { name: 'Hide from my site' }).click();
+  await expect(page.locator('[data-visibility="hidden"]')).toContainText('Hidden: this section is not on your site');
+  await page.getByRole('button', { name: 'Show on my site' }).click();
+  await expect(page.locator('[data-visibility="shown"]')).toBeVisible();
+
+  // The toggle bumped the revision; a save right after must not report a conflict.
+  await page.getByLabel('About you', { exact: true }).fill('Saved straight after showing the section.');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('About saved.')).toBeVisible();
+});
